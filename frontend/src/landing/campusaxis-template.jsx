@@ -52,7 +52,7 @@ const qt =
     d +
     "_30fps.mp4",
   Ct = 48,
-  Pt = Me(19457509, "hd_1920_1080"),
+  Pt = "/campusaxis.mp4",
   ot = Me(19457370, "hd_1920_1080"),
   Et = [
     {
