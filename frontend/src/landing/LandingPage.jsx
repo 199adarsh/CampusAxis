@@ -16,7 +16,7 @@ export default function LandingPage() {
       <OnwardSummitTemplate
         brand="CampusAxis"
         title="CampusAxis"
-        tagline={"Making campus life simpler"}
+        tagline={"Connecting every part of campus!"}
         register={{ label: "Go to Dashboard", href: "/dashboard" }}
         footer={{ note: "© 2026 CampusAxis · EduVault. All rights reserved." }}
       />
