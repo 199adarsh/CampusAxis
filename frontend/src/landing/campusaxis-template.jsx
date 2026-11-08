@@ -2,6 +2,7 @@ import * as React from "react";
 import * as jsxRuntime from "react/jsx-runtime";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Lenis from "lenis";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
@@ -751,6 +752,8 @@ function eo({
           changedAt: 0,
           tone: [],
           bake: () => { },
+          ln: [],
+          lt: [],
         },
         Y = (C) => (ie ? "dark" : (a.tone[C] ?? ge[C].tone)),
         G = j(".or-rail button"),
@@ -804,13 +807,14 @@ function eo({
               },
               {
                 clipPath: "inset(0px 0px 0px 0px round 0px)",
-                ease: "none",
+                duration: 0.9,
+                ease: "power3.inOut",
                 scrollTrigger: {
                   trigger: i,
                   scroller: f[0],
-                  start: "top bottom",
-                  end: "top top",
-                  scrub: !0,
+                  start: 12,
+                  end: "max",
+                  toggleActions: "play none none reverse",
                   invalidateOnRefresh: !0,
                 },
               },
@@ -1468,6 +1472,8 @@ function eo({
               u = s.scrollHeight - s.clientHeight;
             ((a.cur = a.target = a.written = r ? u : 0),
               (s.scrollTop = a.cur),
+              (a.ln[i]?.resize(), a.ln[i]?.scrollTo(a.cur, { immediate: !0, force: !0 })),
+              (a.lt[i] = a.cur),
               (a.push = 0),
               (a.active = i),
               t.setAttribute("data-scene", ge[i].id),
@@ -1479,7 +1485,8 @@ function eo({
             const r = a.active,
               s = i > r ? 1 : -1,
               u = performance.now();
-            ((a.busyUntil = u + (E ? 400 : _e + 120)),
+            ((a.busyUntil =
+              u + (E ? 400 : _e + 120 + (Ut(ge[r].id, ge[i].id) ? 1300 : 0))),
               (a.changedAt = u),
               (a.stale = !0));
             const c = f[r],
@@ -1488,6 +1495,8 @@ function eo({
             if (
               ((a.cur = a.target = a.written = s > 0 ? 0 : p),
                 (h.scrollTop = a.cur),
+                (a.ln[i]?.resize(), a.ln[i]?.scrollTo(a.cur, { immediate: !0, force: !0 })),
+                (a.lt[i] = a.cur),
                 (a.push = 0),
                 (a.active = i),
                 t.setAttribute("data-scene", ge[i].id),
@@ -1511,26 +1520,31 @@ function eo({
               Ut(ge[r].id, ge[i].id) ? ct() : U(),
               We(),
               ke.update(),
-              Te(i, 0.22));
+              Te(i, Ut(ge[r].id, ge[i].id) ? 1.5 : 0.22));
           },
           ct = () => {
             const i = n(".or-flash");
             (U("dark"),
-              y.set(i, { autoAlpha: 1 }),
+              y.fromTo(
+                i,
+                { autoAlpha: 0 },
+                { autoAlpha: 1, duration: 0.7, ease: "power2.inOut", overwrite: !0 },
+              ),
               j(".or-flash-row", i).forEach((r, s) =>
                 y.fromTo(
                   r,
                   { xPercent: s % 2 ? -50 : 0 },
                   {
                     xPercent: s % 2 ? 0 : -50,
-                    duration: [1.5, 0.75, 1.25, 0.9, 0.75, 1.1, 0.8][s],
+                    duration: [3, 1.5, 2.5, 1.8, 1.5, 2.2, 1.6][s],
                     ease: "none",
                     repeat: 1,
                   },
                 ),
               ),
-              y.delayedCall(0.75, () => {
-                (y.set(i, { autoAlpha: 0 }), U());
+              y.delayedCall(1.7, () => {
+                (y.to(i, { autoAlpha: 0, duration: 0.45, ease: "power2.out" }),
+                  U());
               }));
           },
           Xe = (i) => {
@@ -1567,17 +1581,46 @@ function eo({
                 .call(() => Te(i, 0), [], 1));
           };
         if (((Z.current = { jump: Xe }), l)) {
+          ((a.ln = f.map(
+            (c) =>
+              new Lenis({
+                wrapper: c,
+                content: c,
+                autoRaf: !1,
+                smoothWheel: !1,
+                syncTouch: !1,
+                virtualScroll: () => !1,
+                lerp: 0.12,
+              }),
+          )),
+            T.push(() => a.ln.forEach((c) => c.destroy())));
+          {
+            const c = new ResizeObserver(() => a.ln.forEach((h) => h.resize()));
+            (f.forEach((h) => [...h.children].forEach((p) => c.observe(p))),
+              T.push(() => c.disconnect()));
+          }
           (qe(0, !1), Te(0, 0.15));
           let i = 0,
             r = performance.now();
           const s = (c) => {
             const h = c - r;
             r = c;
-            const p = f[a.active];
-            (Math.abs(a.target - a.cur) > 0.01 &&
-              ((a.cur = Dt(a.cur, a.target, 0.05, h)),
-                (p.scrollTop = a.cur),
-                (a.written = p.scrollTop)),
+            const p = f[a.active],
+              L = a.ln[a.active];
+            ((a.lt[a.active] !== a.target ||
+              (!L.isScrolling && Math.abs(L.animatedScroll - a.target) > 0.5)) &&
+              ((a.lt[a.active] = a.target),
+                L.scrollTo(a.target, { lerp: 0.12, force: !0 })),
+              L.raf(c),
+              p.scrollTop !== a.last && ((a.last = p.scrollTop), ke.update()),
+              L.isScrolling
+                ? ((a.mv = c),
+                  a.sc || ((a.sc = !0), t.classList.add("or-scrolling")))
+                : a.sc &&
+                c - a.mv > 160 &&
+                ((a.sc = !1), t.classList.remove("or-scrolling")),
+              (a.cur = L.animatedScroll),
+              (a.written = p.scrollTop),
               (i = requestAnimationFrame(s)));
           };
           ((i = requestAnimationFrame(s)),
@@ -1660,7 +1703,18 @@ function eo({
                 : (a.target = Math.min(w, Math.max(0, a.target + p.to * x)));
             }));
         } else
-          (f.forEach((i, r) => {
+          (!E &&
+            (() => {
+              const i = new Lenis({ lerp: 0.1 }),
+                r = (s) => i.raf(s * 1e3);
+              (i.on("scroll", ke.update),
+                y.ticker.add(r),
+                y.ticker.lagSmoothing(0),
+                T.push(() => {
+                  (y.ticker.remove(r), i.destroy());
+                }));
+            })(),
+            f.forEach((i, r) => {
             (ke.create({
               trigger: i,
               start: "top 10%",
@@ -3320,9 +3374,9 @@ const oo = (o) => o.replace(/(-?\d*\.?\d+)R\b/g, "calc($1*var(--r))"),
 .or-eye.is-asleep .or-lid{transform:scaleY(1)}
 .or-eye.is-asleep .or-lash{opacity:.25}
 @keyframes or-spin{to{transform:rotate(360deg)}}
-.or-reel-track{position:relative;height:calc(var(--h) * 1.5)}
+.or-reel-track{position:relative;height:calc(var(--h) * 1.25)}
 .or-reel{position:sticky;top:0;height:var(--h)}
-.or-reel-mask{position:absolute;inset:0;clip-path:inset(0px 9.375R 16R 9.375R round 1.6R)}
+.or-reel-mask{position:absolute;inset:0;will-change:clip-path;transform:translateZ(0);clip-path:inset(0px 9.375R 16R 9.375R round 1.6R)}
 .or-reel-in{position:absolute;inset:0;background:#c7d3e6}
 .or-reel-cap{position:absolute;left:11R;bottom:20R;color:#fff;font-size:1R;opacity:.9}
 .or-play{position:absolute;left:50%;top:calc(var(--h) / 2 - 8R);width:5.4R;height:5.4R;margin-left:-2.7R;border-radius:50%;background:#fff;display:grid;place-items:center}
@@ -3344,7 +3398,7 @@ const oo = (o) => o.replace(/(-?\d*\.?\d+)R\b/g, "calc($1*var(--r))"),
 
 /* 2 make */
 .or-s-make,.or-make{background:var(--or-warm)}
-.or-make-track{height:calc(var(--h) * 5)}
+.or-make-track{height:calc(var(--h) * 4.2)}
 .or-make-light{position:absolute;inset:0;background:var(--or-paper);opacity:0}
 .or-grid{position:absolute;inset:0;background-image:linear-gradient(var(--or-line) 1px,transparent 1px),linear-gradient(90deg,var(--or-line) 1px,transparent 1px);background-size:5.6R 5.6R;background-position:center}
 .or-grid::after{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed #b9b6bd}
@@ -3393,7 +3447,7 @@ const oo = (o) => o.replace(/(-?\d*\.?\d+)R\b/g, "calc($1*var(--r))"),
 
 /* 3 people */
 .or-s-people,.or-people{background:var(--or-lilac)}
-.or-people-track{height:calc(var(--h) * 4.5)}
+.or-people-track{height:calc(var(--h) * 3)}
 .or-people-h{position:absolute;inset:0;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:6R;line-height:8.2R;font-weight:700;letter-spacing:-.045em;text-transform:uppercase;text-align:center;z-index:2}
 .or-pl{display:flex;align-items:center;white-space:nowrap}
 .or-hi{color:var(--or-hi)}
@@ -3411,7 +3465,7 @@ const oo = (o) => o.replace(/(-?\d*\.?\d+)R\b/g, "calc($1*var(--r))"),
 
 /* 4 quote */
 .or-s-quote,.or-quote,.or-s-work,.or-work,.or-s-rope,.or-rope{background:var(--or-night);color:#fff}
-.or-quote-track{height:calc(var(--h) * 2.6)}
+.or-quote-track{height:calc(var(--h) * 1.8)}
 .or-qmark{position:absolute;left:8R;top:7R;font-family:"Bricolage Grotesque",serif;font-size:16R;line-height:1;color:#5f5f62}
 .or-q{position:absolute;left:12R;top:15.5R;width:44R;margin:0;font-size:4.5R;line-height:1.14;letter-spacing:-.04em;color:#57575b}
 .or-q .or-l{transition:color .25s}
@@ -3425,7 +3479,7 @@ const oo = (o) => o.replace(/(-?\d*\.?\d+)R\b/g, "calc($1*var(--r))"),
 .or-qcap{position:absolute;right:5.5R;bottom:6R;width:20R;margin:0;font-size:.95R;line-height:1.35;color:#8b8a90;text-align:right}
 
 /* 5 work */
-.or-work-track{height:calc(var(--h) * 3)}
+.or-work-track{height:calc(var(--h) * 2.2)}
 .or-work-k{position:absolute;left:9.375R;top:9R;margin:0;font-size:1R;color:#8b8a90}
 .or-car-wrap{position:absolute;inset:0}
 .or-car{position:absolute;inset:0;touch-action:pan-y;user-select:none}
@@ -3452,7 +3506,7 @@ const oo = (o) => o.replace(/(-?\d*\.?\d+)R\b/g, "calc($1*var(--r))"),
 @keyframes or-up{from{transform:translateY(70%);opacity:0}}
 
 /* 6 proof */
-.or-proof-track{height:calc(var(--h) * 3)}
+.or-proof-track{height:calc(var(--h) * 2)}
 .or-bubbles{position:absolute;inset:0;width:100%;height:100%}
 .or-blob{position:absolute;left:-12R;top:-12R;width:24R;height:24R;border-radius:50%;pointer-events:none;background:radial-gradient(circle,#dad2f4 0 30%,#c9d2f2 45%,rgb(220 210 244 / 0) 70%);opacity:.75;filter:blur(1.5R)}
 .or-dark .or-blob{opacity:.25}
@@ -3467,7 +3521,7 @@ const oo = (o) => o.replace(/(-?\d*\.?\d+)R\b/g, "calc($1*var(--r))"),
 .or-face-b a:hover{color:#a996f2}
 
 /* 7 rope */
-.or-rope-track{height:calc(var(--h) * 4)}
+.or-rope-track{height:calc(var(--h) * 2.8)}
 .or-rope-fill{position:absolute;inset:0;background:#9e99a8;opacity:0}
 .or-rope-bg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .or-rope-bg path{fill:none;stroke:#47474c;stroke-width:1.4;stroke-dasharray:1;stroke-dashoffset:1}
@@ -3580,6 +3634,7 @@ const oo = (o) => o.replace(/(-?\d*\.?\d+)R\b/g, "calc($1*var(--r))"),
 
 /* cursor */
 .or-dot{position:fixed;left:-.31R;top:-.31R;width:.62R;height:.62R;z-index:100;pointer-events:none;mix-blend-mode:difference;display:none}
+.or-scrolling .or-dot{mix-blend-mode:normal;opacity:0}
 .or-dot::before{content:"";position:absolute;left:50%;top:50%;width:100%;height:100%;border-radius:50%;background:#fff;translate:-50% -50%;transition:width .3s ease,height .3s ease}
 .or-live:not(.or-stack) .or-dot{display:block}
 .or-dot[data-k=nav]::before{width:6R;height:6R}
