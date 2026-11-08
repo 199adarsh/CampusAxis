@@ -1254,7 +1254,7 @@ export default function OnwardSummitTemplate({
         const parsed = JSON.parse(saved)
         if (parsed?.name && parsed?.prn) return parsed
       }
-    } catch {}
+    } catch { }
     return null
   })
 
@@ -1269,7 +1269,7 @@ export default function OnwardSummitTemplate({
             return
           }
         }
-      } catch {}
+      } catch { }
       setCurrentUser(null)
     }
 
@@ -1366,7 +1366,11 @@ export default function OnwardSummitTemplate({
   const remaining = seatsLeft(seats)
 
   // ---- FAQ ------------------------------------------------------------------
-  const [openFaq, setOpenFaq] = React.useState(0)
+  const [openFaqs, setOpenFaqs] = React.useState<Record<number, boolean>>(() => {
+    const initial: Record<number, boolean> = {}
+    for (let i = 0; i < 20; i++) initial[i] = false
+    return initial
+  })
 
   // ---- in-page links --------------------------------------------------------
   const goTo = (key: string, e?: AnchorEv) => {
@@ -1754,11 +1758,18 @@ export default function OnwardSummitTemplate({
             <h2 className="ows-h2 ows-rise">{faq.title ?? "On your mind"}</h2>
             <div className="ows-faq ows-rise">
               {faqs.map((f, i) => {
-                const open = openFaq === i
+                const open = openFaqs[i] ?? true
                 return (
                   <div key={i} className="ows-faq-item" data-open={open ? "" : undefined}>
                     <h3 className="ows-faq-h">
-                      <button type="button" className="ows-faq-q" aria-expanded={open} aria-controls={uid + "-faq-" + i} id={uid + "-faqq-" + i} onClick={() => setOpenFaq(open ? -1 : i)}>
+                      <button
+                        type="button"
+                        className="ows-faq-q"
+                        aria-expanded={open}
+                        aria-controls={uid + "-faq-" + i}
+                        id={uid + "-faqq-" + i}
+                        onClick={() => setOpenFaqs((prev) => ({ ...prev, [i]: !open }))}
+                      >
                         <span>{f.q}</span>
                         <span className="ows-faq-icon" aria-hidden="true" />
                       </button>
