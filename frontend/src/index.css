@@ -736,6 +736,24 @@ p {
   scrollbar-width: none;
 }
 
+html.hide-scrollbar,
+body.hide-scrollbar,
+html.hide-scrollbar *,
+body.hide-scrollbar * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+html.hide-scrollbar::-webkit-scrollbar,
+body.hide-scrollbar::-webkit-scrollbar,
+html.hide-scrollbar *::-webkit-scrollbar,
+body.hide-scrollbar *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
