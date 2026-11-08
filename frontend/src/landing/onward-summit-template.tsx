@@ -1736,7 +1736,7 @@ export default function OnwardSummitTemplate({
         )}
 
         {/* ---------------- testimonials ---------------- */}
-        <section className="ows-sec ows-wrap" data-sec="testimonials">
+        <section className="ows-sec ows-wrap" data-sec="testimonials" style={{ paddingTop: "clamp(56px, 8vw, 96px)", paddingBottom: "clamp(24px, 4vw, 48px)" }}>
           <div className="ows-sec-head">
             <div>
               <h2 className="ows-h2 ows-rise">Student voices</h2>
@@ -1750,7 +1750,7 @@ export default function OnwardSummitTemplate({
 
         {/* ---------------- FAQ ---------------- */}
         {faq && (
-          <section className="ows-sec ows-wrap" data-sec="faq">
+          <section className="ows-sec ows-wrap" data-sec="faq" style={{ paddingTop: "clamp(56px, 8vw, 96px)", paddingBottom: "clamp(56px, 8vw, 96px)" }}>
             <h2 className="ows-h2 ows-rise">{faq.title ?? "On your mind"}</h2>
             <div className="ows-faq ows-rise">
               {faqs.map((f, i) => {
@@ -1778,15 +1778,15 @@ export default function OnwardSummitTemplate({
 
       {/* ---------------- CTA / Login ---------------- */}
       {cta && (
-        <section className="ows-band" data-sec="register" id="login">
+        <section className="ows-band" data-sec="register" id="login" style={{ padding: "clamp(100px, 14vw, 170px) 0" }}>
           <GlyphField mode="band" glyph={glyph} light={pal.glyphLight} dark={pal.glyphDark} reduced={reduced} cell={15} />
-          <div className="ows-wrap ows-band-grid" style={{ alignItems: "center" }}>
+          <div className="ows-wrap ows-band-grid" style={{ alignItems: "center", gap: "clamp(40px, 6vw, 96px)" }}>
             <div className="ows-band-copy">
               {cta.kicker && <span className="ows-kicker ows-kicker--light">{cta.kicker}</span>}
               <h2 className="ows-band-title">{cta.title ?? "Access CampusAxis"}</h2>
-              {cta.subtitle && <p className="ows-band-sub">{cta.subtitle}</p>}
+              {cta.subtitle && <p className="ows-band-sub" style={{ maxWidth: "540px", fontSize: "17.5px", lineHeight: "1.6" }}>{cta.subtitle}</p>}
             </div>
-            <div style={{ maxWidth: "440px", width: "100%", justifySelf: "end" }}>
+            <div style={{ maxWidth: "460px", width: "100%", justifySelf: "end" }}>
               <SwapForm />
             </div>
           </div>
