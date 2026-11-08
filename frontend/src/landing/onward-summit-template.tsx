@@ -1364,6 +1364,7 @@ export default function OnwardSummitTemplate({
   const [taken, setTaken] = React.useState(cta?.seats?.taken ?? 0)
   const seats = cta?.seats ? { total: cta.seats.total, taken } : undefined
   const remaining = seatsLeft(seats)
+  const [authModalOpen, setAuthModalOpen] = React.useState(false)
 
   // ---- FAQ ------------------------------------------------------------------
   const [openFaqs, setOpenFaqs] = React.useState<Record<number, boolean>>(() => {
@@ -1483,50 +1484,24 @@ export default function OnwardSummitTemplate({
             <CalendarGlyph />
           </span>
         </button>
-        {currentUser ? (
-          <div className="ows-nav-user-cluster">
-            <div className="ows-nav-profile-pill" title={`${currentUser.name} (${currentUser.prn})`}>
-              <span className="ows-nav-avatar">
-                {currentUser.name?.charAt(0) || 'U'}
-              </span>
-              <span className="ows-nav-name">
-                {currentUser.name}
-              </span>
-              <span className="ows-nav-role">
-                {currentUser.role === 'teacher' ? 'Faculty' : 'Student'}
-              </span>
-            </div>
-            <a href="/dashboard" className="ows-btn ows-btn--accent ows-btn--nav">
-              <span>Dashboard</span>
-              <span className="ows-btn-arrow">
-                <ArrowGlyph size={10} />
-              </span>
-            </a>
-            <button
-              type="button"
-              onClick={handleNavLogout}
-              className="ows-btn ows-btn--nav ows-btn--nav-logout"
-              title="Sign Out"
-            >
-              <span>Log Out</span>
-            </button>
-          </div>
-        ) : (
-          <a
-            href="#register"
-            className="ows-btn ows-btn--accent ows-btn--nav"
-            onClick={(e) => {
-              e.preventDefault()
-              const el = document.getElementById("register") || document.querySelector('[data-sec="register"]')
-              el?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" })
-            }}
-          >
-            <span>Sign In</span>
-            <span className="ows-btn-arrow">
-              <ArrowGlyph size={10} />
-            </span>
-          </a>
-        )}
+        <button
+          type="button"
+          className="ows-btn ows-btn--accent ows-btn--nav"
+          onClick={(e) => {
+            e.preventDefault()
+            const cached = localStorage.getItem('eduvault_profile')
+            if (cached) {
+              window.location.href = '/dashboard'
+            } else {
+              setAuthModalOpen(true)
+            }
+          }}
+        >
+          <span>{currentUser ? "Dashboard" : "Sign In"}</span>
+          <span className="ows-btn-arrow">
+            <ArrowGlyph size={10} />
+          </span>
+        </button>
       </header>
 
       {/* ---------------- hero ---------------- */}
@@ -1826,6 +1801,29 @@ export default function OnwardSummitTemplate({
           </div>
         </footer>
       )}
+
+      {/* ---------------- Auth Modal Popup ---------------- */}
+      {authModalOpen && (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setAuthModalOpen(false)}
+        >
+          <div 
+            className="relative w-full max-w-[450px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setAuthModalOpen(false)}
+              className="absolute -top-3.5 -right-3.5 z-20 w-8 h-8 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105"
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+            <SwapForm onSuccess={() => setAuthModalOpen(false)} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -2022,6 +2020,8 @@ html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.o
 
 /* ---- register band ---- */
 .ows-band{position:relative;overflow:hidden;isolation:isolate;color:#fff;padding:clamp(72px,9vw,112px) 0;background:radial-gradient(ellipse 50% 70% at 85% 50%,color-mix(in srgb,var(--ows-mid) 70%,var(--ows-light)) 0%,transparent 100%),linear-gradient(160deg,var(--ows-deep) 0%,var(--ows-mid) 100%)}
+.ows-band :where(input, select, textarea) { color: #0f172a !important; }
+.ows-band :where(label) { color: #1e293b !important; }
 .ows-band-grid{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:clamp(32px,5vw,72px);align-items:center}
 .ows-band-title{color:#ffffff!important;margin-top:10px;font-size:clamp(40px,5.6vw,72px);font-weight:600;letter-spacing:-.05em;line-height:.98}
 .ows-band-sub{margin-top:14px;max-width:420px;font-size:16px;line-height:1.45;color:color-mix(in srgb,#fff 80%,var(--ows-light))}

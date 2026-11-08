@@ -159,7 +159,14 @@ export function validateDob(dob) {
     return { valid: false, error: 'Date of birth is required.' };
   }
 
-  const cleaned = dob.trim();
+  let cleaned = dob.trim().replace(/[\/\.]/g, '-');
+  if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) {
+    const [y, m, d] = cleaned.split('-');
+    cleaned = `${d}-${m}-${y}`;
+  } else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(cleaned)) {
+    const parts = cleaned.split('-');
+    cleaned = `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[2]}`;
+  }
   
   // Format check: DD-MM-YYYY
   const dobRegex = /^(\d{2})-(\d{2})-(\d{4})$/;
@@ -186,9 +193,9 @@ export function validateDob(dob) {
     return { valid: false, error: `Invalid day ${day} for the specified month.` };
   }
 
-  // Realistic college student birth year range (1970 to current year - 12)
+  // Realistic college student birth year range (1960 to current year - 10)
   const currentYear = new Date().getFullYear();
-  if (year < 1970 || year > currentYear - 13) {
+  if (year < 1960 || year > currentYear - 10) {
     return { valid: false, error: 'Birth year is outside the acceptable student range.' };
   }
 
