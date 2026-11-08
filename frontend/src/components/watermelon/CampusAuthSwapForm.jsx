@@ -338,31 +338,26 @@ export default function CampusAuthSwapForm({ onAuthSuccess, className = '' }) {
     setErrorMessage('');
 
     try {
-      // Timing-safe account lookup
-      let matchedAccount = null;
-      for (const acc of TEACHER_ACCOUNTS) {
-        const idMatches = timingSafeEqual(acc.id.toLowerCase(), cleanId.toLowerCase());
-        const passMatches = timingSafeEqual(acc.pass, cleanPass);
-        if (idMatches && passMatches) {
-          matchedAccount = acc;
-        }
+      const res = await axios.post(`${API_BASE}/portal/faculty/login`, {
+        facultyId: cleanId,
+        password: cleanPass
+      });
+
+      const matchedAccount = res.data;
+      if (!matchedAccount || !matchedAccount.name) {
+        throw new Error('Invalid Faculty ID or password');
       }
 
-      // Enforce uniform timing defense
       await enforceConstantTimeDelay(startTime, 550);
 
-      if (!matchedAccount) {
-        throw new Error('Invalid credentials');
-      }
-
       setSyncStep(2);
-      setSyncStage(`Setting up faculty workspace for Prof. ${matchedAccount.name}...`);
+      setSyncStage(`Setting up faculty workspace for ${matchedAccount.name}...`);
 
       const teacherProfile = {
         name: matchedAccount.name,
-        prn: matchedAccount.id,
+        prn: matchedAccount.prn || matchedAccount.id,
         dob: 'TEACHER',
-        department: matchedAccount.dept,
+        department: matchedAccount.department || matchedAccount.dept || 'Engineering',
         role: 'teacher'
       };
 

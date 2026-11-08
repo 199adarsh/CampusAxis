@@ -283,6 +283,13 @@ const HomeDashboard = () => {
   const [teacherId, setTeacherId] = useState('');
   const [teacherPassword, setTeacherPassword] = useState('');
 
+  const FACULTY_DIRECTORY = [
+    { id: 'DRP@Eduvault', name: 'Prof. D R Patil' },
+    { id: 'HPM@Eduvault', name: 'Prof. H P Magdum' },
+    { id: 'TIB@Eduvault', name: 'Prof. T I Bagban' },
+    { id: 'PMM@Eduvault', name: 'Prof. P M Mathpati' }
+  ];
+
   const handleTeacherLogin = async (e) => {
     e.preventDefault();
     if (!teacherId.trim() || !teacherPassword.trim()) {
@@ -936,11 +943,11 @@ const HomeDashboard = () => {
               <div className="p-2.5 rounded-lg bg-slate-50 border border-border-subtle text-[11px] text-text-secondary space-y-1">
                 <div className="font-semibold text-text-primary">Authorized Faculty Accounts:</div>
                 <div className="flex flex-wrap gap-1 text-[10px]">
-                  {TEACHER_ACCOUNTS.map(t => (
+                  {FACULTY_DIRECTORY.map(t => (
                     <button
                       key={t.id}
                       type="button"
-                      onClick={() => { setTeacherId(t.id); setTeacherPassword(t.pass); }}
+                      onClick={() => setTeacherId(t.id)}
                       className="px-2 py-0.5 rounded bg-white hover:bg-slate-100 border border-border-subtle font-mono text-primary transition-colors cursor-pointer"
                     >
                       {t.name}
