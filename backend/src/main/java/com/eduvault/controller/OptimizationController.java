@@ -13,7 +13,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/optimization")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class OptimizationController {
 
     private final AttendanceOptimizationService optimizationService;

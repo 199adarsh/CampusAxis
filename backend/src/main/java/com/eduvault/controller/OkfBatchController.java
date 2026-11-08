@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/batch/okf")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class OkfBatchController {
 
     private final OkfBatchService okfBatchService;

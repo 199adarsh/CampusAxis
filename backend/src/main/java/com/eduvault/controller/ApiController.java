@@ -31,7 +31,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import com.eduvault.util.TeacherSubjectMatcher;
 import java.util.HashSet;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +40,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*")
 public class ApiController {
     
     private static final Logger logger = LoggerFactory.getLogger(ApiController.class);
@@ -165,6 +163,36 @@ public class ApiController {
         return ResponseEntity.ok(database.addSubject(subject));
     }
 
+    private <T> ResponseEntity<List<T>> paginate(List<T> items, Integer page, Integer size) {
+        int totalCount = items != null ? items.size() : 0;
+        if (items == null || items.isEmpty()) {
+            return ResponseEntity.ok()
+                    .header("X-Total-Count", "0")
+                    .header("X-Total-Pages", "0")
+                    .header("X-Current-Page", page != null ? String.valueOf(page) : "0")
+                    .body(java.util.Collections.emptyList());
+        }
+
+        if (page != null && size != null && size > 0 && page >= 0) {
+            int totalPages = (int) Math.ceil((double) totalCount / size);
+            int fromIndex = Math.min(page * size, totalCount);
+            int toIndex = Math.min(fromIndex + size, totalCount);
+            List<T> paged = items.subList(fromIndex, toIndex);
+            return ResponseEntity.ok()
+                    .header("X-Total-Count", String.valueOf(totalCount))
+                    .header("X-Total-Pages", String.valueOf(totalPages))
+                    .header("X-Current-Page", String.valueOf(page))
+                    .header("X-Page-Size", String.valueOf(size))
+                    .body(paged);
+        }
+
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(totalCount))
+                .header("X-Total-Pages", "1")
+                .header("X-Current-Page", "0")
+                .body(items);
+    }
+
     public ResponseEntity<List<Note>> getNotes(
             String subjectId,
             String semester,
@@ -177,7 +205,23 @@ public class ApiController {
             String prn,
             String headerPrn,
             String roleHeader) {
-        return getNotes(subjectId, semester, examType, keyword, search, department, unit, folder, prn, headerPrn, roleHeader, null);
+        return getNotes(subjectId, semester, examType, keyword, search, department, unit, folder, prn, null, null, headerPrn, roleHeader, null);
+    }
+
+    public ResponseEntity<List<Note>> getNotes(
+            String subjectId,
+            String semester,
+            String examType,
+            String keyword,
+            String search,
+            String department,
+            String unit,
+            String folder,
+            String prn,
+            String headerPrn,
+            String roleHeader,
+            String studentSubjectsHeader) {
+        return getNotes(subjectId, semester, examType, keyword, search, department, unit, folder, prn, null, null, headerPrn, roleHeader, studentSubjectsHeader);
     }
 
     @GetMapping("/notes")
@@ -191,6 +235,8 @@ public class ApiController {
             @RequestParam(required = false) String unit,
             @RequestParam(required = false) String folder,
             @RequestParam(required = false) String prn,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
             @RequestHeader(value = "X-Student-PRN", required = false) String headerPrn,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
             @RequestHeader(value = "X-Student-Subjects", required = false) String studentSubjectsHeader) {
@@ -240,19 +286,35 @@ public class ApiController {
             }
         }
 
-        List<Note> allNotes = database.getAllNotes();
+        final String finalSearch = (search != null && !search.isBlank()) ? search.toLowerCase() : ((keyword != null && !keyword.isBlank()) ? keyword.toLowerCase() : null);
+
+        List<Note> sourceNotes;
+        if (subjectId != null && !subjectId.isBlank()) {
+            sourceNotes = database.getNotesBySubjectId(subjectId);
+            if (sourceNotes == null || sourceNotes.isEmpty()) {
+                sourceNotes = database.getNoteSummariesBySubjectId(subjectId);
+            }
+            if (sourceNotes == null || sourceNotes.isEmpty()) {
+                sourceNotes = database.getAllNotes();
+            }
+        } else {
+            sourceNotes = database.getAllNoteSummaries();
+            if (sourceNotes == null || sourceNotes.isEmpty()) {
+                sourceNotes = database.getAllNotes();
+            }
+        }
+
         final String finalDept = queryDept;
         final String finalSem = querySem;
         final String finalSubjectId = subjectId;
         final String finalUnit = unit;
         final String explicitSemester = semester;
-        final String finalSearch = (search != null && !search.isBlank()) ? search.toLowerCase() : ((keyword != null && !keyword.isBlank()) ? keyword.toLowerCase() : null);
 
         Map<String, Subject> subjectMap = database.getAllSubjects().stream()
                 .filter(s -> s.getId() != null)
                 .collect(java.util.stream.Collectors.toMap(Subject::getId, s -> s, (s1, s2) -> s1));
 
-        List<Note> filtered = allNotes.stream()
+        List<Note> filtered = sourceNotes.stream()
                 .filter(n -> {
                     // 1. Never publish unmapped or draft notes to students
                     if (!isTeacher) {
@@ -326,31 +388,23 @@ public class ApiController {
                 .collect(java.util.stream.Collectors.toList());
 
         // Strip heavy extractedText on list view to reduce JSON payload by >90%
-        List<Note> summaries = filtered.stream().map(n -> {
-            if (n.getExtractedText() == null) return n;
-            Note copy = new Note(
-                n.getId(), n.getTitle(), n.getSubjectId(), n.getDepartment(), n.getSemester(),
-                n.getUnit(), n.getExamType(), n.getFileUrl(), n.getB2ObjectKey(), n.getOriginalFilename(),
-                n.getImportBatchId(), n.getUploadedBy(), n.getCreatedAt(), n.getStatus(), n.getCategory(),
-                n.getMoodleId(), n.getSourceUrl(), n.getTags(), n.getAiImportantTopics(),
-                n.getAiGeneratedQuestions(), null, n.getOkfStatus(), n.getOkfFilePath(), n.getOkfCompiledAt()
-            );
-            return copy;
-        }).collect(java.util.stream.Collectors.toList());
+        List<Note> summaries = filtered.stream()
+                .map(Note::toSummary)
+                .collect(java.util.stream.Collectors.toList());
 
-        return ResponseEntity.ok(summaries);
+        return paginate(summaries, page, size);
     }
 
     @RequestMapping(value = "/notes/sync-b2", method = {RequestMethod.GET, RequestMethod.POST})
     public ResponseEntity<Map<String, Object>> syncB2Notes() {
         int synced = database.syncNotesFromBackblaze();
-        return ResponseEntity.ok(Map.of("syncedCount", synced, "totalNotes", database.getAllNotes().size()));
+        return ResponseEntity.ok(Map.of("syncedCount", synced, "totalNotes", database.getTotalNotesCount()));
     }
 
     @RequestMapping(value = "/notes/repair", method = {RequestMethod.GET, RequestMethod.POST})
     public ResponseEntity<Map<String, Object>> repairNotes() {
         int repaired = database.repairExistingNotes();
-        return ResponseEntity.ok(Map.of("repairedCount", repaired, "totalNotes", database.getAllNotes().size()));
+        return ResponseEntity.ok(Map.of("repairedCount", repaired, "totalNotes", database.getTotalNotesCount()));
     }
 
     @GetMapping("/notes/{id}")
@@ -385,14 +439,20 @@ public class ApiController {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
         List<Note> all = database.getAllNotes();
         int count = all.size();
+        Set<String> b2Keys = new HashSet<>();
         for (Note note : all) {
             try {
                 String b2Key = note.getB2ObjectKey() != null ? note.getB2ObjectKey() : note.getFileUrl();
-                backblazeStorageService.deleteFile(b2Key);
+                if (b2Key != null && !b2Key.isBlank() && !b2Key.startsWith("http://") && !b2Key.startsWith("https://")) {
+                    b2Keys.add(b2Key.trim());
+                }
                 fileStorageService.deleteFile(note.getFileUrl());
             } catch (Exception ignored) {}
         }
-        int purgedB2 = backblazeStorageService.purgeAllBucketObjects();
+        if (!b2Keys.isEmpty() && backblazeStorageService != null) {
+            backblazeStorageService.deleteObjectsBatch(b2Keys);
+        }
+        int purgedB2 = backblazeStorageService != null ? backblazeStorageService.purgeAllBucketObjects() : 0;
         database.deleteAllNotes();
         return ResponseEntity.ok(Map.of("message", "All notes and B2 files deleted successfully", "deletedNotes", count, "purgedB2Objects", purgedB2));
     }
@@ -484,24 +544,7 @@ public class ApiController {
                 } catch (Exception ignored) {}
             }
 
-            // Fuzzy fallback: if exact key not found in bucket, match by original filename or note ID
-            if (foundBytes == null) {
-                try {
-                    String targetName = note.getOriginalFilename();
-                    for (software.amazon.awssdk.services.s3.model.S3Object s3Obj : backblazeStorageService.listAllObjects()) {
-                        String k = s3Obj.key();
-                        if ((targetName != null && !targetName.isBlank() && k.endsWith(targetName)) ||
-                                (note.getId() != null && k.contains(note.getId())) ||
-                                (note.getB2ObjectKey() != null && k.contains(note.getB2ObjectKey()))) {
-                            byte[] bytes = backblazeStorageService.getObjectBytes(k);
-                            if (bytes != null && bytes.length > 0) {
-                                foundBytes = bytes;
-                                break;
-                            }
-                        }
-                    }
-                } catch (Exception ignored) {}
-            }
+
 
             if (foundBytes != null && foundBytes.length > 0) {
                 String contentType = resolveContentType(fileName);
@@ -658,10 +701,11 @@ public class ApiController {
             @RequestParam(value = "uploaderName", required = false, defaultValue = "Anonymous") String uploaderName) {
 
         // 0. Validate Subject
-        boolean subjectExists = database.getAllSubjects().stream().anyMatch(s -> s.getId().equals(subjectId));
-        if (!subjectExists) {
+        Optional<Subject> subjectOpt = database.getSubjectById(subjectId);
+        if (subjectOpt.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid subject. Please select a subject from your dashboard."));
         }
+        Subject targetSubject = subjectOpt.get();
 
         // 1. Parse tags from JSON string
         List<String> tags = List.of();
@@ -674,13 +718,10 @@ public class ApiController {
         }
 
         // 2. Extract department and semester directly from selected subject or request parameters
-        Subject targetSubject = database.getAllSubjects().stream()
-                .filter(s -> s.getId().equals(subjectId))
-                .findFirst().orElse(null);
-        String department = (targetSubject != null && targetSubject.getDepartment() != null && !targetSubject.getDepartment().isBlank())
+        String department = (targetSubject.getDepartment() != null && !targetSubject.getDepartment().isBlank())
                 ? targetSubject.getDepartment()
                 : ((departmentParam != null && !departmentParam.isBlank()) ? departmentParam.trim() : "General");
-        String semester = (targetSubject != null && targetSubject.getSemester() != null && !targetSubject.getSemester().isBlank())
+        String semester = (targetSubject.getSemester() != null && !targetSubject.getSemester().isBlank())
                 ? targetSubject.getSemester()
                 : ((semesterParam != null && !semesterParam.isBlank()) ? semesterParam.trim() : "General");
         
@@ -816,6 +857,17 @@ public class ApiController {
         return ResponseEntity.ok(database.getDoubtsByNoteId(id));
     }
 
+    public ResponseEntity<List<Doubt>> getAllDoubts(
+            String roleHeader,
+            String teacherSubjectsHeader,
+            String headerPrn,
+            String role,
+            String teacherSubjects,
+            String prn,
+            String noteId) {
+        return getAllDoubts(roleHeader, teacherSubjectsHeader, headerPrn, role, teacherSubjects, prn, noteId, null, null);
+    }
+
     @GetMapping("/doubts")
     public ResponseEntity<List<Doubt>> getAllDoubts(
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
@@ -824,7 +876,9 @@ public class ApiController {
             @RequestParam(required = false) String role,
             @RequestParam(required = false) String teacherSubjects,
             @RequestParam(required = false) String prn,
-            @RequestParam(required = false) String noteId) {
+            @RequestParam(required = false) String noteId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
 
         if (noteId != null && !noteId.isBlank()) {
             return getDoubts(noteId, roleHeader, teacherSubjectsHeader, role, teacherSubjects, prn, headerPrn);
@@ -837,48 +891,52 @@ public class ApiController {
                 || (role != null && (role.equalsIgnoreCase("teacher") || role.equalsIgnoreCase("faculty") || role.equalsIgnoreCase("admin")))
                 || (callerProfile != null && ("TEACHER".equalsIgnoreCase(callerProfile.getDob()) || "TEACHER".equalsIgnoreCase(callerProfile.getRole())));
 
-        List<Note> allNotes = database.getAllNotes();
+        if (!isTeacher) {
+            return paginate(database.getAllDoubts(), page, size);
+        }
+
         Set<String> selectedSubs = new HashSet<>();
-        if (isTeacher) {
-            selectedSubs = TeacherSubjectMatcher.parseSubjectList(teacherSubjectsHeader, teacherSubjects);
-            if (callerProfile != null) {
-                if (callerProfile.getSelectedSubjects() != null) {
-                    for (String s : callerProfile.getSelectedSubjects()) {
-                        TeacherSubjectMatcher.addSubjectsFromString(selectedSubs, s);
-                    }
-                }
-                if (callerProfile.getSubjectIds() != null) {
-                    for (String s : callerProfile.getSubjectIds()) {
-                        TeacherSubjectMatcher.addSubjectsFromString(selectedSubs, s);
-                    }
+        selectedSubs = TeacherSubjectMatcher.parseSubjectList(teacherSubjectsHeader, teacherSubjects);
+        if (callerProfile != null) {
+            if (callerProfile.getSelectedSubjects() != null) {
+                for (String s : callerProfile.getSelectedSubjects()) {
+                    TeacherSubjectMatcher.addSubjectsFromString(selectedSubs, s);
                 }
             }
-            if (selectedSubs.isEmpty()) {
-                return ResponseEntity.ok(java.util.Collections.emptyList());
+            if (callerProfile.getSubjectIds() != null) {
+                for (String s : callerProfile.getSubjectIds()) {
+                    TeacherSubjectMatcher.addSubjectsFromString(selectedSubs, s);
+                }
             }
         }
+        if (selectedSubs.isEmpty()) {
+            return paginate(java.util.Collections.emptyList(), page, size);
+        }
 
-        List<Doubt> allDoubts = new java.util.ArrayList<>();
+        List<Note> allNotes = database.getAllNoteSummaries();
+        if (allNotes == null || allNotes.isEmpty()) {
+            allNotes = database.getAllNotes();
+        }
+        List<String> matchingNoteIds = new java.util.ArrayList<>();
         for (Note n : allNotes) {
-            if (isTeacher) {
-                String noteSubId = n.getSubjectId();
-                String noteSubjectName = null;
-                String noteSubjectCode = null;
-                if (noteSubId != null && !noteSubId.isBlank()) {
-                    Optional<Subject> subOpt = database.getSubjectById(noteSubId);
-                    if (subOpt.isPresent()) {
-                        Subject s = subOpt.get();
-                        noteSubjectName = s.getName();
-                        noteSubjectCode = s.getCode();
-                    }
+            String noteSubId = n.getSubjectId();
+            String noteSubjectName = null;
+            String noteSubjectCode = null;
+            if (noteSubId != null && !noteSubId.isBlank()) {
+                Optional<Subject> subOpt = database.getSubjectById(noteSubId);
+                if (subOpt.isPresent()) {
+                    Subject s = subOpt.get();
+                    noteSubjectName = s.getName();
+                    noteSubjectCode = s.getCode();
                 }
-                boolean matches = TeacherSubjectMatcher.matchesAnySubject(selectedSubs, noteSubId, noteSubjectName, noteSubjectCode, n.getTitle());
-                if (!matches) continue;
             }
-            allDoubts.addAll(database.getDoubtsByNoteId(n.getId()));
+            boolean matches = TeacherSubjectMatcher.matchesAnySubject(selectedSubs, noteSubId, noteSubjectName, noteSubjectCode, n.getTitle());
+            if (matches) {
+                matchingNoteIds.add(n.getId());
+            }
         }
 
-        return ResponseEntity.ok(allDoubts);
+        return paginate(database.getDoubtsByNoteIds(matchingNoteIds), page, size);
     }
 
     @PostMapping("/notes/{id}/doubts")
@@ -919,10 +977,7 @@ public class ApiController {
             return ResponseEntity.badRequest().body(Map.of("error", "Answer cannot be empty"));
         }
 
-        Optional<Doubt> doubtOpt = database.getAllNotes().stream()
-                .flatMap(n -> database.getDoubtsByNoteId(n.getId()).stream())
-                .filter(d -> d.getId().equals(doubtId))
-                .findFirst();
+        Optional<Doubt> doubtOpt = database.getDoubtById(doubtId);
 
         if (doubtOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -977,11 +1032,17 @@ public class ApiController {
 
     // --- PYQ Endpoints ---
 
+    public ResponseEntity<List<com.eduvault.model.PYQ>> getPyqs(String subjectId, String examType) {
+        return getPyqs(subjectId, examType, null, null);
+    }
+
     @GetMapping("/pyqs")
     public ResponseEntity<List<com.eduvault.model.PYQ>> getPyqs(
             @RequestParam(required = false) String subjectId,
-            @RequestParam(required = false) String examType) {
-        return ResponseEntity.ok(database.getPyqsByFilter(subjectId, examType));
+            @RequestParam(required = false) String examType,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        return paginate(database.getPyqsByFilter(subjectId, examType), page, size);
     }
 
     @PostMapping("/pyqs")
@@ -1012,9 +1073,15 @@ public class ApiController {
 
     // --- Announcement Endpoints (Full CRUD with Permissions & Persistence) ---
 
-    @GetMapping("/announcements")
     public ResponseEntity<List<com.eduvault.model.Announcement>> getAnnouncements() {
-        return ResponseEntity.ok(database.getAllAnnouncements());
+        return getAnnouncements(null, null);
+    }
+
+    @GetMapping("/announcements")
+    public ResponseEntity<List<com.eduvault.model.Announcement>> getAnnouncements(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        return paginate(database.getAllAnnouncements(), page, size);
     }
 
     @GetMapping("/announcements/recent")
@@ -1079,9 +1146,15 @@ public class ApiController {
 
     // --- Roadmap Endpoints ---
 
-    @GetMapping("/roadmaps")
     public ResponseEntity<List<com.eduvault.model.PredefinedRoadmap>> getRoadmaps() {
-        return ResponseEntity.ok(database.getAllRoadmaps());
+        return getRoadmaps(null, null);
+    }
+
+    @GetMapping("/roadmaps")
+    public ResponseEntity<List<com.eduvault.model.PredefinedRoadmap>> getRoadmaps(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        return paginate(database.getAllRoadmaps(), page, size);
     }
 
     @GetMapping("/roadmaps/{id}")
@@ -1093,9 +1166,15 @@ public class ApiController {
 
     // --- Timeline Endpoints ---
 
-    @GetMapping("/timeline")
     public ResponseEntity<List<com.eduvault.model.TimelineEvent>> getTimeline() {
-        return ResponseEntity.ok(database.getAllTimelineEvents());
+        return getTimeline(null, null);
+    }
+
+    @GetMapping("/timeline")
+    public ResponseEntity<List<com.eduvault.model.TimelineEvent>> getTimeline(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        return paginate(database.getAllTimelineEvents(), page, size);
     }
 
     @PostMapping("/timeline")

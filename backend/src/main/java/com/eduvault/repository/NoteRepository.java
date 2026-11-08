@@ -51,6 +51,10 @@ public interface NoteRepository extends JpaRepository<Note, String> {
 
     List<Note> findByOkfStatus(String okfStatus);
 
+    List<Note> findBySubjectId(String subjectId);
+
+    List<Note> findBySubjectIdIn(java.util.Collection<String> subjectIds);
+
     List<Note> findBySubjectIdAndOkfStatus(String subjectId, String okfStatus);
 
     long countByOkfStatus(String okfStatus);

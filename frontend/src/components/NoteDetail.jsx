@@ -4,7 +4,6 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { renderAsync } from 'docx-preview';
 import {
     ArrowLeft02Icon,
     Download01Icon,
@@ -29,10 +28,27 @@ import { getCachedNoteBlob, setCachedNoteBlob } from '@/lib/pdfCache';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
-// In-memory instant caches for rapid note reopening
+// In-memory instant caches with size cap to prevent SPA memory growth
+const MAX_CACHE_ENTRIES = 20;
 const presignedCache = new Map();
 const blobCache = new Map();
 const doubtsCache = new Map();
+
+function setBoundedCache(map, key, value) {
+    if (map.size >= MAX_CACHE_ENTRIES) {
+        const firstKey = map.keys().next().value;
+        if (firstKey !== undefined) {
+            if (map === blobCache) {
+                const oldUrl = map.get(firstKey);
+                if (oldUrl && typeof oldUrl === 'string' && oldUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(oldUrl);
+                }
+            }
+            map.delete(firstKey);
+        }
+    }
+    map.set(key, value);
+}
 
 const NoteDetail = () => {
     const { id: noteId } = useParams();
@@ -106,18 +122,24 @@ const NoteDetail = () => {
     const textareaRef = useRef(null);
     const docxContainerRef = useRef(null);
 
-    // Render docx-preview when docxBlob is available
+    // Render docx-preview dynamically only when docxBlob is available (avoids eager bundle cost)
     useEffect(() => {
         let active = true;
         if (docxBlob && docxContainerRef.current) {
             docxContainerRef.current.innerHTML = '';
-            renderAsync(docxBlob, docxContainerRef.current, null, {
-                inWrapper: false,
-                ignoreWidth: false,
-                ignoreHeight: false
-            }).catch(err => {
-                if (active) console.warn('docx-preview render error:', err);
-            });
+            (async () => {
+                try {
+                    const { renderAsync } = await import('docx-preview');
+                    if (!active || !docxContainerRef.current) return;
+                    await renderAsync(docxBlob, docxContainerRef.current, null, {
+                        inWrapper: false,
+                        ignoreWidth: false,
+                        ignoreHeight: false
+                    });
+                } catch (err) {
+                    if (active) console.warn('docx-preview render error:', err);
+                }
+            })();
         }
         return () => {
             active = false;
@@ -191,10 +213,10 @@ const NoteDetail = () => {
                 }
                 const freshDoubts = doubtsRes?.data || [];
                 setDoubts(freshDoubts);
-                doubtsCache.set(noteId, freshDoubts);
+                setBoundedCache(doubtsCache, noteId, freshDoubts);
 
                 if (fileRes?.data?.url) {
-                    presignedCache.set(noteId, fileRes.data.url);
+                    setBoundedCache(presignedCache, noteId, fileRes.data.url);
                     setPresignedUrl(fileRes.data.url);
                 }
             } catch (err) {
@@ -286,7 +308,7 @@ const NoteDetail = () => {
 
             if (blob) {
                 const bUrl = URL.createObjectURL(blob);
-                blobCache.set(noteId, bUrl);
+                setBoundedCache(blobCache, noteId, bUrl);
                 setBlobUrl(bUrl);
 
                 const ext = ((note?.originalFilename || note?.fileUrl || '').split('.').pop() || '').toLowerCase();
@@ -684,6 +706,8 @@ const NoteDetail = () => {
                             <img
                                 src={blobUrl || 'about:blank'}
                                 alt={note.title}
+                                loading="lazy"
+                                decoding="async"
                                 className="max-w-full max-h-full object-contain rounded-2xl border border-[#E5E5EA] bg-white shadow-xs"
                             />
                         </div>

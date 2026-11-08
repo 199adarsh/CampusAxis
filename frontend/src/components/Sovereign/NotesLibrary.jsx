@@ -92,6 +92,75 @@ const matchesCategory = (note, cat) => {
     return false;
 };
 
+const NoteCard = React.memo(function NoteCard({ note, subject, subjectName, onOpen, onDownload }) {
+    const badgeLabel = getNoteBadge(note);
+    const displayTitle = getCleanTitle(note.title);
+    const resolvedSubjectName = subjectName || (typeof subject === 'object' ? subject?.name : subject) || 'Study Material';
+
+    return (
+        <div
+            onClick={() => onOpen(note)}
+            className="bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] hover:border-[#0071E3]/50 dark:hover:border-[#0071E3]/60 rounded-xl p-3.5 transition-all duration-150 cursor-pointer flex flex-col justify-between group shadow-2xs hover:shadow-xs active:scale-[0.99]"
+        >
+            <div>
+                {/* Header: Icon, Unit Pill, Format */}
+                <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#0071E3] flex items-center justify-center shrink-0">
+                        {note.thumbnailUrl || note.coverImage ? (
+                            <img
+                                src={note.thumbnailUrl || note.coverImage}
+                                alt={displayTitle}
+                                loading="lazy"
+                                decoding="async"
+                                className="w-full h-full object-cover rounded-lg"
+                            />
+                        ) : (
+                            <File02Icon size={15} />
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[10px] font-semibold text-[#0071E3] dark:text-[#5AC8FA] bg-[#DEEDFC]/70 dark:bg-blue-950/40 px-2 py-0.5 rounded-md">
+                            {note.unit || "Unit 1"}
+                        </span>
+                        <span className="text-[9px] font-bold text-[#8E8E93] uppercase tracking-wider">
+                            {badgeLabel}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Title & Subject */}
+                <div>
+                    <h3 className="font-semibold text-xs text-[#1D1D1F] dark:text-white line-clamp-2 leading-snug group-hover:text-[#0071E3] transition-colors">
+                        {displayTitle}
+                    </h3>
+                    <p className="text-[11px] text-[#8E8E93] mt-1 truncate">
+                        {resolvedSubjectName}
+                    </p>
+                </div>
+            </div>
+
+            {/* Bottom Footer: Date & Download */}
+            <div className="pt-2.5 mt-2.5 border-t border-[#F2F2F7] dark:border-[#2C2C2E] flex items-center justify-between text-[10px] text-[#8E8E93]">
+                <span>
+                    {note.createdAt
+                        ? new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                        : 'Recent'}
+                </span>
+
+                <button
+                    onClick={(e) => onDownload(e, note)}
+                    className="p-1 rounded-md text-[#8E8E93] hover:text-[#0071E3] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                    title="Download Document"
+                    type="button"
+                >
+                    <Download01Icon size={14} />
+                </button>
+            </div>
+        </div>
+    );
+});
+
 const NotesLibrary = ({ defaultTab = 'notes' }) => {
     const { profile, subjects, catalogSubjects: outletCatalogSubjects, notes, refreshData, setShowUpload } = useOutletContext();
     const navigate = useNavigate();
@@ -136,11 +205,20 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
         return Array.from(map.values());
     }, [outletCatalogSubjects, subjects]);
 
+    // Precomputed subject lookup map for O(1) access
+    const subjectMap = useMemo(() => {
+        const map = new Map();
+        (allKnownSubjects || []).forEach(s => {
+            if (s && s.id) map.set(s.id, s);
+        });
+        return map;
+    }, [allKnownSubjects]);
+
     // Subject resolution helper
     const resolveSubjectId = useCallback((note) => {
         if (!note) return null;
         if (note.subjectId) {
-            if (allKnownSubjects.some(s => s.id === note.subjectId)) return note.subjectId;
+            if (subjectMap.has(note.subjectId)) return note.subjectId;
             const matchedSub = allKnownSubjects.find(s =>
                 (s.code && s.code.length > 2 && s.code.toLowerCase() === note.subjectId.toLowerCase()) ||
                 (s.name && s.name.toLowerCase() === note.subjectId.toLowerCase())
@@ -161,7 +239,7 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
             if (matchedName) return matchedName.id;
         }
         return null;
-    }, [allKnownSubjects]);
+    }, [allKnownSubjects, subjectMap]);
 
     // Check if a subject has notes available (has at least 1 note in loaded notes array)
     const subjectHasNotes = useCallback((s) => {
@@ -225,11 +303,11 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
     const [downloadingNote, setDownloadingNote] = useState(null);
     const [downloadProgress, setDownloadProgress] = useState(0);
 
-    const handleOpenNote = (note) => {
+    const handleOpenNote = useCallback((note) => {
         navigate(`/notes/${note.id}`);
-    };
+    }, [navigate]);
 
-    const handleDownloadNote = (e, note) => {
+    const handleDownloadNote = useCallback((e, note) => {
         e.stopPropagation();
         const downloadUrl = note?.fileUrl
             ? (note.fileUrl.startsWith('http') ? note.fileUrl : `${import.meta.env.VITE_API_BASE || '/api'}/files/raw/${note.fileUrl}`)
@@ -268,7 +346,7 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
                 setDownloadProgress(0);
             }, 500);
         }, 650);
-    };
+    }, [handleOpenNote]);
 
     // Subject selection state
     const [selectedSubject, setSelectedSubject] = useState(() => {
@@ -606,62 +684,16 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-16">
                                 {displayNotes.map((note) => {
                                     const rId = resolveSubjectId(note);
-                                    const sub = allKnownSubjects.find(s => s.id === rId);
-                                    const badgeLabel = getNoteBadge(note);
-                                    const displayTitle = getCleanTitle(note.title);
-
+                                    const sub = subjectMap.get(rId);
                                     return (
-                                        <div
+                                        <NoteCard
                                             key={note.id}
-                                            onClick={() => handleOpenNote(note)}
-                                            className="bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] hover:border-[#0071E3]/50 dark:hover:border-[#0071E3]/60 rounded-xl p-3.5 transition-all duration-150 cursor-pointer flex flex-col justify-between group shadow-2xs hover:shadow-xs active:scale-[0.99]"
-                                        >
-                                            <div>
-                                                {/* Header: Icon, Unit Pill, Format */}
-                                                <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                                    <div className="w-7 h-7 rounded-lg bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#0071E3] flex items-center justify-center shrink-0">
-                                                        <File02Icon size={15} />
-                                                    </div>
-
-                                                    <div className="flex items-center gap-1.5 shrink-0">
-                                                        <span className="text-[10px] font-semibold text-[#0071E3] dark:text-[#5AC8FA] bg-[#DEEDFC]/70 dark:bg-blue-950/40 px-2 py-0.5 rounded-md">
-                                                            {note.unit || "Unit 1"}
-                                                        </span>
-                                                        <span className="text-[9px] font-bold text-[#8E8E93] uppercase tracking-wider">
-                                                            {badgeLabel}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Title & Subject */}
-                                                <div>
-                                                    <h3 className="font-semibold text-xs text-[#1D1D1F] dark:text-white line-clamp-2 leading-snug group-hover:text-[#0071E3] transition-colors">
-                                                        {displayTitle}
-                                                    </h3>
-                                                    <p className="text-[11px] text-[#8E8E93] mt-1 truncate">
-                                                        {sub?.name || 'Study Material'}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* Bottom Footer: Date & Download */}
-                                            <div className="pt-2.5 mt-2.5 border-t border-[#F2F2F7] dark:border-[#2C2C2E] flex items-center justify-between text-[10px] text-[#8E8E93]">
-                                                <span>
-                                                    {note.createdAt
-                                                        ? new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-                                                        : 'Recent'}
-                                                </span>
-
-                                                <button
-                                                    onClick={(e) => handleDownloadNote(e, note)}
-                                                    className="p-1 rounded-md text-[#8E8E93] hover:text-[#0071E3] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                                                    title="Download Document"
-                                                    type="button"
-                                                >
-                                                    <Download01Icon size={14} />
-                                                </button>
-                                            </div>
-                                        </div>
+                                            note={note}
+                                            subject={sub}
+                                            subjectName={sub?.name}
+                                            onOpen={handleOpenNote}
+                                            onDownload={handleDownloadNote}
+                                        />
                                     );
                                 })}
                             </div>

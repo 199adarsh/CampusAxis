@@ -15,7 +15,11 @@ import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 @Repository
 @Primary
@@ -64,6 +68,20 @@ public class LocalJsonDatabase {
     @Autowired(required = false)
     private javax.sql.DataSource dataSource;
 
+    @Autowired(required = false)
+    private org.springframework.cache.CacheManager cacheManager;
+
+    private final ReentrantLock syncLock = new ReentrantLock();
+
+    private void evictNoteCaches() {
+        if (cacheManager != null) {
+            org.springframework.cache.Cache c1 = cacheManager.getCache("allNotes");
+            if (c1 != null) c1.clear();
+            org.springframework.cache.Cache c2 = cacheManager.getCache("allNoteSummaries");
+            if (c2 != null) c2.clear();
+        }
+    }
+
     private final ObjectMapper mapper = mapperWithJava8Time();
 
     private ObjectMapper mapperWithJava8Time() {
@@ -101,12 +119,20 @@ public class LocalJsonDatabase {
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_status ON notes(status)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_unit ON notes(unit)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_okf_status ON notes(okf_status)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_moodle_id ON notes(moodle_id)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_source_url ON notes(source_url)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_file_url ON notes(file_url)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_b2_key ON notes(b2_object_key)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_uploaded_by ON notes(uploaded_by)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_import_batch ON notes(import_batch_id)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_pyqs_subject_exam ON pyqs(subject_id, exam_type)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_nc_requests_student ON nc_requests(student_prn, created_at DESC)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_nc_requests_status ON nc_requests(status)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_doubts_note_id ON doubts(note_id)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_nc_notifications_recipient ON nc_notifications(recipient_prn, read)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_subjects_dept_sem ON subjects(department, semester)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_subjects_code ON subjects(code)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_subjects_name ON subjects(name)");
             } catch (Exception e) {
                 logger.warn("Could not ensure database indexes: {}", e.getMessage());
             }
@@ -176,7 +202,8 @@ public class LocalJsonDatabase {
         seedThread.start();
     }
 
-    public synchronized int repairExistingNotes() {
+    public int repairExistingNotes() {
+        syncLock.lock();
         try {
             ensureCoreSubjects();
             List<Subject> subjects = subjectRepository.findAll();
@@ -223,11 +250,15 @@ public class LocalJsonDatabase {
         } catch (Exception e) {
             logger.warn("Error during repairExistingNotes: {}", e.getMessage());
             return 0;
+        } finally {
+            syncLock.unlock();
+            evictNoteCaches();
         }
     }
 
-    public synchronized int syncNotesFromBackblaze() {
+    public int syncNotesFromBackblaze() {
         if (backblazeStorageService == null) return 0;
+        syncLock.lock();
         try {
             logger.info("Checking notes from Backblaze B2 bucket...");
 
@@ -388,11 +419,15 @@ public class LocalJsonDatabase {
             return countNewOrUpdated;
         } catch (Exception e) {
             logger.error("Error during Backblaze B2 note synchronization: {}", e.getMessage(), e);
+        } finally {
+            syncLock.unlock();
+            evictNoteCaches();
         }
         return 0;
     }
 
-    public synchronized int deleteDisposableTestImportNotes() {
+    public int deleteDisposableTestImportNotes() {
+        syncLock.lock();
         try {
             List<Note> testNotes = noteRepository.findByUploadedBy("Backblaze B2");
             int deleted = 0;
@@ -413,6 +448,9 @@ public class LocalJsonDatabase {
         } catch (Exception e) {
             logger.error("Error deleting disposable test import notes: {}", e.getMessage(), e);
             return 0;
+        } finally {
+            syncLock.unlock();
+            evictNoteCaches();
         }
     }
 
@@ -599,15 +637,15 @@ public class LocalJsonDatabase {
         return studentProfileRepository.save(newProfile);
     }
 
-    public synchronized void clearProfile() {
+    public void clearProfile() {
         // Multi-tenant protection: do not delete all profiles
     }
 
-    public synchronized void clearProfileAndSubjects() {
+    public void clearProfileAndSubjects() {
         // Multi-tenant protection: do not wipe global database
     }
 
-    public synchronized void registerSubjectsCatalog(List<DashboardSubject> dashboardSubjects, String dept, String sem) {
+    public void registerSubjectsCatalog(List<DashboardSubject> dashboardSubjects, String dept, String sem) {
         if (dashboardSubjects == null || dashboardSubjects.isEmpty()) return;
         List<Subject> existing = subjectRepository.findAll();
 
@@ -658,31 +696,49 @@ public class LocalJsonDatabase {
         subjectRepository.saveAll(subjects);
     }
 
-    public synchronized void relinkOrphanNotes() {
-        ensureCoreSubjects();
-        List<Subject> subjects = subjectRepository.findAll();
-        List<Note> orphanNotes = noteRepository.findOrphanOrPendingNotes();
-        if (subjects.isEmpty() || orphanNotes.isEmpty()) return;
+    public void relinkOrphanNotes() {
+        syncLock.lock();
+        try {
+            ensureCoreSubjects();
+            List<Subject> subjects = subjectRepository.findAll();
+            List<Note> orphanNotes = noteRepository.findOrphanOrPendingNotes();
+            if (subjects.isEmpty() || orphanNotes.isEmpty()) return;
 
-        List<Note> toUpdate = new java.util.ArrayList<>();
-        for (Note n : orphanNotes) {
-            Subject matched = matchSubjectForNote(n, subjects);
-            if (matched != null) {
-                n.setSubjectId(matched.getId());
-                n.setStatus("ready");
-                toUpdate.add(n);
+            List<Note> toUpdate = new java.util.ArrayList<>();
+            for (Note n : orphanNotes) {
+                Subject matched = matchSubjectForNote(n, subjects);
+                if (matched != null) {
+                    n.setSubjectId(matched.getId());
+                    n.setStatus("ready");
+                    toUpdate.add(n);
+                }
             }
-        }
-        if (!toUpdate.isEmpty()) {
-            noteRepository.saveAll(toUpdate);
-            logger.info("Relinked {} orphan notes to their respective subjects", toUpdate.size());
+            if (!toUpdate.isEmpty()) {
+                noteRepository.saveAll(toUpdate);
+                logger.info("Relinked {} orphan notes to their respective subjects", toUpdate.size());
+            }
+        } finally {
+            syncLock.unlock();
+            evictNoteCaches();
         }
     }
 
-    public synchronized void ensureCoreSubjects() {
-        // Ensure Sem 4 subjects for AIDS (UAD) exist so legacy notes remain fully mapped
-        if (!subjectRepository.existsById("ef0e44fc-760d-4b34-93ad-e525d4a5e1c8")) {
-            subjectRepository.save(Subject.builder()
+    public void ensureCoreSubjects() {
+        List<Subject> allSubs = subjectRepository.findAll();
+        Set<String> existingIds = allSubs.stream()
+                .map(Subject::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Set<String> existingNames = allSubs.stream()
+                .map(Subject::getName)
+                .filter(Objects::nonNull)
+                .map(s -> s.trim().toLowerCase())
+                .collect(Collectors.toSet());
+
+        List<Subject> toSave = new ArrayList<>();
+
+        if (!existingIds.contains("ef0e44fc-760d-4b34-93ad-e525d4a5e1c8")) {
+            toSave.add(Subject.builder()
                     .id("ef0e44fc-760d-4b34-93ad-e525d4a5e1c8")
                     .name("Computer Algorithms")
                     .code("01ADL204")
@@ -692,8 +748,8 @@ public class LocalJsonDatabase {
                     .noteCount(7)
                     .build());
         }
-        if (!subjectRepository.existsById("af189579-731a-445b-8dd1-ff89b8168157")) {
-            subjectRepository.save(Subject.builder()
+        if (!existingIds.contains("af189579-731a-445b-8dd1-ff89b8168157")) {
+            toSave.add(Subject.builder()
                     .id("af189579-731a-445b-8dd1-ff89b8168157")
                     .name("Operating Systems")
                     .code("01ADL205")
@@ -704,9 +760,8 @@ public class LocalJsonDatabase {
                     .build());
         }
 
-        // Ensure representative dynamic virtual folder subjects for CSE-S05 and CSE-S04
-        if (!subjectRepository.existsById("c501-cse-networks")) {
-            subjectRepository.save(Subject.builder()
+        if (!existingIds.contains("c501-cse-networks")) {
+            toSave.add(Subject.builder()
                     .id("c501-cse-networks")
                     .name("Computer Networks")
                     .code("01CS501")
@@ -716,8 +771,8 @@ public class LocalJsonDatabase {
                     .noteCount(0)
                     .build());
         }
-        if (!subjectRepository.existsById("c502-cse-softeng")) {
-            subjectRepository.save(Subject.builder()
+        if (!existingIds.contains("c502-cse-softeng")) {
+            toSave.add(Subject.builder()
                     .id("c502-cse-softeng")
                     .name("Software Engineering")
                     .code("01CS502")
@@ -727,8 +782,8 @@ public class LocalJsonDatabase {
                     .noteCount(0)
                     .build());
         }
-        if (!subjectRepository.existsById("c503-cse-ai")) {
-            subjectRepository.save(Subject.builder()
+        if (!existingIds.contains("c503-cse-ai")) {
+            toSave.add(Subject.builder()
                     .id("c503-cse-ai")
                     .name("Artificial Intelligence")
                     .code("01CS503")
@@ -738,8 +793,8 @@ public class LocalJsonDatabase {
                     .noteCount(0)
                     .build());
         }
-        if (!subjectRepository.existsById("c401-cse-dsa")) {
-            subjectRepository.save(Subject.builder()
+        if (!existingIds.contains("c401-cse-dsa")) {
+            toSave.add(Subject.builder()
                     .id("c401-cse-dsa")
                     .name("Data Structures & Algorithms")
                     .code("01CS401")
@@ -749,8 +804,8 @@ public class LocalJsonDatabase {
                     .noteCount(0)
                     .build());
         }
-        if (!subjectRepository.existsById("c402-cse-dbms")) {
-            subjectRepository.save(Subject.builder()
+        if (!existingIds.contains("c402-cse-dbms")) {
+            toSave.add(Subject.builder()
                     .id("c402-cse-dbms")
                     .name("Database Management Systems")
                     .code("01CS402")
@@ -760,8 +815,8 @@ public class LocalJsonDatabase {
                     .noteCount(0)
                     .build());
         }
-        if (!subjectRepository.existsById("c403-cse-toc")) {
-            subjectRepository.save(Subject.builder()
+        if (!existingIds.contains("c403-cse-toc")) {
+            toSave.add(Subject.builder()
                     .id("c403-cse-toc")
                     .name("Theory of Computation")
                     .code("01CS403")
@@ -772,8 +827,8 @@ public class LocalJsonDatabase {
                     .build());
         }
 
-        if (subjectRepository.findAll().stream().noneMatch(s -> s.getName() != null && s.getName().equalsIgnoreCase("Mathematics for Artificial Intelligence and Data Science"))) {
-            subjectRepository.save(Subject.builder()
+        if (!existingNames.contains("mathematics for artificial intelligence and data science")) {
+            toSave.add(Subject.builder()
                     .id("sub-uad-maths-ai")
                     .name("Mathematics for Artificial Intelligence and Data Science")
                     .code("01ADL201")
@@ -783,8 +838,8 @@ public class LocalJsonDatabase {
                     .noteCount(0)
                     .build());
         }
-        if (subjectRepository.findAll().stream().noneMatch(s -> s.getName() != null && s.getName().equalsIgnoreCase("Design and Analysis of Algorithms"))) {
-            subjectRepository.save(Subject.builder()
+        if (!existingNames.contains("design and analysis of algorithms")) {
+            toSave.add(Subject.builder()
                     .id("sub-uad-daa")
                     .name("Design and Analysis of Algorithms")
                     .code("01ADL210")
@@ -794,8 +849,8 @@ public class LocalJsonDatabase {
                     .noteCount(0)
                     .build());
         }
-        if (subjectRepository.findAll().stream().noneMatch(s -> s.getName() != null && s.getName().equalsIgnoreCase("Design Thinking and Idea Lab"))) {
-            subjectRepository.save(Subject.builder()
+        if (!existingNames.contains("design thinking and idea lab")) {
+            toSave.add(Subject.builder()
                     .id("sub-uad-dtil")
                     .name("Design Thinking and Idea Lab")
                     .code("03TCP156")
@@ -805,8 +860,8 @@ public class LocalJsonDatabase {
                     .noteCount(0)
                     .build());
         }
-        if (subjectRepository.findAll().stream().noneMatch(s -> s.getName() != null && s.getName().equalsIgnoreCase("Microprocessors"))) {
-            subjectRepository.save(Subject.builder()
+        if (!existingNames.contains("microprocessors")) {
+            toSave.add(Subject.builder()
                     .id("sub-uad-mp")
                     .name("Microprocessors")
                     .code("02ADL204")
@@ -816,8 +871,8 @@ public class LocalJsonDatabase {
                     .noteCount(0)
                     .build());
         }
-        if (subjectRepository.findAll().stream().noneMatch(s -> s.getName() != null && s.getName().equalsIgnoreCase("Mini-Project-I"))) {
-            subjectRepository.save(Subject.builder()
+        if (!existingNames.contains("mini-project-i")) {
+            toSave.add(Subject.builder()
                     .id("sub-uad-mini-proj-1")
                     .name("Mini-Project-I")
                     .code("02ADD220")
@@ -826,6 +881,10 @@ public class LocalJsonDatabase {
                     .createdAt("2026-05-01")
                     .noteCount(0)
                     .build());
+        }
+
+        if (!toSave.isEmpty()) {
+            subjectRepository.saveAll(toSave);
         }
     }
 
@@ -860,7 +919,7 @@ public class LocalJsonDatabase {
     }
 
     @CacheEvict(value = "allSubjects", allEntries = true)
-    public synchronized void setSubjects(List<Subject> newSubjects) {
+    public void setSubjects(List<Subject> newSubjects) {
         List<Subject> existing = subjectRepository.findAll();
         java.util.Map<String, String> nameToId = new java.util.HashMap<>();
         for (Subject s : existing) {
@@ -891,38 +950,77 @@ public class LocalJsonDatabase {
         return subjectRepository.findById(id);
     }
 
+    @Cacheable("allNotes")
     public List<Note> getAllNotes() {
         return noteRepository.findAll();
+    }
+
+    @Cacheable("allNoteSummaries")
+    public List<Note> getAllNoteSummaries() {
+        return noteRepository.findAll().stream()
+                .map(Note::toSummary)
+                .collect(Collectors.toList());
+    }
+
+    public List<Note> getNotesBySubjectId(String subjectId) {
+        if (subjectId == null || subjectId.isBlank()) {
+            return java.util.Collections.emptyList();
+        }
+        return noteRepository.findBySubjectId(subjectId);
+    }
+
+    public List<Note> getNoteSummariesBySubjectId(String subjectId) {
+        if (subjectId == null || subjectId.isBlank()) {
+            return java.util.Collections.emptyList();
+        }
+        return noteRepository.findBySubjectId(subjectId).stream()
+                .map(Note::toSummary)
+                .collect(Collectors.toList());
+    }
+
+    public long getTotalNotesCount() {
+        return noteRepository.count();
     }
 
     public Optional<Note> getNoteById(String id) {
         return noteRepository.findById(id);
     }
 
+    @CacheEvict(value = {"allNotes", "allNoteSummaries"}, allEntries = true)
     public void addNote(Note note) {
         noteRepository.save(note);
+        evictNoteCaches();
         updateSubjectCounts();
     }
     
+    @CacheEvict(value = {"allNotes", "allNoteSummaries"}, allEntries = true)
     public void updateNote(Note note) {
         noteRepository.save(note);
+        evictNoteCaches();
         updateSubjectCounts();
     }
     
-    public synchronized Optional<Note> updateNoteTags(String id, List<String> tags) {
+    @CacheEvict(value = {"allNotes", "allNoteSummaries"}, allEntries = true)
+    public Optional<Note> updateNoteTags(String id, List<String> tags) {
         return noteRepository.findById(id).map(note -> {
             note.setTags(tags);
-            return noteRepository.save(note);
+            Note saved = noteRepository.save(note);
+            evictNoteCaches();
+            return saved;
         });
     }
 
+    @CacheEvict(value = {"allNotes", "allNoteSummaries"}, allEntries = true)
     public void deleteNote(String id) {
         noteRepository.deleteById(id);
+        evictNoteCaches();
         updateSubjectCounts();
     }
 
-    public synchronized void deleteAllNotes() {
+    @CacheEvict(value = {"allNotes", "allNoteSummaries"}, allEntries = true)
+    public void deleteAllNotes() {
         noteRepository.deleteAll();
+        evictNoteCaches();
         updateSubjectCounts();
     }
     
@@ -966,6 +1064,22 @@ public class LocalJsonDatabase {
         return doubtRepository.findByNoteId(noteId);
     }
 
+    public List<Doubt> getDoubtsByNoteIds(java.util.Collection<String> noteIds) {
+        if (noteIds == null || noteIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return doubtRepository.findByNoteIdIn(noteIds);
+    }
+
+    public List<Doubt> getAllDoubts() {
+        return doubtRepository.findAll();
+    }
+
+    public Optional<Doubt> getDoubtById(String id) {
+        if (id == null) return Optional.empty();
+        return doubtRepository.findById(id);
+    }
+
     public void addDoubt(Doubt doubt) {
         doubtRepository.save(doubt);
     }
@@ -978,7 +1092,7 @@ public class LocalJsonDatabase {
         return pyqRepository.findAll();
     }
 
-    public synchronized PYQ addPyq(PYQ pyq) {
+    public PYQ addPyq(PYQ pyq) {
         return pyqRepository.save(pyq);
     }
 
@@ -986,11 +1100,11 @@ public class LocalJsonDatabase {
         return pyqRepository.findByFilters(subjectId, examType);
     }
 
-    public synchronized void deleteAllPyqs() {
+    public void deleteAllPyqs() {
         pyqRepository.deleteAll();
     }
 
-    public synchronized void deletePyq(String id) {
+    public void deletePyq(String id) {
         pyqRepository.deleteById(id);
     }
 
@@ -1003,7 +1117,7 @@ public class LocalJsonDatabase {
     }
 
     @CacheEvict(value = "recentAnnouncements", allEntries = true)
-    public synchronized Announcement addAnnouncement(Announcement announcement) {
+    public Announcement addAnnouncement(Announcement announcement) {
         if (announcement.getId() == null || announcement.getId().isBlank()) {
             announcement.setId(java.util.UUID.randomUUID().toString());
         }
@@ -1015,7 +1129,7 @@ public class LocalJsonDatabase {
         return saved;
     }
 
-    public synchronized Optional<Announcement> updateAnnouncement(String id, Announcement updated) {
+    public Optional<Announcement> updateAnnouncement(String id, Announcement updated) {
         return announcementRepository.findById(id).map(existing -> {
             if (updated.getTitle() != null) existing.setTitle(updated.getTitle());
             if (updated.getDescription() != null) existing.setDescription(updated.getDescription());
@@ -1031,7 +1145,7 @@ public class LocalJsonDatabase {
         });
     }
 
-    public synchronized boolean deleteAnnouncement(String id) {
+    public boolean deleteAnnouncement(String id) {
         if (announcementRepository.existsById(id)) {
             announcementRepository.deleteById(id);
             saveAnnouncementsBackup();
@@ -1041,19 +1155,7 @@ public class LocalJsonDatabase {
     }
 
     private void saveAnnouncementsBackup() {
-        try {
-            java.nio.file.Path path = java.nio.file.Paths.get("data", "announcements.json");
-            if (!java.nio.file.Files.exists(path)) {
-                java.nio.file.Path backendData = java.nio.file.Paths.get("backend", "data", "announcements.json");
-                if (java.nio.file.Files.exists(backendData)) path = backendData;
-            }
-            if (path.getParent() != null && !java.nio.file.Files.exists(path.getParent())) {
-                java.nio.file.Files.createDirectories(path.getParent());
-            }
-            mapper.writeValue(path.toFile(), announcementRepository.findAll());
-        } catch (Exception e) {
-            logger.warn("Could not sync announcements to backup file: {}", e.getMessage());
-        }
+        // Redundant synchronous findAll() JSON backup eliminated: PostgreSQL is primary store (L-6)
     }
 
     @Cacheable("recentAnnouncements")
@@ -1076,15 +1178,15 @@ public class LocalJsonDatabase {
     }
 
     @CacheEvict(value = "allTimeline", allEntries = true)
-    public synchronized void addTimelineEvent(TimelineEvent event) {
+    public void addTimelineEvent(TimelineEvent event) {
         timelineEventRepository.save(event);
     }
 
-    public synchronized void updateTimelineEvent(TimelineEvent event) {
+    public void updateTimelineEvent(TimelineEvent event) {
         timelineEventRepository.save(event);
     }
 
-    public synchronized void deleteTimelineEvent(String id) {
+    public void deleteTimelineEvent(String id) {
         timelineEventRepository.deleteById(id);
     }
 
@@ -1108,7 +1210,7 @@ public class LocalJsonDatabase {
         return false;
     }
 
-    public synchronized NcRequest addNcRequest(NcRequest request) {
+    public NcRequest addNcRequest(NcRequest request) {
         if (hasDuplicateNcDates(request.getStudentPrn(), request.getAbsentDates())) {
             throw new IllegalArgumentException("An NC request already exists for one or more selected dates.");
         }
@@ -1154,7 +1256,7 @@ public class LocalJsonDatabase {
         return ncRequestRepository.findById(id);
     }
 
-    public synchronized NcRequest updateNcRequest(NcRequest request) {
+    public NcRequest updateNcRequest(NcRequest request) {
         NcRequest saved = ncRequestRepository.save(request);
         saveNcRequestsBackup();
 
@@ -1177,7 +1279,7 @@ public class LocalJsonDatabase {
         return saved;
     }
 
-    public synchronized void deleteAllNcData() {
+    public void deleteAllNcData() {
         ncRequestRepository.deleteAll();
         ncNotificationRepository.deleteAll();
         saveNcRequestsBackup();
@@ -1186,24 +1288,12 @@ public class LocalJsonDatabase {
     }
 
     private void saveNcRequestsBackup() {
-        try {
-            java.nio.file.Path path = java.nio.file.Paths.get("data", "nc_requests.json");
-            if (!java.nio.file.Files.exists(path)) {
-                java.nio.file.Path backendData = java.nio.file.Paths.get("backend", "data", "nc_requests.json");
-                if (java.nio.file.Files.exists(backendData)) path = backendData;
-            }
-            if (path.getParent() != null && !java.nio.file.Files.exists(path.getParent())) {
-                java.nio.file.Files.createDirectories(path.getParent());
-            }
-            mapper.writeValue(path.toFile(), ncRequestRepository.findAll());
-        } catch (Exception e) {
-            logger.warn("Could not sync nc_requests to backup file: {}", e.getMessage());
-        }
+        // Redundant synchronous findAll() JSON backup eliminated: PostgreSQL is primary store (L-6)
     }
 
     // --- NC Notifications ---
 
-    public synchronized NcNotification addNcNotification(NcNotification notification) {
+    public NcNotification addNcNotification(NcNotification notification) {
         if (notification.getId() == null || notification.getId().isBlank()) {
             notification.setId(java.util.UUID.randomUUID().toString());
         }
@@ -1219,7 +1309,7 @@ public class LocalJsonDatabase {
         return ncNotificationRepository.findByRecipientPrnOrRecipientRoleOrderByCreatedAtDesc(recipientPrn, recipientRole);
     }
 
-    public synchronized void markNotificationRead(String id) {
+    public void markNotificationRead(String id) {
         ncNotificationRepository.findById(id).ifPresent(n -> {
             n.setRead(true);
             ncNotificationRepository.save(n);
@@ -1228,18 +1318,6 @@ public class LocalJsonDatabase {
     }
 
     private void saveNcNotificationsBackup() {
-        try {
-            java.nio.file.Path path = java.nio.file.Paths.get("data", "nc_notifications.json");
-            if (!java.nio.file.Files.exists(path)) {
-                java.nio.file.Path backendData = java.nio.file.Paths.get("backend", "data", "nc_notifications.json");
-                if (java.nio.file.Files.exists(backendData)) path = backendData;
-            }
-            if (path.getParent() != null && !java.nio.file.Files.exists(path.getParent())) {
-                java.nio.file.Files.createDirectories(path.getParent());
-            }
-            mapper.writeValue(path.toFile(), ncNotificationRepository.findAll());
-        } catch (Exception e) {
-            logger.warn("Could not sync nc_notifications to backup file: {}", e.getMessage());
-        }
+        // Redundant synchronous findAll() JSON backup eliminated: PostgreSQL is primary store (L-6)
     }
 }

@@ -86,6 +86,10 @@ public class Note {
         this(id, title, subjectId, department, semester, unit, examType, fileUrl, b2ObjectKey, originalFilename, importBatchId, uploadedBy, createdAt, status, category, moodleId, sourceUrl, tags, aiImportantTopics, aiGeneratedQuestions, extractedText, "PENDING", null, null);
     }
 
+    public Note(String id, String title, String subjectId, String department, String semester, String unit, String examType, String fileUrl, String b2ObjectKey, String originalFilename, String importBatchId, String uploadedBy, String createdAt, String status, String category, String moodleId, String sourceUrl, List<String> tags, List<String> aiImportantTopics, List<Question> aiGeneratedQuestions, String okfStatus, String okfFilePath, String okfCompiledAt) {
+        this(id, title, subjectId, department, semester, unit, examType, fileUrl, b2ObjectKey, originalFilename, importBatchId, uploadedBy, createdAt, status, category, moodleId, sourceUrl, tags, aiImportantTopics, aiGeneratedQuestions, null, okfStatus, okfFilePath, okfCompiledAt);
+    }
+
     public Note(String id, String title, String subjectId, String department, String semester, String unit, String examType, String fileUrl, String b2ObjectKey, String originalFilename, String importBatchId, String uploadedBy, String createdAt, String status, String category, String moodleId, String sourceUrl, List<String> tags, List<String> aiImportantTopics, List<Question> aiGeneratedQuestions, String extractedText, String okfStatus, String okfFilePath, String okfCompiledAt) {
         this.id = id;
         this.title = title;
@@ -111,6 +115,19 @@ public class Note {
         this.okfStatus = (okfStatus != null) ? okfStatus : "PENDING";
         this.okfFilePath = okfFilePath;
         this.okfCompiledAt = okfCompiledAt;
+    }
+
+    public Note toSummary() {
+        if (this.extractedText == null) {
+            return this;
+        }
+        return new Note(
+            this.id, this.title, this.subjectId, this.department, this.semester,
+            this.unit, this.examType, this.fileUrl, this.b2ObjectKey, this.originalFilename,
+            this.importBatchId, this.uploadedBy, this.createdAt, this.status, this.category,
+            this.moodleId, this.sourceUrl, this.tags, this.aiImportantTopics,
+            this.aiGeneratedQuestions, this.okfStatus, this.okfFilePath, this.okfCompiledAt
+        );
     }
 
     public static NoteBuilder builder() {

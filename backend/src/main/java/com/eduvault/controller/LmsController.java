@@ -15,7 +15,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/lms")
-@CrossOrigin(origins = "*")
 public class LmsController {
 
     private static final Logger logger = LoggerFactory.getLogger(LmsController.class);

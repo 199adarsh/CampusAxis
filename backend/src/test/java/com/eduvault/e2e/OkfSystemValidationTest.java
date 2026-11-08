@@ -294,6 +294,9 @@ public class OkfSystemValidationTest {
 
             String jobId = UUID.randomUUID().toString();
             try {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ignored) {}
                 List<Note> eligibleNotes = notes.stream()
                         .filter(n -> targetSubjectId == null || targetSubjectId.equals(n.getSubjectId()))
                         .filter(n -> !"PROCESSED".equalsIgnoreCase(n.getOkfStatus()))

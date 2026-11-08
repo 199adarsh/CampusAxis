@@ -1,15 +1,9 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { toPng } from 'html-to-image';
 import { cn } from '../../lib/utils';
-import { motion } from 'framer-motion';
-import { getSubjectAbbreviation } from '../../lib/attendanceUtils';
 import { toast } from 'sonner';
 import {
-  Shield01Icon,
-  Loading03Icon,
-  CheckmarkCircle01Icon,
   Search01Icon,
   Notification01Icon,
   Clock01Icon,
@@ -18,137 +12,34 @@ import {
   Calendar03Icon,
   Calendar03Icon as CalendarIcon,
   BarChartIcon,
-  Analytics01Icon,
   Megaphone01Icon,
   ArrowRight01Icon,
-  Refresh01Icon,
   Task01Icon,
-  EyeIcon,
-  Cancel01Icon,
-  Delete02Icon,
-  Add01Icon,
-  HourglassIcon,
   Download01Icon,
   File01Icon,
+  Cancel01Icon,
   BookOpen01Icon
 } from 'hugeicons-react';
-import SharedAttendanceHeatmap from './SharedAttendanceHeatmap';
 import HackathonsFeed from './HackathonsFeed';
 import DeadlinesPopover from './DeadlinesPopover';
-import { FluidTabs } from '../fluid-tabs';
 import { TetrisLoader } from '../ui/loader-tetris';
 
+// Modularized Dashboard Subcomponents (React.memo isolated renders)
+import AttendanceRadarSection from './dashboard/AttendanceRadarSection';
+import TimelineSection from './dashboard/TimelineSection';
+import AnnouncementsSection from './dashboard/AnnouncementsSection';
+import CiePerformanceSection from './dashboard/CiePerformanceSection';
+import FacultyNcSection from './dashboard/FacultyNcSection';
+import CieBreakdownModal from './dashboard/CieBreakdownModal';
+import {
+  formatName,
+  getDepartmentName,
+  getInitials,
+  isCiePending,
+  getSubjectMaxCie
+} from './dashboard/dashboardUtils';
+
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
-
-const QUICK_NC_COMMENTS = [
-  'Verified with medical certificate',
-  'Approved for institutional / academic duty',
-  'Approved per department attendance policy',
-  'Proof document missing or unclear'
-];
-
-const getDepartmentName = (deptCode) => {
-  if (!deptCode) return "";
-  const code = deptCode.toUpperCase();
-  if (code.includes('UAD')) return 'AI & Data Science';
-  if (code.includes('UAM')) return 'CSE (AI & ML)';
-  if (code.includes('UCS')) return 'Computer Science & Engineering';
-  if (code.includes('UME')) return 'Mechanical Engineering';
-  if (code.includes('UET')) return 'Electronics & Telecom';
-  if (code.includes('UCE')) return 'Civil Engineering';
-  if (code.includes('UEE')) return 'Electrical Engineering';
-  return deptCode;
-};
-
-const formatName = (fullName) => {
-  if (!fullName) return "Student";
-  const trimmed = fullName.trim();
-  if (!trimmed) return "Student";
-  return trimmed.split(/\s+/).map(word => {
-    if (word.length <= 2 && word.toUpperCase() === word) return word;
-    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-  }).join(' ');
-};
-
-const getInitials = (fullName) => {
-  if (!fullName) return "ST";
-  const parts = fullName.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[1][0] + parts[0][0]).toUpperCase();
-  }
-  return fullName.slice(0, 2).toUpperCase();
-};
-
-const getSubjectIcon = (name = '') => {
-  const lower = name.toLowerCase();
-  if (lower.includes('data') || lower.includes('dbms')) return 'database';
-  if (lower.includes('machine') || lower.includes('ai') || lower.includes('intelligence')) return 'psychology';
-  if (lower.includes('network') || lower.includes('security')) return 'shield';
-  if (lower.includes('entrepreneur') || lower.includes('manage')) return 'lightbulb';
-  if (lower.includes('web') || lower.includes('software')) return 'code';
-  return 'menu_book';
-};
-
-function buildHeatmapData(subjects, fallbackWeeks = 18) {
-  const dayMap = new Map();
-  const dates = [];
-  (subjects || []).forEach(sub => {
-    (sub.detailedAttendance || []).forEach(rec => {
-      const key = rec.date;
-      if (!dayMap.has(key)) dayMap.set(key, { present: 0, absent: 0, total: 0, date: key });
-      const entry = dayMap.get(key);
-      entry.total++;
-      if (rec.status === 'Present') entry.present++;
-      else entry.absent++;
-
-      if (!entry.lectures) entry.lectures = [];
-      entry.lectures.push({
-        name: sub.subjectName || sub.name || "Lecture",
-        status: rec.status
-      });
-
-      const parts = key.split('-');
-      if (parts.length === 3) {
-        dates.push(`${parts[2]}-${parts[1]}-${parts[0]}`);
-      }
-    });
-  });
-
-  const today = new Date();
-  const endSaturday = new Date(today);
-  endSaturday.setDate(today.getDate() + (6 - today.getDay()));
-
-  let startOfGrid = new Date(endSaturday);
-  startOfGrid.setDate(endSaturday.getDate() - (fallbackWeeks * 7) + 1);
-  let weeksToShow = fallbackWeeks;
-
-  if (dates.length > 0) {
-    const earliestStr = dates.sort()[0];
-    const earliest = new Date(earliestStr.replace(/-/g, '/'));
-    const startSunday = new Date(earliest);
-    startSunday.setDate(earliest.getDate() - earliest.getDay());
-    weeksToShow = 19;
-    startOfGrid = startSunday;
-  }
-
-  const grid = [];
-  let cursor = new Date(startOfGrid);
-  for (let w = 0; w < weeksToShow; w++) {
-    const week = [];
-    for (let d = 0; d < 7; d++) {
-      const dd = String(cursor.getDate()).padStart(2, '0');
-      const mm = String(cursor.getMonth() + 1).padStart(2, '0');
-      const yyyy = cursor.getFullYear();
-      const key = `${dd}-${mm}-${yyyy}`;
-      const entry = dayMap.get(key) || null;
-      const isFuture = cursor > today;
-      week.push({ key, entry, isFuture, dateObj: new Date(cursor) });
-      cursor.setDate(cursor.getDate() + 1);
-    }
-    grid.push(week);
-  }
-  return { grid, dayMap };
-}
 
 const HomeDashboard = () => {
   const { profile, subjects, notes, loading, refreshData, onOpenDeveloper } = useOutletContext() || {};
@@ -163,90 +54,13 @@ const HomeDashboard = () => {
   const homeCalendarRef = useRef(null);
   const topHeaderCalendarRef = useRef(null);
 
-  const annoDeadlinesList = useMemo(() => {
-    return (announcements || [])
-      .filter(a => a && (a.deadline || a.dueDate || a.meta?.deadline))
-      .map(a => ({
-        ...a,
-        deadline: a.deadline || a.dueDate || a.meta?.deadline
-      }))
-      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
-  }, [announcements]);
-
-  const combinedTimeline = useMemo(() => {
-    const annoDeadlines = (announcements || [])
-      .filter(a => a.deadline)
-      .map(a => ({
-        id: `ann-${a.id}`,
-        title: a.title,
-        description: a.description || `Notice: ${a.type || 'Academic'}`,
-        date: a.deadline,
-        isAnnouncement: true
-      }));
-
-    const all = [...(timeline || []), ...annoDeadlines];
-    all.sort((a, b) => new Date(a.date) - new Date(b.date));
-    return all;
-  }, [timeline, announcements]);
-
-  const handleExportCie = async () => {
-    const targetEl = cieExportRef.current || cieCardRef.current;
-    if (!targetEl) return;
-    setExportingCie(true);
-    const toastId = toast.loading('Rendering high-res CIE image...');
-    try {
-      const dataUrl = await toPng(targetEl, {
-        quality: 0.98,
-        pixelRatio: 2,
-        backgroundColor: '#ffffff',
-        cacheBust: true,
-      });
-
-      const studentPrn = profile?.prn || profile?.rollNo || 'Student';
-      const filename = `CIE_Performance_${studentPrn}_${new Date().toISOString().slice(0, 10)}.png`;
-
-      // Try Web Share API (mobile/desktop browsers supporting file sharing)
-      if (navigator.share && navigator.canShare) {
-        try {
-          const blob = await (await fetch(dataUrl)).blob();
-          const file = new File([blob], filename, { type: 'image/png' });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: `CIE Performance - ${formatName(profile?.name)}`,
-              text: `Continuous Internal Evaluation (CIE) Performance Card for ${formatName(profile?.name)} (${studentPrn})`
-            });
-            toast.success('Shared successfully!', { id: toastId });
-            return;
-          }
-        } catch (shareErr) {
-          if (shareErr.name !== 'AbortError') {
-            console.warn('Native share failed, falling back to download:', shareErr);
-          } else {
-            toast.dismiss(toastId);
-            return;
-          }
-        }
-      }
-
-      // Direct download fallback
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = dataUrl;
-      link.click();
-      toast.success('CIE image downloaded!', { id: toastId });
-    } catch (err) {
-      console.error('Failed to export CIE image:', err);
-      toast.error('Failed to generate image. Please try again.', { id: toastId });
-    } finally {
-      setExportingCie(false);
-    }
-  };
-  const [newMilestone, setNewMilestone] = useState({ title: '', description: '', date: new Date().toISOString().split('T')[0] });
-  const [hoveredDay, setHoveredDay] = useState(null);
+  const [newMilestone, setNewMilestone] = useState({
+    title: '',
+    description: '',
+    date: new Date().toISOString().split('T')[0]
+  });
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const navigate = useNavigate();
 
   // Smoothly redirect unauthenticated visitors to landing page where login is hosted
@@ -274,7 +88,7 @@ const HomeDashboard = () => {
   }, []);
 
   const isTeacher = (localStorage.getItem('eduvault_user_role') === 'teacher' || profile?.dob === 'TEACHER');
-  
+
   const teacherSubjects = useMemo(() => {
     try {
       const saved = localStorage.getItem('eduvault_teacher_subjects');
@@ -299,7 +113,7 @@ const HomeDashboard = () => {
   const [docPreviewUrl, setDocPreviewUrl] = useState(null);
   const [docPreviewName, setDocPreviewName] = useState('');
 
-  const fetchFacultyNc = async () => {
+  const fetchFacultyNc = useCallback(async () => {
     if (!isTeacher) return;
     setFacultyNcLoading(true);
     try {
@@ -330,23 +144,23 @@ const HomeDashboard = () => {
     } finally {
       setFacultyNcLoading(false);
     }
-  };
+  }, [isTeacher, teacherSubjects]);
 
   useEffect(() => {
     if (isTeacher) {
       fetchFacultyNc();
     }
-  }, [isTeacher, teacherSubjects]);
+  }, [isTeacher, fetchFacultyNc]);
 
-  const getNcProofUrl = (req) => {
+  const getNcProofUrl = useCallback((req) => {
     if (!req) return '';
     if (req.proofFileKey) {
       return `${API_BASE}/nc/proofs/${encodeURIComponent(req.proofFileKey)}`;
     }
     return req.proofPresignedUrl || '';
-  };
+  }, []);
 
-  const handleTeacherReview = async (e) => {
+  const handleTeacherReview = useCallback(async (e) => {
     e?.preventDefault();
     if (!reviewingReq) return;
     setIsSubmittingReview(true);
@@ -367,7 +181,7 @@ const HomeDashboard = () => {
     } finally {
       setIsSubmittingReview(false);
     }
-  };
+  }, [reviewingReq, reviewDecision, reviewComment, profile, refreshData, fetchFacultyNc]);
 
   const ncStats = useMemo(() => {
     const total = facultyNcRequests.length;
@@ -390,6 +204,32 @@ const HomeDashboard = () => {
       return true;
     });
   }, [facultyNcRequests, ncFilterStatus, ncSearchQuery]);
+
+  const annoDeadlinesList = useMemo(() => {
+    return (announcements || [])
+      .filter(a => a && (a.deadline || a.dueDate || a.meta?.deadline))
+      .map(a => ({
+        ...a,
+        deadline: a.deadline || a.dueDate || a.meta?.deadline
+      }))
+      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+  }, [announcements]);
+
+  const combinedTimeline = useMemo(() => {
+    const annoDeadlines = (announcements || [])
+      .filter(a => a.deadline)
+      .map(a => ({
+        id: `ann-${a.id}`,
+        title: a.title,
+        description: a.description || `Notice: ${a.type || 'Academic'}`,
+        date: a.deadline,
+        isAnnouncement: true
+      }));
+
+    const all = [...(timeline || []), ...annoDeadlines];
+    all.sort((a, b) => new Date(a.date) - new Date(b.date));
+    return all;
+  }, [timeline, announcements]);
 
   const { stats, subjectRegistry, totalSessionsRecorded } = useMemo(() => {
     const saved = localStorage.getItem('eduvault_excluded_subjects');
@@ -468,84 +308,6 @@ const HomeDashboard = () => {
     };
   }, [subjects, notes]);
 
-  const { grid: heatmapGrid } = useMemo(() => buildHeatmapData(subjects), [subjects]);
-
-  const handleSearchKeyDown = (e) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
-      navigate(`/notes?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
-  const handleAddMilestone = async () => {
-    if (!newMilestone.title.trim()) return;
-    const item = { ...newMilestone, id: Date.now() };
-    const updated = [item, ...timeline];
-    setTimeline(updated);
-    setNewMilestone({ title: '', description: '', date: new Date().toISOString().split('T')[0] });
-    setShowAddForm(false);
-    try {
-      await axios.post(`${API_BASE}/timeline`, item);
-    } catch (e) {
-      console.warn("Failed saving milestone to server:", e);
-    }
-  };
-
-  const handleDeleteMilestone = async (index, id) => {
-    const updated = timeline.filter((_, idx) => idx !== index);
-    setTimeline(updated);
-    if (id) {
-      try {
-        await axios.delete(`${API_BASE}/timeline/${id}`);
-      } catch (e) {
-        console.warn("Failed deleting milestone on server:", e);
-      }
-    }
-  };
-
-  const displayCurriculumCards = useMemo(() => {
-    if (subjects && subjects.length > 0) {
-      return subjects.slice(0, 4).map(s => ({
-        id: s.id,
-        title: s.name,
-        icon: getSubjectIcon(s.name),
-        verified: true
-      }));
-    }
-    return [];
-  }, [subjects]);
-
-  // CIE Evaluation Helpers (Supports /50 and /75 schemes)
-  const isCiePending = (cie) => {
-    if (cie === null || cie === undefined) return true;
-    const s = String(cie).trim();
-    return s === '' || s === '-' || s === 'NA' || s === 'N/A' || isNaN(parseFloat(s));
-  };
-
-  const getSubjectMaxCie = (sub, registry = []) => {
-    if (sub?.maxCie) return sub.maxCie;
-    const score = parseFloat(sub?.cie);
-    if (!isNaN(score) && score > 50) return 75;
-
-    const code = (sub?.code || '').toLowerCase();
-    const name = (sub?.name || '').toLowerCase();
-    const isPractical = code.endsWith('-p') ||
-      code.includes('-p') ||
-      name.includes(' lab') ||
-      name.includes('practical') ||
-      name.includes('mini-project') ||
-      name.includes('mini project') ||
-      name.includes('project');
-
-    if (isPractical) return 50;
-
-    const hasAnyAbove50 = registry.some(s => {
-      const v = parseFloat(s?.cie);
-      return !isNaN(v) && v > 50;
-    });
-
-    return hasAnyAbove50 ? 75 : 50;
-  };
-
   const displayCieList = useMemo(() => {
     if (subjectRegistry && subjectRegistry.length > 0) {
       return [...subjectRegistry].sort((a, b) => {
@@ -600,6 +362,123 @@ const HomeDashboard = () => {
 
   const cieAverage = cieStats.percentage;
 
+  // L-1: Dynamic import of html-to-image
+  const handleExportCie = useCallback(async () => {
+    const targetEl = cieExportRef.current || cieCardRef.current;
+    if (!targetEl) return;
+    setExportingCie(true);
+    const toastId = toast.loading('Rendering high-res CIE image...');
+    try {
+      const { toPng } = await import('html-to-image');
+      const dataUrl = await toPng(targetEl, {
+        quality: 0.98,
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        cacheBust: true,
+      });
+
+      const studentPrn = profile?.prn || profile?.rollNo || 'Student';
+      const filename = `CIE_Performance_${studentPrn}_${new Date().toISOString().slice(0, 10)}.png`;
+
+      // Try Web Share API (mobile/desktop browsers supporting file sharing)
+      if (navigator.share && navigator.canShare) {
+        try {
+          const blob = await (await fetch(dataUrl)).blob();
+          const file = new File([blob], filename, { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: `CIE Performance - ${formatName(profile?.name)}`,
+              text: `Continuous Internal Evaluation (CIE) Performance Card for ${formatName(profile?.name)} (${studentPrn})`
+            });
+            toast.success('Shared successfully!', { id: toastId });
+            return;
+          }
+        } catch (shareErr) {
+          if (shareErr.name !== 'AbortError') {
+            console.warn('Native share failed, falling back to download:', shareErr);
+          } else {
+            toast.dismiss(toastId);
+            return;
+          }
+        }
+      }
+
+      // Direct download fallback
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      link.click();
+      toast.success('CIE image downloaded!', { id: toastId });
+    } catch (err) {
+      console.error('Failed to export CIE image:', err);
+      toast.error('Failed to generate image. Please try again.', { id: toastId });
+    } finally {
+      setExportingCie(false);
+    }
+  }, [profile]);
+
+  const handleSearchKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      navigate(`/notes?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  }, [navigate, searchQuery]);
+
+  const handleAddMilestone = useCallback(async () => {
+    if (!newMilestone.title.trim()) return;
+    const item = { ...newMilestone, id: Date.now() };
+    setTimeline(prev => [item, ...prev]);
+    setNewMilestone({ title: '', description: '', date: new Date().toISOString().split('T')[0] });
+    setShowAddForm(false);
+    try {
+      await axios.post(`${API_BASE}/timeline`, item);
+    } catch (e) {
+      console.warn("Failed saving milestone to server:", e);
+    }
+  }, [newMilestone]);
+
+  const handleDeleteMilestone = useCallback(async (index, id) => {
+    setTimeline(prev => prev.filter((_, idx) => idx !== index));
+    if (id) {
+      try {
+        await axios.delete(`${API_BASE}/timeline/${id}`);
+      } catch (e) {
+        console.warn("Failed deleting milestone on server:", e);
+      }
+    }
+  }, []);
+
+  const handleStartReview = useCallback((req) => {
+    setReviewingReq(req);
+    setReviewDecision(req.status === 'REJECTED' ? 'REJECTED' : 'APPROVED');
+    setReviewComment(req.reviewComment || '');
+  }, []);
+
+  const handleCloseReview = useCallback(() => {
+    setReviewingReq(null);
+  }, []);
+
+  const handleViewProof = useCallback((url, name) => {
+    setDocPreviewUrl(url);
+    setDocPreviewName(name);
+  }, []);
+
+  const handleNavigateAnnouncements = useCallback(() => {
+    navigate('/announcements');
+  }, [navigate]);
+
+  const handleNavigateAttendance = useCallback(() => {
+    navigate('/attendance');
+  }, [navigate]);
+
+  const handleOpenCiePopup = useCallback(() => {
+    setCiePopupOpen(true);
+  }, []);
+
+  const handleCloseCiePopup = useCallback(() => {
+    setCiePopupOpen(false);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[75vh] gap-3 bg-canvas-bg text-text-primary">
@@ -638,7 +517,6 @@ const HomeDashboard = () => {
           </div>
         </div>
         <div className="flex items-center gap-3">
-
           {!(localStorage.getItem('eduvault_user_role') === 'teacher' || profile?.dob === 'TEACHER') && (
             <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D9ECFF] text-[#174073] text-xs font-semibold tabular-nums border border-[#D9ECFF]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#0073E6]"></span>
@@ -675,7 +553,7 @@ const HomeDashboard = () => {
           </div>
 
           <button
-            onClick={() => navigate('/announcements')}
+            onClick={handleNavigateAnnouncements}
             className="relative w-9 h-9 rounded-full bg-[#FFFFFF] hover:bg-[#DEEDFC]/40 border border-[#E2E2E2] flex items-center justify-center text-[#383838] transition-colors cursor-pointer"
             title="Notifications"
           >
@@ -688,6 +566,8 @@ const HomeDashboard = () => {
                 src={profile.image}
                 alt={formatName(profile?.name)}
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
                 className="w-9 h-9 rounded-full object-cover ring-2 ring-[#D9ECFF]"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
@@ -712,14 +592,10 @@ const HomeDashboard = () => {
 
       {/* Main Content */}
       <main className="relative py-3 sm:py-6 px-3.5 sm:px-6 lg:px-8 pb-28 md:pb-12 flex-1 w-full max-w-7xl mx-auto space-y-4 sm:space-y-5 min-w-0 overflow-x-hidden">
-        {/* Mobile Collapsible Search Bar */}
-
-
         <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-5 min-w-0">
-          {/* Student Profile & Hero Area (Strict Unstop Design.md & Antislop-UI Minimal) */}
+          {/* Student Profile & Hero Area */}
           <section className="bg-white rounded-[12px] border border-[#E2E2E2] p-4 sm:p-5 w-full min-w-0">
             <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-4">
-              {/* Left Identity: Clear hierarchy, honest data, zero decorative slop */}
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="relative shrink-0">
                   {profile?.image ? (
@@ -727,6 +603,8 @@ const HomeDashboard = () => {
                       src={profile.image}
                       alt={formatName(profile?.name)}
                       referrerPolicy="no-referrer"
+                      loading="lazy"
+                      decoding="async"
                       className="w-12 h-12 rounded-full object-cover ring-1 ring-[#E2E2E2]"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
@@ -748,7 +626,6 @@ const HomeDashboard = () => {
                     </h1>
                   </div>
 
-                  {/* Clean unstop metadata chips */}
                   <div className="flex items-center gap-2 text-xs text-[#727272] mt-1 flex-wrap">
                     {(profile?.rollNo || profile?.prn) && (
                       <span className="font-mono text-[#174073] font-medium">
@@ -771,11 +648,11 @@ const HomeDashboard = () => {
                 </div>
               </div>
 
-              {/* Right Key Metrics: Minimal, honest, flat unstop style */}
+              {/* Right Key Metrics */}
               {isTeacher ? (
                 <div className="flex items-center gap-2 lg:ml-auto shrink-0 flex-wrap sm:flex-nowrap">
                   <div
-                    onClick={() => navigate('/attendance')}
+                    onClick={handleNavigateAttendance}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white hover:bg-[#F5F5F7] border border-[#E5E5EA] transition-colors cursor-pointer shadow-xs"
                   >
                     <Clock01Icon size={15} className={ncStats.pending > 0 ? "text-[#FF9F0A]" : "text-[#8E8E93]"} />
@@ -784,7 +661,7 @@ const HomeDashboard = () => {
                   </div>
 
                   <div
-                    onClick={() => navigate('/attendance')}
+                    onClick={handleNavigateAttendance}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white hover:bg-[#F5F5F7] border border-[#E5E5EA] transition-colors cursor-pointer shadow-xs"
                   >
                     <CheckmarkBadge01Icon size={15} className="text-[#34C759]" />
@@ -794,7 +671,7 @@ const HomeDashboard = () => {
 
                   <button
                     type="button"
-                    onClick={() => navigate('/attendance')}
+                    onClick={handleNavigateAttendance}
                     className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0071E3] hover:bg-[#005BB5] text-white text-xs font-medium transition-colors cursor-pointer shadow-xs"
                   >
                     <span>Attendance Desk</span>
@@ -804,7 +681,7 @@ const HomeDashboard = () => {
               ) : (
                 <div className="hidden lg:flex items-center gap-2 ml-auto shrink-0">
                   <div
-                    onClick={() => navigate('/attendance')}
+                    onClick={handleNavigateAttendance}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-[12px] bg-white hover:bg-[#DEEDFC]/30 border border-[#E2E2E2] transition-colors cursor-pointer"
                   >
                     <CheckmarkBadge01Icon size={16} className="text-[#0073E6]" />
@@ -813,7 +690,7 @@ const HomeDashboard = () => {
                   </div>
 
                   <div
-                    onClick={() => navigate('/attendance')}
+                    onClick={handleNavigateAttendance}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-[12px] bg-white hover:bg-rose-50/40 border border-[#E2E2E2] hover:border-[#E11D48]/30 transition-colors cursor-pointer"
                   >
                     <AlertCircleIcon size={16} className="text-[#E11D48]" />
@@ -828,7 +705,7 @@ const HomeDashboard = () => {
             {isTeacher ? (
               <div className="w-full grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-[#E5E5EA] lg:hidden">
                 <div
-                  onClick={() => navigate('/attendance')}
+                  onClick={handleNavigateAttendance}
                   className="flex flex-col bg-white rounded-lg p-2.5 border border-[#E5E5EA] active:bg-[#F5F5F7] transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
@@ -842,7 +719,7 @@ const HomeDashboard = () => {
                   </div>
                 </div>
                 <div
-                  onClick={() => navigate('/attendance')}
+                  onClick={handleNavigateAttendance}
                   className="flex flex-col bg-white rounded-lg p-2.5 border border-[#E5E5EA] active:bg-[#F5F5F7] transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
@@ -854,7 +731,7 @@ const HomeDashboard = () => {
                   </div>
                 </div>
                 <div
-                  onClick={() => navigate('/announcements')}
+                  onClick={handleNavigateAnnouncements}
                   className="flex flex-col bg-white rounded-lg p-2.5 border border-[#E5E5EA] active:bg-[#F5F5F7] transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
@@ -869,7 +746,7 @@ const HomeDashboard = () => {
             ) : (
               <div className="w-full grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-[#E2E2E2] lg:hidden">
                 <div
-                  onClick={() => navigate('/attendance')}
+                  onClick={handleNavigateAttendance}
                   className="flex flex-col bg-white rounded-lg p-2.5 border border-[#E2E2E2] active:bg-[#DEEDFC]/30 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
@@ -881,7 +758,7 @@ const HomeDashboard = () => {
                   </div>
                 </div>
                 <div
-                  onClick={() => navigate('/attendance')}
+                  onClick={handleNavigateAttendance}
                   className="flex flex-col bg-white rounded-lg p-2.5 border border-[#E2E2E2] active:bg-rose-50/40 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
@@ -894,7 +771,7 @@ const HomeDashboard = () => {
                   </div>
                 </div>
                 <div
-                  onClick={() => setCiePopupOpen(true)}
+                  onClick={handleOpenCiePopup}
                   className="flex flex-col bg-white rounded-lg p-2.5 border border-[#E2E2E2] active:bg-[#DEEDFC]/30 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
@@ -909,7 +786,7 @@ const HomeDashboard = () => {
             )}
           </section>
 
-          {/* Urgent Broadcast Notification Banner (Unstop Mobile Style) */}
+          {/* Urgent Broadcast Notification Banner */}
           {latestAnnouncement && (
             <div className="lg:hidden bg-white rounded-xl p-3 border border-[#E2E2E2] flex items-center justify-between gap-2.5">
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -928,7 +805,7 @@ const HomeDashboard = () => {
                 </div>
               </div>
               <button
-                onClick={() => navigate('/announcements')}
+                onClick={handleNavigateAnnouncements}
                 className="px-3.5 py-1 rounded-full bg-[#0073E6] hover:bg-[#4A9AF0] text-white font-medium text-xs shrink-0 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <span>View</span>
@@ -937,563 +814,67 @@ const HomeDashboard = () => {
             </div>
           )}
 
-          {/* Core Dashboard Layout (Minimal & Compact) */}
+          {/* Core Dashboard Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Left Column: Core Academics & Tracking (7 Cols) */}
             <div className="lg:col-span-7 space-y-4">
               {/* Section 1: Attendance Activity Heatmap OR Faculty NC Management */}
               {isTeacher ? (
-                <section className="bg-white rounded-xl p-5 border border-[#E5E5EA] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4" id="faculty-nc-hub">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-[#E5E5EA] gap-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-[#F5F5F7] text-[#1D1D1F] border border-[#E5E5EA] flex items-center justify-center shrink-0">
-                        <CheckmarkBadge01Icon size={18} />
-                      </div>
-                      <div>
-                        <h2 className="text-sm sm:text-base font-semibold text-[#1D1D1F]">Student Leave Requests</h2>
-                        <span className="text-xs text-[#6E6E73]">Review medical and academic absence submissions</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {ncStats.pending > 0 && (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#FFF8E6] text-[#B25E00] border border-[#FFE29A]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#FF9F0A]" />
-                          <span className="tabular-nums font-semibold">{ncStats.pending}</span> pending
-                        </span>
-                      )}
-                      <button
-                        onClick={fetchFacultyNc}
-                        disabled={facultyNcLoading}
-                        className="p-1.5 rounded-lg text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#F5F5F7] border border-[#E5E5EA] transition cursor-pointer disabled:opacity-50"
-                        title="Refresh Submissions"
-                      >
-                        <Refresh01Icon size={14} className={facultyNcLoading ? "animate-spin" : ""} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Filter Tabs & Search Controls */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-0.5">
-                    <div className="inline-flex items-center p-1 rounded-lg bg-[#F5F5F7] border border-[#E5E5EA] overflow-x-auto no-scrollbar">
-                      {[
-                        { id: 'ALL', label: 'All', count: ncStats.total },
-                        { id: 'PENDING', label: 'Pending', count: ncStats.pending },
-                        { id: 'APPROVED', label: 'Approved', count: ncStats.approved },
-                        { id: 'REJECTED', label: 'Rejected', count: ncStats.rejected }
-                      ].map((tab) => (
-                        <button
-                          key={tab.id}
-                          type="button"
-                          onClick={() => setNcFilterStatus(tab.id)}
-                          className={cn(
-                            "px-2.5 py-1 rounded-md text-[11px] font-medium transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap",
-                            ncFilterStatus === tab.id
-                              ? "bg-white text-[#1D1D1F] font-semibold shadow-xs"
-                              : "text-[#6E6E73] hover:text-[#1D1D1F]"
-                          )}
-                        >
-                          <span>{tab.label}</span>
-                          <span className={cn(
-                            "text-[10px] tabular-nums px-1.5 py-0.2 rounded-full",
-                            ncFilterStatus === tab.id
-                              ? "bg-[#F5F5F7] text-[#1D1D1F]"
-                              : "text-[#8E8E93]"
-                          )}>
-                            {tab.count}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="relative w-full sm:w-52">
-                      <input
-                        type="text"
-                        value={ncSearchQuery}
-                        onChange={(e) => setNcSearchQuery(e.target.value)}
-                        placeholder="Search student or PRN..."
-                        className="w-full text-xs pl-7 pr-7 py-1.5 rounded-lg bg-white border border-[#E5E5EA] text-[#1D1D1F] placeholder:text-[#8E8E93] focus:outline-none focus:border-[#0071E3] transition"
-                      />
-                      <Search01Icon size={13} className="text-[#8E8E93] absolute left-2.5 top-1/2 -translate-y-1/2" />
-                      {ncSearchQuery && (
-                        <button
-                          type="button"
-                          onClick={() => setNcSearchQuery('')}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-[#8E8E93] hover:text-[#1D1D1F] p-0.5"
-                        >
-                          <Cancel01Icon size={12} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Requests List */}
-                  <div className="space-y-2.5 max-h-[500px] overflow-y-auto no-scrollbar">
-                    {facultyNcLoading ? (
-                      <div className="py-12 text-center text-xs text-[#6E6E73]">Loading submissions...</div>
-                    ) : filteredFacultyNc.length === 0 ? (
-                      <div className="py-10 text-center bg-[#FBFBFD] rounded-xl border border-dashed border-[#E5E5EA] p-6">
-                        <CheckmarkCircle01Icon size={28} className="text-[#34C759] mx-auto mb-2 opacity-80" />
-                        <p className="text-xs font-semibold text-[#1D1D1F]">All caught up</p>
-                        <p className="text-[11px] text-[#6E6E73] mt-0.5 max-w-xs mx-auto">
-                          {ncSearchQuery ? 'No student requests match your search criteria.' : 'No leave requests under this filter.'}
-                        </p>
-                      </div>
-                    ) : (
-                      filteredFacultyNc.map((req) => {
-                        const courseDisplay = Array.from(new Set((req.missedSubjects || []).map(m => m?.subjectName || m?.name || m).filter(Boolean))).join(' · ');
-                        const isApproved = req.status === 'APPROVED';
-                        const isRejected = req.status === 'REJECTED';
-                        const isPending = req.status === 'PENDING';
-
-                        return (
-                          <div
-                            key={req.id}
-                            className="p-4 rounded-xl border border-[#E5E5EA] bg-white text-xs space-y-3 hover:border-[#D2D2D7] transition shadow-xs"
-                          >
-                            {/* Student Header */}
-                            <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="w-8 h-8 rounded-full bg-[#F5F5F7] border border-[#E5E5EA] flex items-center justify-center text-[10px] font-semibold text-[#1D1D1F] shrink-0">
-                                  {getInitials(req.studentName)}
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="font-semibold text-sm text-[#1D1D1F] truncate">{formatName(req.studentName)}</span>
-                                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#F5F5F7] text-[#6E6E73] border border-[#E5E5EA]">
-                                      {req.studentPrn}
-                                    </span>
-                                  </div>
-                                  <p className="text-[11px] text-[#6E6E73] truncate mt-0.5">
-                                    {courseDisplay || 'Course Absence'}
-                                  </p>
-                                </div>
-                              </div>
-                              <span className={cn(
-                                "px-2.5 py-0.5 rounded-full text-[10px] font-medium border shrink-0",
-                                isApproved ? 'bg-[#EAF9EE] text-[#1B7F37] border-[#C6EFD2]' :
-                                  isRejected ? 'bg-[#FDF2F2] text-[#D32F2F] border-[#F8C8C8]' :
-                                    'bg-[#FFF8E6] text-[#B25E00] border-[#FFE29A]'
-                              )}>
-                                {isApproved ? 'Approved' : isRejected ? 'Declined' : 'Pending Review'}
-                              </span>
-                            </div>
-
-                            {/* Request Details */}
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-2 pt-1 border-t border-[#E5E5EA]/60">
-                              <div className="md:col-span-8 space-y-1">
-                                <div className="flex items-center gap-2 text-xs flex-wrap">
-                                  <span className="font-medium text-[#1D1D1F]">{req.reason}</span>
-                                  <span className="text-[#D2D2D7]">•</span>
-                                  <span className="text-[#6E6E73] font-mono text-[11px]">{(req.absentDates || []).join(', ')}</span>
-                                </div>
-                                {req.description && (
-                                  <p className="text-[11px] text-[#6E6E73] italic">"{req.description}"</p>
-                                )}
-                                {req.reviewComment && (
-                                  <p className="text-[10px] text-[#6E6E73] flex items-center gap-1.5 pt-0.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#1B7F37] shrink-0" />
-                                    <span>
-                                      <strong className="font-medium text-[#1D1D1F]">{req.reviewedBy || 'Faculty'}:</strong> "{req.reviewComment}"
-                                    </span>
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* Actions */}
-                              <div className="md:col-span-4 flex items-center justify-start md:justify-end gap-2 shrink-0 self-center">
-                                {req.proofFileName && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setDocPreviewUrl(getNcProofUrl(req));
-                                      setDocPreviewName(req.proofFileName);
-                                    }}
-                                    className="text-[#1D1D1F] hover:text-[#0071E3] font-medium inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border border-[#E5E5EA] bg-white hover:bg-[#F5F5F7] transition cursor-pointer"
-                                  >
-                                    <File01Icon size={13} />
-                                    <span>Proof</span>
-                                  </button>
-                                )}
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setReviewingReq(req);
-                                    setReviewDecision(req.status === 'REJECTED' ? 'REJECTED' : 'APPROVED');
-                                    setReviewComment(req.reviewComment || '');
-                                  }}
-                                  className={cn(
-                                    "px-3 py-1 rounded-lg font-medium text-[11px] transition cursor-pointer",
-                                    isPending
-                                      ? "bg-[#0071E3] hover:bg-[#005BB5] text-white shadow-xs"
-                                      : "bg-white hover:bg-[#F5F5F7] text-[#6E6E73] hover:text-[#1D1D1F] border border-[#E5E5EA]"
-                                  )}
-                                >
-                                  {isPending ? 'Review' : 'Update'}
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Inline Review Drawer */}
-                            {reviewingReq && reviewingReq.id === req.id && (
-                              <div className="mt-2.5 p-3.5 rounded-xl bg-[#FBFBFD] border border-[#E5E5EA] space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-semibold text-xs text-[#1D1D1F]">Record Faculty Decision</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => setReviewingReq(null)}
-                                    className="text-[#8E8E93] hover:text-[#1D1D1F] p-0.5 rounded"
-                                  >
-                                    <Cancel01Icon size={14} />
-                                  </button>
-                                </div>
-
-                                {/* Decision Toggle */}
-                                <div className="grid grid-cols-2 gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => setReviewDecision('APPROVED')}
-                                    className={cn(
-                                      "py-1.5 px-3 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center gap-1.5 border",
-                                      reviewDecision === 'APPROVED'
-                                        ? "bg-[#1B7F37] text-white border-[#1B7F37] shadow-xs"
-                                        : "bg-white text-[#1D1D1F] border-[#E5E5EA] hover:bg-[#F5F5F7]"
-                                    )}
-                                  >
-                                    <CheckmarkCircle01Icon size={13} />
-                                    <span>Approve Request</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setReviewDecision('REJECTED')}
-                                    className={cn(
-                                      "py-1.5 px-3 rounded-lg text-xs font-medium transition cursor-pointer flex items-center justify-center gap-1.5 border",
-                                      reviewDecision === 'REJECTED'
-                                        ? "bg-[#D32F2F] text-white border-[#D32F2F] shadow-xs"
-                                        : "bg-white text-[#1D1D1F] border-[#E5E5EA] hover:bg-[#F5F5F7]"
-                                    )}
-                                  >
-                                    <Cancel01Icon size={13} />
-                                    <span>Reject Request</span>
-                                  </button>
-                                </div>
-
-                                {/* Quick Comment Chips */}
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {QUICK_NC_COMMENTS.map((qc, qidx) => (
-                                    <button
-                                      key={qidx}
-                                      type="button"
-                                      onClick={() => setReviewComment(qc)}
-                                      className="text-[10px] px-2 py-0.5 rounded-md bg-white border border-[#E5E5EA] text-[#6E6E73] hover:text-[#1D1D1F] hover:border-[#D2D2D7] transition cursor-pointer"
-                                    >
-                                      {qc}
-                                    </button>
-                                  ))}
-                                </div>
-
-                                <input
-                                  type="text"
-                                  value={reviewComment}
-                                  onChange={(e) => setReviewComment(e.target.value)}
-                                  placeholder="Faculty feedback or reason for student..."
-                                  className="w-full text-xs px-2.5 py-1.5 bg-white border border-[#E5E5EA] rounded-lg text-[#1D1D1F] placeholder:text-[#8E8E93] focus:outline-none focus:border-[#0071E3]"
-                                />
-
-                                <div className="flex justify-end gap-2 pt-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => setReviewingReq(null)}
-                                    className="px-3 py-1 text-xs text-[#6E6E73] hover:text-[#1D1D1F] transition rounded-lg"
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={handleTeacherReview}
-                                    disabled={isSubmittingReview}
-                                    className="px-3.5 py-1 rounded-lg bg-[#0071E3] hover:bg-[#005BB5] text-white text-xs font-medium transition disabled:opacity-50 shadow-xs cursor-pointer"
-                                  >
-                                    {isSubmittingReview ? 'Saving...' : 'Save Decision'}
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </section>
+                <FacultyNcSection
+                  facultyNcRequests={facultyNcRequests}
+                  facultyNcLoading={facultyNcLoading}
+                  ncStats={ncStats}
+                  ncFilterStatus={ncFilterStatus}
+                  setNcFilterStatus={setNcFilterStatus}
+                  ncSearchQuery={ncSearchQuery}
+                  setNcSearchQuery={setNcSearchQuery}
+                  filteredFacultyNc={filteredFacultyNc}
+                  fetchFacultyNc={fetchFacultyNc}
+                  reviewingReq={reviewingReq}
+                  reviewDecision={reviewDecision}
+                  setReviewDecision={setReviewDecision}
+                  reviewComment={reviewComment}
+                  setReviewComment={setReviewComment}
+                  isSubmittingReview={isSubmittingReview}
+                  onStartReview={handleStartReview}
+                  onCloseReview={handleCloseReview}
+                  onSaveDecision={handleTeacherReview}
+                  onViewProof={handleViewProof}
+                  getNcProofUrl={getNcProofUrl}
+                />
               ) : (
-                <section className="bg-white rounded-xl p-5 sm:p-6 border border-[#E2E2E2] shadow-[0_1px_3px_rgba(0,0,0,0.02)] w-full min-w-0 overflow-hidden" id="attendance-radar">
-                  <div className="flex flex-wrap items-center justify-between pb-3.5 border-b border-[#E2E2E2] gap-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-[#D9ECFF] text-[#0073E6] flex items-center justify-center">
-                        <Calendar03Icon size={18} />
-                      </div>
-                      <div>
-                        <h2 className="text-base">Attendance Activity</h2>
-
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2.5 text-[11px] text-[#727272] font-medium">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#30a14e]"></span>
-                          <span>Present</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#E11D48]"></span>
-                          <span>Absent</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#DEEDFC]"></span>
-                          <span>Off Day</span>
-                        </div>
-                      </div>
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[#DEEDFC]/60 text-[#174073] border border-[#D9ECFF]">
-                        <span className="tabular-nums font-bold text-[#0073E6] mr-1">{totalSessionsRecorded}</span> Sessions
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3.5">
-                    <SharedAttendanceHeatmap subjects={subjects} weeksCount={18} />
-                  </div>
-                </section>
+                <AttendanceRadarSection
+                  subjects={subjects}
+                  totalSessionsRecorded={totalSessionsRecorded}
+                />
               )}
 
               {/* Section 2: Brabble.ai Hackathons Feed */}
               {!isTeacher && <HackathonsFeed />}
 
-              {/* Section 3: Milestones & Events */}
-              <section className="bg-white rounded-xl p-5 sm:p-6 border border-[#E2E2E2] shadow-[0_1px_3px_rgba(0,0,0,0.02)] w-full min-w-0 overflow-visible relative">
-                <div className="flex items-center justify-between pb-3.5 border-b border-[#E2E2E2] gap-2 flex-wrap sm:flex-nowrap min-w-0 w-full">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[#D9ECFF] text-[#0073E6] flex items-center justify-center">
-                      <Calendar03Icon size={18} />
-                    </div>
-                    <div>
-                      <h2 className="text-base">Deadlines &amp; Events</h2>
-                      <span className="text-xs font-normal text-[#727272]">Academic Schedule</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="relative" ref={homeCalendarRef}>
-                      <button
-                        type="button"
-                        onClick={() => setShowHomeCalendar(prev => !prev)}
-                        className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${showHomeCalendar
-                          ? 'bg-[#D9ECFF] border-[#0073E6] text-[#0073E6]'
-                          : 'bg-white border-[#E2E2E2] hover:bg-[#DEEDFC]/40 text-[#383838]'
-                          }`}
-                        title="View Announcements Deadlines Calendar"
-                        aria-expanded={showHomeCalendar}
-                      >
-                        <CalendarIcon className="w-3.5 h-3.5 text-[#0073E6]" />
-                        <span className="hidden sm:inline">Calendar</span>
-                        {annoDeadlinesList.length > 0 && (
-                          <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-[#E11D48] text-white text-[10px] font-bold">
-                            {annoDeadlinesList.length}
-                          </span>
-                        )}
-                      </button>
-
-                      {showHomeCalendar && (
-                        <DeadlinesPopover
-                          isOpen={showHomeCalendar}
-                          deadlines={annoDeadlinesList}
-                          onClose={() => setShowHomeCalendar(false)}
-                          anchorRef={homeCalendarRef}
-                        />
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => setShowAddForm(!showAddForm)}
-                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0073E6] hover:bg-[#4A9AF0] text-white text-xs font-medium whitespace-nowrap transition-all shadow-xs cursor-pointer"
-                    >
-                      {showAddForm ? <Cancel01Icon size={14} /> : <Add01Icon size={14} />}
-                      <span>{showAddForm ? 'Cancel' : 'Add Event'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {showAddForm ? (
-                  <div className="mt-3 p-3 rounded-lg bg-slate-50 border border-border-subtle space-y-2.5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="text-[10px] font-bold text-text-secondary uppercase">Date</label>
-                        <input
-                          type="date"
-                          value={newMilestone.date}
-                          onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })}
-                          className="w-full mt-0.5 px-2.5 py-1.5 bg-surface-card border border-border-subtle rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-text-secondary uppercase">Event Title</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. CIE 1 Exam or Submission"
-                          value={newMilestone.title}
-                          onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })}
-                          className="w-full mt-0.5 px-2.5 py-1.5 bg-surface-card border border-border-subtle rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Details or notes..."
-                        value={newMilestone.description}
-                        onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })}
-                        className="flex-1 px-2.5 py-1.5 bg-surface-card border border-border-subtle rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary"
-                      />
-                      <button
-                        onClick={handleAddMilestone}
-                        className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-lg transition-colors border border-primary cursor-pointer"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                ) : combinedTimeline.length > 0 ? (
-                  <div className="mt-3 space-y-2">
-                    {combinedTimeline.map((item, i) => {
-                      const itemDate = new Date(item.date);
-                      const month = !isNaN(itemDate.getTime()) ? itemDate.toLocaleDateString('en-US', { month: 'short' }) : 'Now';
-                      const day = !isNaN(itemDate.getTime()) ? itemDate.getDate() : '--';
-
-                      return (
-                        <div key={item.id || i} className="w-full flex items-center justify-between gap-2.5 p-3 bg-white hover:bg-slate-50 border border-border-subtle hover:border-slate-300 rounded-xl group transition-all min-w-0 overflow-hidden">
-                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <div className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center shrink-0">
-                              <span className="text-[9px] font-bold uppercase text-primary leading-tight">{month}</span>
-                              <span className="text-xs font-extrabold text-text-primary leading-none">{day}</span>
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-text-primary truncate">{item.title}</p>
-                              {item.isAnnouncement ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 mt-0.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                  Announcement Deadline
-                                </span>
-                              ) : item.description ? (
-                                <p className="text-[11px] text-text-secondary truncate mt-0.5">{item.description}</p>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 mt-0.5">
-                                  Academic
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          {!item.isAnnouncement && (
-                            <button
-                              onClick={() => handleDeleteMilestone(i, item.id)}
-                              className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 text-slate-400 hover:text-status-danger-text transition-opacity p-1.5 rounded-lg hover:bg-slate-50 shrink-0 cursor-pointer"
-                              title="Delete"
-                            >
-                              <Delete02Icon size={15} />
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="mt-3 p-5 rounded-xl bg-slate-50/70 border border-dashed border-border-subtle flex flex-col items-center justify-center text-center">
-                    <Calendar03Icon size={22} className="text-text-secondary/70 mb-1.5" />
-                    <p className="text-xs font-bold text-text-primary">No Upcoming Deadlines</p>
-                    <p className="text-[11px] text-text-secondary mt-0.5 max-w-xs text-pretty">Track key academic deadlines, lab submissions, and tests.</p>
-                    <button
-                      onClick={() => setShowAddForm(true)}
-                      className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-border-subtle text-xs font-semibold text-text-primary transition-[transform,background-color] duration-150 ease-out active:scale-[0.96] shadow-2xs cursor-pointer"
-                    >
-                      <Add01Icon size={14} className="text-primary" />
-                      <span>Add Milestone</span>
-                    </button>
-                  </div>
-                )}
-              </section>
+              {/* Section 3: Milestones & Deadlines Timeline */}
+              <TimelineSection
+                combinedTimeline={combinedTimeline}
+                annoDeadlinesList={annoDeadlinesList}
+                showHomeCalendar={showHomeCalendar}
+                setShowHomeCalendar={setShowHomeCalendar}
+                homeCalendarRef={homeCalendarRef}
+                showAddForm={showAddForm}
+                setShowAddForm={setShowAddForm}
+                newMilestone={newMilestone}
+                setNewMilestone={setNewMilestone}
+                handleAddMilestone={handleAddMilestone}
+                handleDeleteMilestone={handleDeleteMilestone}
+              />
             </div>
 
             {/* Right Column: Broadcasts & CIE Scores (5 Cols) */}
             <div className="lg:col-span-5 space-y-4">
-              {/* Section 4: Campus Announcements Feed (Desktop Only) */}
-              <section className="hidden lg:flex flex-col justify-between bg-white rounded-[12px] p-5 border border-[#E2E2E2] shadow-[0_1px_3px_rgba(0,0,0,0.02)] w-full min-w-0 overflow-hidden">
-                <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-[#E2E2E2] gap-3 min-w-0 w-full">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-[10px] bg-[#DEEDFC] text-[#0073E6] flex items-center justify-center shrink-0">
-                      <Megaphone01Icon size={18} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-sm sm:text-base font-bold text-[#383838] tracking-tight">
-                          Campus Announcements
-                        </h2>
-                        {announcements && announcements.length > 0 && (
-                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#D9ECFF] text-[#0073E6] tabular-nums">
-                            {announcements.length}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-[#727272] truncate mt-0.5">Official circulars &amp; academic notices</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => navigate('/announcements')}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-[#0073E6] bg-white hover:bg-[#DEEDFC]/50 border border-[#D9ECFF] transition-all cursor-pointer shrink-0 shadow-2xs"
-                  >
-                    <span>View All</span>
-                    <ArrowRight01Icon size={13} />
-                  </button>
-                </div>
-
-                <div className="flex-1 flex flex-col justify-between gap-2">
-                  {announcements && announcements.length > 0 ? (
-                    announcements.slice(0, 2).map((item, idx) => (
-                      <div
-                        key={item.id || idx}
-                        onClick={() => navigate('/announcements')}
-                        className="p-3 rounded-lg bg-white border border-[#E2E2E2] hover:border-[#0073E6] hover:shadow-2xs transition-all cursor-pointer group flex items-start gap-3"
-                      >
-                        <div className="w-9 h-9 rounded-md bg-[#DEEDFC]/60 border border-[#D9ECFF] flex flex-col items-center justify-center shrink-0 text-[#174073]">
-                          <span className="text-[9px] uppercase font-bold text-[#0073E6] leading-none">
-                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB', { month: 'short' }) : 'Oct'}
-                          </span>
-                          <span className="text-xs font-bold leading-none mt-0.5 tabular-nums text-[#174073]">
-                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit' }) : '14'}
-                          </span>
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-[#DEEDFC] text-[#174073]">
-                              {item.type || 'Notice'}
-                            </span>
-                            {item.deadline && (
-                              <span className="text-[10px] font-medium text-[#E11D48]">
-                                Due {new Date(item.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="text-xs font-semibold text-[#383838] font-sans group-hover:text-[#0073E6] transition-colors truncate mt-1">
-                            {item.title}
-                          </h3>
-                        </div>
-
-                        <ArrowRight01Icon size={14} className="text-[#727272] group-hover:text-[#0073E6] group-hover:translate-x-0.5 transition-all shrink-0 mt-2" />
-                      </div>
-                    ))
-                  ) : (
-                    <div className="py-6 text-center text-xs text-[#727272] bg-white border border-[#E2E2E2] rounded-lg">
-                      No active campus announcements.
-                    </div>
-                  )}
-                </div>
-              </section>
+              {/* Section 4: Campus Announcements Feed */}
+              <AnnouncementsSection
+                announcements={announcements}
+                onNavigateAnnouncements={handleNavigateAnnouncements}
+              />
 
               {/* Section 5: CIE Scores (Student) OR Faculty Operations Hub (Teacher) */}
               {isTeacher ? (
@@ -1507,7 +888,7 @@ const HomeDashboard = () => {
                         <h2 className="text-sm sm:text-base font-semibold text-[#1D1D1F]">
                           Faculty Operations
                         </h2>
-                        <p className="text-[11px] text-[#6E6E73]">Quick management shortcuts & tools</p>
+                        <p className="text-[11px] text-[#6E6E73]">Quick management shortcuts &amp; tools</p>
                       </div>
                     </div>
                   </div>
@@ -1515,7 +896,7 @@ const HomeDashboard = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <button
                       type="button"
-                      onClick={() => navigate('/announcements')}
+                      onClick={handleNavigateAnnouncements}
                       className="flex items-start gap-3 p-3 rounded-xl border border-[#E5E5EA] bg-white hover:bg-[#F5F5F7] hover:border-[#D2D2D7] text-left transition-colors cursor-pointer group"
                     >
                       <div className="w-8 h-8 rounded-lg bg-[#0071E3]/8 text-[#0071E3] flex items-center justify-center shrink-0 mt-0.5">
@@ -1532,7 +913,7 @@ const HomeDashboard = () => {
 
                     <button
                       type="button"
-                      onClick={() => navigate('/attendance')}
+                      onClick={handleNavigateAttendance}
                       className="flex items-start gap-3 p-3 rounded-xl border border-[#E5E5EA] bg-white hover:bg-[#F5F5F7] hover:border-[#D2D2D7] text-left transition-colors cursor-pointer group"
                     >
                       <div className="w-8 h-8 rounded-lg bg-[#34C759]/10 text-[#34C759] flex items-center justify-center shrink-0 mt-0.5">
@@ -1583,87 +964,13 @@ const HomeDashboard = () => {
                   </div>
                 </section>
               ) : (
-                <section className="bg-white rounded-[12px] p-5 border border-[#E2E2E2] shadow-[0_1px_3px_rgba(0,0,0,0.02)] w-full min-w-0 overflow-hidden">
-                  <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-[#E2E2E2] gap-3 min-w-0 w-full">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-[10px] bg-[#DEEDFC] text-[#0073E6] flex items-center justify-center shrink-0">
-                        <Analytics01Icon size={18} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-sm sm:text-base font-bold text-[#383838] tracking-tight">
-                            Internal Marks (CIE)
-                          </h2>
-                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#DEEDFC] text-[#174073]">
-                            Sem {profile?.semester ? (profile.semester.match(/\d+/)?.[0] || '5') : '5'}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-[#727272] truncate mt-0.5">Continuous internal evaluation</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setCiePopupOpen(true)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-[#0073E6] bg-white hover:bg-[#DEEDFC]/50 border border-[#D9ECFF] transition-all cursor-pointer shrink-0 shadow-2xs"
-                    >
-                      <span>View All</span>
-                      <ArrowRight01Icon size={13} />
-                    </button>
-                  </div>
-
-                  {/* High-Density Subject Scores Ledger */}
-                  <div className="space-y-2">
-                    {displayCieList.length > 0 ? (
-                      displayCieList.slice(0, 4).map((sub, i) => {
-                        const pending = isCiePending(sub.cie);
-                        const cie = pending ? null : parseFloat(sub.cie);
-                        const maxCie = getSubjectMaxCie(sub, subjectRegistry);
-                        const pct = pending ? 0 : Math.min(Math.round((cie / maxCie) * 100), 100);
-                        const tagColor = pending
-                          ? "text-slate-600 bg-slate-100 border-slate-200"
-                          : pct >= 80
-                            ? "text-emerald-700 bg-emerald-50 border-emerald-200"
-                            : pct >= 60
-                              ? "text-[#0073E6] bg-[#D9ECFF] border-[#0073E6]/20"
-                              : "text-amber-700 bg-amber-50 border-amber-200";
-                        const statusLabel = pending ? "Pending" : pct >= 80 ? "Excellent" : pct >= 60 ? "Good" : "Needs Imp.";
-
-                        return (
-                          <div key={sub.id || i} className="p-2.5 rounded-lg bg-white border border-[#E2E2E2] hover:border-[#0073E6]/40 transition-colors flex items-center justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-semibold text-[#383838] font-sans truncate">{sub.name}</span>
-                                <span className="text-xs font-bold text-[#383838] tabular-nums ml-2 shrink-0">
-                                  {pending ? (
-                                    <span className="text-[#727272] font-normal italic text-[11px]">Pending</span>
-                                  ) : (
-                                    <>
-                                      {cie} <span className="text-[10px] font-normal text-[#727272]">/ {maxCie}</span>
-                                    </>
-                                  )}
-                                </span>
-                              </div>
-                              <div className="w-full h-1.5 rounded-full bg-[#DEEDFC] overflow-hidden">
-                                <div
-                                  className="h-full rounded-full bg-[#0073E6] transition-all duration-300"
-                                  style={{ width: pending ? '0%' : `${pct}%` }}
-                                />
-                              </div>
-                            </div>
-                            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0", tagColor)}>
-                              {statusLabel}
-                            </span>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="py-5 text-center text-xs text-[#727272] bg-white border border-[#E2E2E2] rounded-lg">
-                        No internal marks available yet.
-                      </div>
-                    )}
-                  </div>
-                </section>
+                <CiePerformanceSection
+                  displayCieList={displayCieList}
+                  subjectRegistry={subjectRegistry}
+                  profile={profile}
+                  onOpenCiePopup={handleOpenCiePopup}
+                />
               )}
-
             </div>
           </div>
 
@@ -1682,356 +989,21 @@ const HomeDashboard = () => {
               </button>
             </div>
           </footer>
-
         </div>
       </main>
 
-      {/* CIE Popup Modal */}
-      {!isTeacher && ciePopupOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setCiePopupOpen(false)}
-        >
-          <div
-            className="relative w-full max-w-4xl max-h-[90vh] bg-white border border-[#E2E2E2] rounded-2xl overflow-hidden flex flex-col shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Exportable Canvas Container */}
-            <div ref={cieCardRef} className="bg-white text-[#383838] flex flex-col overflow-hidden">
-              {/* Modal Header with Student Identity Badge */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 border-b border-[#E2E2E2] gap-3 bg-white">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#D9ECFF] text-[#0073E6] flex items-center justify-center shrink-0 border border-[#D9ECFF]">
-                    <BarChartIcon size={20} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base">Internal Assessment Scores</h3>
-                      <span className="px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-[#DEEDFC] text-[#174073] border border-[#D9ECFF]">
-                        {profile?.semester || 'Semester'}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#727272] font-normal mt-0.5">Continuous Internal Evaluation • Student Records</p>
-                  </div>
-                </div>
-
-                {/* Verified Student Badge on Exported Image */}
-                <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-[#DEEDFC]/30 border border-[#E2E2E2] shrink-0">
-                  <div className="w-7 h-7 rounded-lg bg-[#0073E6] text-white flex items-center justify-center text-xs font-semibold uppercase shrink-0">
-                    {profile?.name ? profile.name.charAt(0) : 'S'}
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold text-[#383838] truncate">
-                      {formatName(profile?.name)}
-                    </span>
-                    <span className="text-[10px] text-[#727272] truncate">
-                      PRN: {profile?.prn || profile?.rollNo || '-'} • {getDepartmentName(profile?.department) || profile?.department || 'Engineering'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Stats */}
-              <div className="grid grid-cols-3 gap-2 p-3 sm:p-4 border-b border-[#E2E2E2] bg-white">
-                {[
-                  { value: subjectRegistry.length, label: 'Enrolled Subjects' },
-                  {
-                    value: cieStats.percentage ? `${cieStats.percentage}%` : 'Pending',
-                    label: `Avg (${cieStats.totalMarks}/${cieStats.totalMax || 0})`
-                  },
-                  { value: cieStats.highScorers, label: 'Scored ≥80%' }
-                ].map((stat, i) => (
-                  <div key={i} className="text-center p-2.5 bg-white rounded-lg border border-[#E2E2E2]">
-                    <p className="text-lg sm:text-2xl font-bold text-[#383838] tracking-tight">{stat.value}</p>
-                    <p className="text-[9px] sm:text-[10px] text-[#727272] uppercase tracking-wider font-medium mt-0.5">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Modal Chart */}
-              <div className="p-3 sm:p-5 overflow-y-auto max-h-[46vh] bg-white">
-                <div className="w-full overflow-x-auto pb-2">
-                  <div className="flex items-end justify-between gap-2 min-w-[620px] md:min-w-full min-h-[200px] p-3 sm:p-5 bg-white rounded-lg border border-[#E2E2E2]">
-                    {subjectRegistry.length > 0 ? (
-                      subjectRegistry.map((sub, i) => {
-                        const pending = isCiePending(sub.cie);
-                        const cie = pending ? null : parseFloat(sub.cie);
-                        const maxCie = getSubjectMaxCie(sub, subjectRegistry);
-                        const heightPct = pending ? 0 : Math.min(Math.round((cie / maxCie) * 100), 100);
-                        const isHigh = !pending && heightPct >= 80;
-                        const isGood = !pending && heightPct >= 60;
-                        return (
-                          <div key={sub.id || i} className="flex-1 min-w-[48px] max-w-[72px] flex flex-col items-center gap-1.5">
-                            <span className={cn(
-                              "text-[11px] font-semibold whitespace-nowrap",
-                              pending ? "text-[#727272]" : isHigh ? "text-emerald-600" : isGood ? "text-[#0073E6]" : "text-amber-600"
-                            )}>
-                              {pending ? (
-                                <span className="text-[10px] text-slate-400 font-medium">-</span>
-                              ) : (
-                                <>
-                                  {cie} <span className="text-[9px] text-[#727272] font-normal">/{maxCie}</span>
-                                </>
-                              )}
-                            </span>
-
-                            {/* Bar container */}
-                            <div className={cn(
-                              "relative flex h-30 w-full items-end overflow-hidden rounded-t-xl rounded-b-xs",
-                              pending ? "bg-slate-100 border border-dashed border-slate-300" : "bg-[#DEEDFC]"
-                            )}>
-                              {pending ? (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <span className="text-[8px] font-semibold text-slate-400 rotate-90 sm:rotate-0">N/A</span>
-                                </div>
-                              ) : (
-                                <motion.div
-                                  className={cn(
-                                    'relative w-full rounded-t-xl rounded-b-xs transition-colors',
-                                    isHigh ? 'bg-emerald-500' : isGood ? 'bg-[#0073E6]' : 'bg-amber-500'
-                                  )}
-                                  initial={{ height: '0%' }}
-                                  animate={{ height: `${Math.max(heightPct, 14)}%` }}
-                                  transition={{
-                                    duration: 0.8,
-                                    delay: i * 0.08,
-                                    ease: [0.22, 1, 0.36, 1],
-                                  }}
-                                >
-                                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] font-bold text-white tabular-nums">
-                                    {heightPct}%
-                                  </span>
-                                </motion.div>
-                              )}
-                            </div>
-
-                            <div className="text-center flex flex-col items-center mt-1 w-full">
-                              <p className="text-[10px] font-semibold text-[#383838] truncate w-full text-center" title={sub.code || sub.name}>
-                                {sub.code || sub.name.substring(0, 4)}
-                              </p>
-                              <span className="text-[8px] text-[#727272] truncate max-w-full block" title={sub.name}>
-                                {sub.name}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <p className="text-xs text-[#727272] font-normal">No internal marks recorded yet.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Legend & Verification Stamp inside Card */}
-              <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-2.5 border-t border-[#E2E2E2] bg-white text-[10px] text-[#727272] gap-2">
-                <div className="flex items-center gap-3 uppercase tracking-wider font-medium flex-wrap">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    ≥80% Excellent
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#0073E6]" />
-                    ≥60% Good
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    &lt;60% Needs Improvement
-                  </span>
-                </div>
-                <span className="text-[10px] text-[#727272] font-mono">
-                  Internal Assessment Report • CampusAxis
-                </span>
-              </div>
-            </div>
-
-            {/* Dedicated Off-Screen Export Container - Identical unclipped wide layout on mobile & desktop */}
-            <div
-              style={{
-                position: 'fixed',
-                left: '-9999px',
-                top: 0,
-                width: `${Math.max(940, (subjectRegistry?.length || 0) * 82 + 100)}px`,
-                overflow: 'hidden',
-                pointerEvents: 'none',
-                zIndex: -9999
-              }}
-              aria-hidden="true"
-            >
-              <div
-                ref={cieExportRef}
-                style={{ width: `${Math.max(940, (subjectRegistry?.length || 0) * 82 + 100)}px` }}
-                className="bg-white text-slate-900 flex flex-col p-6 rounded-2xl border border-slate-200"
-              >
-                {/* Header with Title + Student Identity */}
-                <div className="flex items-center justify-between pb-5 border-b border-slate-200 gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 border border-purple-200">
-                      <Analytics01Icon size={26} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xl font-bold text-slate-900 leading-tight">Internal Assessment Scores</h3>
-                        <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                          {profile?.semester || 'Semester'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 font-medium mt-1">Continuous Internal Evaluation • Student Records</p>
-                    </div>
-                  </div>
-
-                  {/* Student Identity Badge */}
-                  <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold uppercase shrink-0 shadow-xs">
-                      {profile?.name ? profile.name.charAt(0) : 'S'}
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-bold text-slate-900">
-                        {formatName(profile?.name)}
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">
-                        PRN: {profile?.prn || profile?.rollNo || '-'} • {getDepartmentName(profile?.department) || profile?.department || 'Engineering'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stats Row */}
-                <div className="grid grid-cols-3 gap-4 my-5 p-4 rounded-xl border border-slate-200 bg-slate-50/70">
-                  {[
-                    { value: subjectRegistry?.length || 0, label: 'Enrolled Subjects' },
-                    {
-                      value: cieStats.percentage ? `${cieStats.percentage}%` : 'Pending',
-                      label: `Average (${cieStats.totalMarks}/${cieStats.totalMax || 0})`
-                    },
-                    { value: cieStats.highScorers, label: 'Scored ≥80%' }
-                  ].map((stat, i) => (
-                    <div key={i} className="text-center p-3.5 bg-white rounded-lg border border-slate-200 shadow-2xs">
-                      <p className="text-2xl font-black text-slate-900 tracking-tight">{stat.value}</p>
-                      <p className="text-[11px] text-slate-500 uppercase tracking-wider font-bold mt-0.5">{stat.label}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Full unclipped chart for all subjects */}
-                <div className="p-4 bg-white rounded-xl border border-slate-200">
-                  <div className="flex items-end justify-between gap-3 min-h-[250px] p-6 bg-slate-50/80 rounded-xl border border-slate-200">
-                    {(subjectRegistry || []).length > 0 ? (
-                      subjectRegistry.map((sub, i) => {
-                        const pending = isCiePending(sub.cie);
-                        const cie = pending ? null : parseFloat(sub.cie);
-                        const maxCie = getSubjectMaxCie(sub, subjectRegistry);
-                        const heightPct = pending ? 0 : Math.min(Math.round((cie / maxCie) * 100), 100);
-                        const isHigh = !pending && heightPct >= 80;
-                        const isGood = !pending && heightPct >= 60;
-                        return (
-                          <div key={sub.id || i} className="flex-1 min-w-[56px] max-w-[76px] flex flex-col items-center gap-1.5">
-                            <span className={cn(
-                              "text-xs font-bold whitespace-nowrap",
-                              pending ? "text-slate-400" : isHigh ? "text-emerald-600" : isGood ? "text-primary" : "text-amber-600"
-                            )}>
-                              {pending ? (
-                                <span className="text-[11px] text-slate-400 font-medium">-</span>
-                              ) : (
-                                <>
-                                  {cie} <span className="text-[10px] text-slate-400 font-normal">/{maxCie}</span>
-                                </>
-                              )}
-                            </span>
-
-                            {/* Bar container with striped background */}
-                            <div
-                              className={cn(
-                                "relative flex h-36 w-full items-end overflow-hidden rounded-lg",
-                                pending ? "bg-slate-100 border border-dashed border-slate-300" : "bg-slate-100 border border-slate-200/50"
-                              )}
-                            >
-                              {pending ? (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <span className="text-[9px] font-semibold text-slate-400">N/A</span>
-                                </div>
-                              ) : (
-                                <div
-                                  className={cn(
-                                    'relative w-full rounded-t-md transition-colors',
-                                    isHigh ? 'bg-emerald-500 shadow-xs' : isGood ? 'bg-primary shadow-xs' : 'bg-amber-500 shadow-xs'
-                                  )}
-                                  style={{ height: `${Math.max(heightPct, 14)}%` }}
-                                >
-                                  <div className="absolute left-1/2 top-1 h-1 w-1/3 -translate-x-1/2 rounded-full bg-white/60" />
-                                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white tabular-nums drop-shadow-xs">
-                                    {heightPct}%
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="text-center flex flex-col items-center mt-1 w-full">
-                              <p className="text-[11px] font-bold text-slate-900 truncate w-full text-center" title={sub.code || sub.name}>
-                                {getSubjectAbbreviation(sub.name) || sub.code || sub.name?.slice(0, 8)}
-                              </p>
-                              <p className="text-[10px] text-slate-500 truncate w-full text-center" title={sub.name}>
-                                {sub.name}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <p className="text-xs text-slate-500 font-medium">No internal marks recorded yet.</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Footer with Legend & Watermark */}
-                <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200 text-xs text-slate-500">
-                  <div className="flex items-center gap-5 uppercase tracking-wider font-bold">
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-sm bg-emerald-600" />
-                      ≥80% Excellent
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-sm bg-blue-600" />
-                      ≥60% Good
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-sm bg-amber-600" />
-                      &lt;60% Needs Improvement
-                    </span>
-                  </div>
-                  <span className="text-xs text-slate-400 font-mono">
-                    Internal Assessment Report • CampusAxis
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Controls / Action Bar */}
-            <div className="flex items-center justify-between p-3 sm:p-4 border-t border-[#E2E2E2] bg-white">
-              <span className="text-xs text-[#727272] font-normal hidden sm:inline">
-                Download your marks card with student details
-              </span>
-              <div className="flex items-center gap-2.5 ml-auto w-full sm:w-auto justify-end">
-                <button
-                  onClick={handleExportCie}
-                  disabled={exportingCie}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#0073E6] hover:bg-[#4A9AF0] text-white text-xs font-medium rounded-full transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
-                  title="Download or share marks card as image"
-                >
-                  {exportingCie ? <HourglassIcon size={16} /> : <Download01Icon size={16} />}
-                  <span>{exportingCie ? 'Generating...' : 'Download Marks Card'}</span>
-                </button>
-                <button
-                  onClick={() => setCiePopupOpen(false)}
-                  className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-[#383838] text-xs font-medium rounded-full transition-colors cursor-pointer border border-[#E2E2E2]"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* CIE Breakdown Popup Modal */}
+      <CieBreakdownModal
+        isOpen={!isTeacher && ciePopupOpen}
+        onClose={handleCloseCiePopup}
+        profile={profile}
+        subjectRegistry={subjectRegistry}
+        cieStats={cieStats}
+        cieCardRef={cieCardRef}
+        cieExportRef={cieExportRef}
+        onExportCie={handleExportCie}
+        exportingCie={exportingCie}
+      />
 
       {/* Document Preview Modal */}
       {docPreviewUrl && (
@@ -2074,6 +1046,8 @@ const HomeDashboard = () => {
                   src={docPreviewUrl}
                   alt={docPreviewName}
                   className="max-h-[60vh] object-contain rounded-xl border border-slate-200 shadow-xs"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     e.target.style.display = 'none';
                     if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';

@@ -34,7 +34,7 @@ export default defineConfig({
             if (id.includes('react-pdf') || id.includes('pdfjs-dist') || id.includes('mammoth')) {
               return 'vendor-pdf';
             }
-            if (id.includes('framer-motion') || id.includes('motion/')) {
+            if (id.includes('motion')) {
               return 'vendor-motion';
             }
           }

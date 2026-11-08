@@ -24,6 +24,7 @@ if (typeof window !== 'undefined') {
 export default function PdfViewer({ url, data, presignedUrl, title, onDownload, extractedText }) {
     const [numPages, setNumPages] = useState(null);
     const [pageNumber, setPageNumber] = useState(1);
+    const [visiblePages, setVisiblePages] = useState(() => new Set([1]));
     const [scale, setScale] = useState(1.0);
     const [containerWidth, setContainerWidth] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -39,6 +40,11 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
     const scrollToPage = useCallback((target) => {
         const el = pageRefs.current[target];
         if (el) {
+            setVisiblePages((prev) => {
+                const next = new Set(prev);
+                next.add(target);
+                return next;
+            });
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             setPageNumber(target);
         }
@@ -47,6 +53,7 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
     const onDocumentLoadSuccess = useCallback(({ numPages }) => {
         setNumPages(numPages);
         setPageNumber(1);
+        setVisiblePages(new Set([1]));
         setLoadError(null);
     }, []);
 
@@ -113,13 +120,29 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
         return Math.round(base * scale);
     }, [containerWidth, scale]);
 
-    // Track current visible page during continuous scroll
+    const placeholderHeight = useMemo(() => {
+        return Math.round(calculatedWidth * 1.414);
+    }, [calculatedWidth]);
+
+    // Active pages to mount (+- 1 buffer page around visible pages)
+    const mountedPages = useMemo(() => {
+        const mounted = new Set();
+        const active = visiblePages.size > 0 ? visiblePages : new Set([pageNumber || 1]);
+        active.forEach((p) => {
+            if (p > 1) mounted.add(p - 1);
+            mounted.add(p);
+            if (numPages && p < numPages) mounted.add(p + 1);
+        });
+        return mounted;
+    }, [visiblePages, numPages, pageNumber]);
+
+    // Track current visible page and virtualize active canvas mounts
     useEffect(() => {
         if (!numPages || numPages <= 1) return;
         const container = scrollContainerRef.current;
         if (!container) return;
 
-        const observer = new IntersectionObserver(
+        const navObserver = new IntersectionObserver(
             (entries) => {
                 for (const entry of entries) {
                     if (entry.isIntersecting) {
@@ -137,11 +160,47 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
             }
         );
 
+        const virtObserver = new IntersectionObserver(
+            (entries) => {
+                setVisiblePages((prev) => {
+                    let changed = false;
+                    const next = new Set(prev);
+                    for (const entry of entries) {
+                        const page = Number(entry.target.getAttribute('data-page-number'));
+                        if (page && !isNaN(page)) {
+                            if (entry.isIntersecting) {
+                                if (!next.has(page)) {
+                                    next.add(page);
+                                    changed = true;
+                                }
+                            } else {
+                                if (next.has(page)) {
+                                    next.delete(page);
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                    return changed ? next : prev;
+                });
+            },
+            {
+                root: container,
+                threshold: 0,
+            }
+        );
+
         Object.values(pageRefs.current).forEach((el) => {
-            if (el) observer.observe(el);
+            if (el) {
+                navObserver.observe(el);
+                virtObserver.observe(el);
+            }
         });
 
-        return () => observer.disconnect();
+        return () => {
+            navObserver.disconnect();
+            virtObserver.disconnect();
+        };
     }, [numPages]);
 
     const pageNav = (
@@ -291,20 +350,31 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
                     {numPages ? (
                         Array.from(new Array(numPages), (_, index) => {
                             const pNum = index + 1;
+                            const isMounted = mountedPages.has(pNum);
                             return (
                                 <div
                                     key={`page_${pNum}`}
                                     ref={(el) => (pageRefs.current[pNum] = el)}
                                     data-page-number={pNum}
                                     className="flex flex-col items-center"
+                                    style={{ minHeight: `${placeholderHeight}px`, width: `${calculatedWidth}px` }}
                                 >
-                                    <Page
-                                        pageNumber={pNum}
-                                        width={calculatedWidth}
-                                        className="shadow-sm rounded-lg overflow-hidden border border-[#E5E5EA] dark:border-[#2C2C2E] bg-white"
-                                        renderAnnotationLayer={false}
-                                        renderTextLayer={false}
-                                    />
+                                    {isMounted ? (
+                                        <Page
+                                            pageNumber={pNum}
+                                            width={calculatedWidth}
+                                            className="shadow-sm rounded-lg overflow-hidden border border-[#E5E5EA] dark:border-[#2C2C2E] bg-white"
+                                            renderAnnotationLayer={false}
+                                            renderTextLayer={false}
+                                        />
+                                    ) : (
+                                        <div
+                                            style={{ height: `${placeholderHeight}px`, width: `${calculatedWidth}px` }}
+                                            className="shadow-sm rounded-lg overflow-hidden border border-[#E5E5EA] dark:border-[#2C2C2E] bg-white dark:bg-[#1C1C1E] flex flex-col items-center justify-center text-[#8E8E93]"
+                                        >
+                                            <div className="text-xs font-medium">Page {pNum}</div>
+                                        </div>
+                                    )}
                                     {numPages > 1 && (
                                         <div className="text-[10px] text-[#8E8E93] font-mono mt-1 mb-2">
                                             Page {pNum} of {numPages}

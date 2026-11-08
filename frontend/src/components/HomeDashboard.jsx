@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { toPng } from 'html-to-image';
 import { cn } from '../../lib/utils';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { getSubjectAbbreviation } from '../../lib/attendanceUtils';
 import { toast } from 'sonner';
 import {
@@ -195,6 +194,7 @@ const HomeDashboard = () => {
     setExportingCie(true);
     const toastId = toast.loading('Rendering high-res CIE image...');
     try {
+      const { toPng } = await import('html-to-image');
       const dataUrl = await toPng(targetEl, {
         quality: 0.98,
         pixelRatio: 2,
@@ -1106,6 +1106,8 @@ const HomeDashboard = () => {
               <img
                 src={profile.image}
                 alt={formatName(profile?.name)}
+                loading="lazy"
+                decoding="async"
                 referrerPolicy="no-referrer"
                 className="w-9 h-9 rounded-full object-cover ring-2 ring-[#D9ECFF]"
                 onError={(e) => {
@@ -1145,6 +1147,8 @@ const HomeDashboard = () => {
                     <img
                       src={profile.image}
                       alt={formatName(profile?.name)}
+                      loading="lazy"
+                      decoding="async"
                       referrerPolicy="no-referrer"
                       className="w-12 h-12 rounded-full object-cover ring-1 ring-[#E2E2E2]"
                       onError={(e) => {
@@ -2492,6 +2496,8 @@ const HomeDashboard = () => {
                 <img
                   src={docPreviewUrl}
                   alt={docPreviewName}
+                  loading="lazy"
+                  decoding="async"
                   className="max-h-[60vh] object-contain rounded-xl border border-slate-200 shadow-xs"
                   onError={(e) => {
                     e.target.style.display = 'none';

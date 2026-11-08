@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { DropdownDisclosure } from "../dropdown-disclosure";
 import { Book02Icon, BookOpen01Icon, Layers01Icon, ArrowUp02Icon, Loading01Icon, Cancel01Icon } from "hugeicons-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import {
   PiArrowUpBold,
   PiBrainFill,

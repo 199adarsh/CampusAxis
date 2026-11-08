@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/nc")
-@CrossOrigin(origins = "*")
 public class NcController {
 
     private static final Logger logger = LoggerFactory.getLogger(NcController.class);

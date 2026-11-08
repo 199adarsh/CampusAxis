@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/hackathons")
-@CrossOrigin(origins = "*")
 public class BrabbleController {
 
     @Autowired

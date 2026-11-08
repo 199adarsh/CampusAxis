@@ -222,17 +222,59 @@ public class BackblazeStorageService {
         }
     }
 
-    public int purgeAllBucketObjects() {
-        List<S3Object> objects = listAllObjects();
-        int count = 0;
-        for (S3Object obj : objects) {
+    /**
+     * Batch deletes objects from B2 by keys using chunking of up to 1,000 objects per S3 request.
+     *
+     * @param keys the collection of object keys to delete
+     * @return the total number of objects deleted
+     */
+    public int deleteObjectsBatch(java.util.Collection<String> keys) {
+        if (keys == null || keys.isEmpty()) {
+            return 0;
+        }
+        List<String> validKeys = keys.stream()
+                .filter(k -> k != null && !k.isBlank() && !k.startsWith("http://") && !k.startsWith("https://"))
+                .distinct()
+                .toList();
+        if (validKeys.isEmpty()) {
+            return 0;
+        }
+
+        int totalDeleted = 0;
+        int chunkSize = 1000;
+        for (int i = 0; i < validKeys.size(); i += chunkSize) {
+            List<String> chunk = validKeys.subList(i, Math.min(i + chunkSize, validKeys.size()));
+            List<ObjectIdentifier> identifiers = chunk.stream()
+                    .map(k -> ObjectIdentifier.builder().key(k).build())
+                    .toList();
             try {
-                deleteFile(obj.key());
-                count++;
+                DeleteObjectsRequest request = DeleteObjectsRequest.builder()
+                        .bucket(bucketName)
+                        .delete(Delete.builder().objects(identifiers).build())
+                        .build();
+                DeleteObjectsResponse response = s3Client.deleteObjects(request);
+                int deletedCount = (response != null && response.hasDeleted()) ? response.deleted().size() : chunk.size();
+                totalDeleted += deletedCount;
+                logger.info("Batch deleted {} objects from B2 bucket {}", deletedCount, bucketName);
+                if (response != null && response.hasErrors() && !response.errors().isEmpty()) {
+                    response.errors().forEach(err ->
+                            logger.warn("Failed to delete key {}: {} ({})", err.key(), err.message(), err.code())
+                    );
+                }
             } catch (Exception e) {
-                logger.warn("Failed to delete B2 object {}: {}", obj.key(), e.getMessage());
+                logger.error("Failed batch deleting chunk from B2 bucket {}: {}", bucketName, e.getMessage(), e);
             }
         }
+        return totalDeleted;
+    }
+
+    public int purgeAllBucketObjects() {
+        List<S3Object> objects = listAllObjects();
+        if (objects == null || objects.isEmpty()) {
+            return 0;
+        }
+        List<String> keys = objects.stream().map(S3Object::key).toList();
+        int count = deleteObjectsBatch(keys);
         logger.info("Purged {} total objects from B2 bucket {}", count, bucketName);
         return count;
     }

@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/portal")
-@CrossOrigin(origins = "*") // Allows calls from frontend
 public class PortalController {
 
     private static final Logger logger = LoggerFactory.getLogger(PortalController.class);

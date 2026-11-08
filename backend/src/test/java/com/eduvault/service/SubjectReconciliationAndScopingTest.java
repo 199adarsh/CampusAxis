@@ -100,7 +100,7 @@ public class SubjectReconciliationAndScopingTest {
 
         // Student passes enrolled subject ID "c502-cse-softeng"
         ResponseEntity<List<Note>> response = controller.getNotes(
-                null, null, null, null, null, null, null, null, "23UAD001", null, "student", "c502-cse-softeng"
+                null, null, null, null, null, null, null, null, "23UAD001", null, null, null, "student", "c502-cse-softeng"
         );
 
         assertNotNull(response.getBody());

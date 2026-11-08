@@ -19,15 +19,24 @@ public class EduVaultApplication {
         SpringApplication.run(EduVaultApplication.class, args);
     }
 
+    @org.springframework.beans.factory.annotation.Value("${spring.web.cors.allowed-origin-patterns:http://localhost:*,https://*.vercel.app,https://*.onrender.com}")
+    private String allowedOriginPatterns;
+
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
+                String[] patterns = java.util.Arrays.stream(allowedOriginPatterns.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .toArray(String[]::new);
+
                 registry.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:5173") // Vite default port
+                        .allowedOriginPatterns(patterns)
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                        .allowedHeaders("*");
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
             }
         };
     }
