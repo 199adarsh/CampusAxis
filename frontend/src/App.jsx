@@ -12,6 +12,7 @@ const Announcements = React.lazy(() => import('./components/Sovereign/Announceme
 const AIAssistant = React.lazy(() => import('./components/Sovereign/AIAssistant'));
 const OptimizationPage = React.lazy(() => import('./components/Sovereign/OptimizationPage'));
 const Settings = React.lazy(() => import('./components/Sovereign/Settings'));
+const LandingPage = React.lazy(() => import('./landing/LandingPage'));
 
 const RouteLoadingFallback = () => (
   <div className="w-full min-h-[50vh] flex flex-col items-center justify-center p-8 text-center animate-pulse">
@@ -25,17 +26,19 @@ function App() {
     <Router>
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
-          <Route path="/" element={<SovereignLayout />}>
-            <Route index element={<HomeDashboard />} />
-            <Route path="notes" element={<NotesLibrary />} />
-            <Route path="notes/:id" element={<NoteDetail />} />
-            <Route path="pyqs" element={<NotesLibrary defaultTab="pyqs" />} />
-            <Route path="roadmaps" element={<Roadmaps />} />
-            <Route path="ai-assistant" element={<AIAssistant />} />
-            <Route path="announcements" element={<Announcements />} />
-            <Route path="attendance" element={<AttendanceAnalytics />} />
-            <Route path="optimization" element={<OptimizationPage />} />
-            <Route path="settings" element={<Settings />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/landing" element={<LandingPage />} />
+          <Route element={<SovereignLayout />}>
+            <Route path="/dashboard" element={<HomeDashboard />} />
+            <Route path="/notes" element={<NotesLibrary />} />
+            <Route path="/notes/:id" element={<NoteDetail />} />
+            <Route path="/pyqs" element={<NotesLibrary defaultTab="pyqs" />} />
+            <Route path="/roadmaps" element={<Roadmaps />} />
+            <Route path="/ai-assistant" element={<AIAssistant />} />
+            <Route path="/announcements" element={<Announcements />} />
+            <Route path="/attendance" element={<AttendanceAnalytics />} />
+            <Route path="/optimization" element={<OptimizationPage />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>
       </Suspense>
