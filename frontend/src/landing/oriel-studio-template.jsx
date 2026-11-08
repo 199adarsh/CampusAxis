@@ -1,9 +1,9 @@
-import * as React from 'react';
-import * as jsxRuntime from 'react/jsx-runtime';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import * as THREE from 'three';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import * as React from "react";
+import * as jsxRuntime from "react/jsx-runtime";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
 const F = React;
 const e = jsxRuntime;
@@ -31,7 +31,3216 @@ const ue = THREE.Vector3;
 const zt = THREE.TubeGeometry;
 const St = THREE.CatmullRomCurve3;
 
-typeof window < "u" && y.registerPlugin(ke); const qt = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Inter+Tight:wght@300..800&display=swap", J = (o, d = 1400, m = 0) => "https://images.pexels.com/photos/" + o + "/pexels-photo-" + o + ".jpeg?auto=compress&cs=tinysrgb&w=" + d + (m ? "&h=" + m + "&fit=crop" : ""), Me = (o, d) => "https://videos.pexels.com/video-files/" + o + "/" + o + "-" + d + "_30fps.mp4", Ct = 48, Pt = Me(19457509, "hd_1920_1080"), ot = Me(19457370, "hd_1920_1080"), Et = [{ name: "Mallow", kind: "Skincare identity", year: "2026", img: J(4841519, 1e3) }, { name: "Arcadia", kind: "Architecture website", year: "2026", img: J(21849253, 1e3) }, { name: "Halcyon", kind: "Meditation app", year: "2025", img: J(29612114, 1e3) }, { name: "Pebble", kind: "Savings brand", year: "2025", img: J(15863490, 1e3) }, { name: "Casa Rosa", kind: "Hotel website", year: "2025", img: J(11116100, 1e3) }, { name: "Fold", kind: "Packaging system", year: "2024", img: J(36339062, 1e3) }, { name: "Prism", kind: "Design system", year: "2024", img: J(29579757, 1e3) }], At = [{ tint: "var(--or-warm)", title: "We make good ideas feel obvious", text: "Strategy, identity and product live in one small room here, so the idea that starts a project is the one that ships.", clip: Me(15863510, "sd_960_540") }, { tint: "var(--or-mint)", title: "Small studio, long memory", text: "Eleven designers, two engineers, one long table. Most of the teams we work with have stayed for more than three years.", clip: Me(15863511, "sd_960_540") }, { tint: "var(--or-lilac-soft)", title: "Calm is a craft", text: "We take things away until nothing is left to argue with, then tune the half-second that makes it feel alive.", clip: Me(19493166, "sd_960_540") }], rt = [33866498, 15946547, 29852852, 11824896, 38197025, 14669406, 19456417, 36439572, 31530222], It = ["Brand systems", "Product interfaces", "Apps that travel", "Motion & 3D"], at = [{ name: "Mira", c: "#f08a7e", x: -38, y: -20 }, { name: "Jonas", c: "#7c8cff", x: 36, y: -17 }, { name: "Ade", c: "#3fbf8f", x: 38, y: 8 }, { name: "Lin", c: "#c58cf2", x: -40, y: 12 }, { name: "Tomás", c: "#f2b84b", x: -14, y: 22 }, { name: "Priya", c: "#4fb7e8", x: 18, y: 23 }], Wt = ["In fintech", "In health", "In hospitality", "In climate", "In retail", "In education"], Fe = ["Mallow", "Arcadia", "Halcyon", "Pebble", "Casa Rosa", "Fold", "Prism", "Fernhill", "Lumen", "Tidepool"], Lt = ["Brand identity", "Product design", "Website", "Motion & 3D", "Design system", "Something else"], it = ["< $20k", "$20–50k", "$50–100k", "$100k +"], ge = [{ id: "home", label: "Home", tone: "light" }, { id: "about", label: "About", tone: "light" }, { id: "make", label: "What we make", tone: "light" }, { id: "people", label: "People", tone: "light" }, { id: "quote", label: "Belief", tone: "dark" }, { id: "work", label: "Work", tone: "dark" }, { id: "proof", label: "Proof", tone: "light" }, { id: "rope", label: "Process", tone: "dark" }, { id: "contact", label: "Contact", tone: "light" }], Bt = 260, Ot = 170, _e = 700; function Ht(o, d, m) { return d === 1 ? o * 32 : d === 2 ? o * m : o } function Dt(o, d, m, b) { const O = 1 - Math.pow(1 - m, Math.min(b, 64) / 16.666666666666668), S = o + (d - o) * O; return Math.abs(d - S) < .3 ? d : S } function Ft(o, d, m, b, O, S, P = 1 / 0) { if (d > 0) { if (m < b - 1.5) return { target: Math.min(b, o.target + d * S, m + P), push: 0, turn: 0 }; const g = Math.max(0, o.push) + d; return g >= O ? { target: b, push: 0, turn: 1 } : { target: b, push: g, turn: 0 } } if (d < 0) { if (m > 1.5) return { target: Math.max(0, o.target + d * S, m - P), push: 0, turn: 0 }; const g = Math.min(0, o.push) + d; return g <= -O ? { target: 0, push: 0, turn: -1 } : { target: 0, push: g, turn: 0 } } return { target: o.target, push: o.push, turn: 0 } } function _t(o, d, m) { const b = o + d; return b < 0 || b >= m ? -1 : b } function Le(o, d, m) { return o < m && d >= m ? 1 : o >= m && d < m ? -1 : 0 } function Yt(o, d, m) { return Math.min(1, Math.max(0, (o - d) / (m - d))) } function Gt(o, d) { let m = -1; for (let b = 0; b < d.length; b++)o >= d[b] && (m = b); return m } function Vt(o, d) { return Math.max(0, Math.min(d, Math.ceil(o / .95 * d))) } function nt(o, d) { return (o % d + d) % d } function Xt(o, d, m) { let b = nt(o - d, m); return b > m / 2 && (b -= m), b } function Zt(o, d, m) { return o === "ArrowDown" || o === "PageDown" || o === " " && !d ? { kind: "step", to: 1 } : o === "ArrowUp" || o === "PageUp" || o === " " && d ? { kind: "step", to: -1 } : o === "Home" ? { kind: "jump", to: 0 } : o === "End" ? { kind: "jump", to: m - 1 } : /^[1-9]$/.test(o) && +o <= m ? { kind: "jump", to: +o - 1 } : null } function Ut(o, d) { return o === "about" && d === "make" } function Kt(o) { return o === "dark" ? "light" : "dark" } const $ = (...o) => o.filter(Boolean).join(" "); function ne({ text: o, hidden: d }) { const m = o.split(" "); let b = 0; return e.jsxs(e.Fragment, { children: [!d && e.jsx("span", { className: "or-sr", children: o }), e.jsx("span", { className: "or-spell", "aria-hidden": "true", "data-spell": "", children: m.map((O, S) => e.jsxs(F.Fragment, { children: [e.jsx("span", { className: "or-w", children: [...O].map((P, g) => e.jsx("span", { className: "or-l", style: { "--i": b++ }, children: P }, g)) }), S < m.length - 1 ? " " : null] }, S)) })] }) } function pe({ children: o }) { return e.jsxs("span", { className: "or-roll", children: [e.jsx("span", { className: "or-roll-s", children: o }), e.jsxs("span", { className: "or-roll-t", "aria-hidden": "true", children: [e.jsx("span", { children: o }), e.jsx("span", { children: o })] })] }) } function Ce({ src: o, className: d }) { return e.jsx("video", { className: $("or-vid", d), src: o, muted: !0, loop: !0, playsInline: !0, preload: "none", "aria-hidden": "true", tabIndex: -1 }) } function Pe({ className: o }) { return e.jsxs("svg", { viewBox: "0 0 24 28", className: o, "aria-hidden": "true", children: [e.jsx("path", { d: "M3 26.5V12a9 9 0 0 1 18 0v14.5Z", fill: "none", stroke: "currentColor", strokeWidth: "2.6" }), e.jsx("path", { d: "M12 4v22.5M3 15.5h18", fill: "none", stroke: "currentColor", strokeWidth: "2.2" })] }) } function Qt() { return e.jsxs("svg", { viewBox: "0 0 140 140", className: "or-eye", "aria-hidden": "true", children: [e.jsxs("defs", { children: [e.jsx("path", { id: "or-ring", d: "M70 70m-55 0a55 55 0 1 1 110 0a55 55 0 1 1 -110 0" }), e.jsx("clipPath", { id: "or-almond", children: e.jsx("path", { d: "M40 70Q70 44 100 70Q70 96 40 70Z" }) })] }), e.jsx("g", { className: "or-eye-ring", children: e.jsx("text", { children: e.jsx("textPath", { href: "#or-ring", startOffset: "0", children: "CAMPUSAXIS · SCROLL DOWN · SEE WHAT WE MAKE ·" }) }) }), e.jsx("g", { className: "or-lash", children: e.jsx("path", { d: "M55 52l-3-6M70 49v-7M85 52l3-6M47 58l-5-4M93 58l5-4" }) }), e.jsx("path", { d: "M40 70Q70 44 100 70Q70 96 40 70Z", fill: "#fff" }), e.jsxs("g", { clipPath: "url(#or-almond)", children: [e.jsxs("g", { className: "or-iris", children: [e.jsx("circle", { cx: "70", cy: "70", r: "13", fill: "#dad2f4" }), e.jsx("circle", { cx: "70", cy: "70", r: "7", fill: "#17171a" }), e.jsx("circle", { cx: "73", cy: "67", r: "2", fill: "#fff" })] }), e.jsx("rect", { className: "or-lid or-lid-t", x: "38", y: "42", width: "64", height: "29" }), e.jsx("rect", { className: "or-lid or-lid-b", x: "38", y: "69", width: "64", height: "29" })] }), e.jsx("path", { d: "M40 70Q70 44 100 70Q70 96 40 70Z", fill: "none", stroke: "#17171a", strokeWidth: "2.4", strokeLinejoin: "round" })] }) } function st() { return e.jsx("span", { className: "or-stars", "aria-hidden": "true", children: [0, 1, 2, 3, 4].map(o => e.jsx("svg", { viewBox: "0 0 20 20", children: e.jsx("path", { d: "M10 1.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L10 14.8l-5.2 2.8 1-5.8L1.5 7.7l5.9-.8Z" }) }, o)) }) } function $t({ projects: o }) { const [d, m] = F.useState(0), b = o.length, O = F.useRef(null), S = g => m(D => nt(D + g, b)), P = o[d]; return e.jsxs("div", { className: "or-car", role: "region", "aria-roledescription": "carousel", "aria-label": "Selected work", onPointerDown: g => O.current = g.clientX, onPointerUp: g => { if (O.current == null) return; const D = g.clientX - O.current; O.current = null, Math.abs(D) > 40 && S(D < 0 ? 1 : -1) }, onKeyDown: g => { g.key === "ArrowRight" && (S(1), g.preventDefault()), g.key === "ArrowLeft" && (S(-1), g.preventDefault()) }, children: [e.jsx("div", { className: "or-car-ring", children: o.map((g, D) => { const N = Xt(D, d, b); return e.jsxs("figure", { className: $("or-car-card", N === 0 && "is-on"), style: { "--d": N, opacity: Math.abs(N) > 1 ? 0 : 1 }, "aria-hidden": N !== 0, onClick: () => N && S(N), children: [e.jsx("img", { src: g.img, alt: g.name + ", " + g.kind, draggable: !1 }), e.jsxs("figcaption", { className: "or-car-meta", children: [e.jsx("span", { children: g.kind }), e.jsx("span", { children: g.year })] })] }, g.name) }) }), e.jsx("h3", { className: "or-car-title", "aria-live": "polite", children: e.jsx(ne, { text: P.name }) }, P.name), e.jsxs("div", { className: "or-car-foot", children: [e.jsx("div", { className: "or-car-bars", "aria-hidden": "true", children: o.map((g, D) => e.jsx("span", { className: $(D === d && "is-on") }, g.name)) }), e.jsxs("span", { className: "or-car-count", children: [String(d + 1).padStart(2, "0"), " / ", String(b).padStart(2, "0")] }), e.jsx("button", { type: "button", className: "or-car-btn", "data-mag": "", "data-cursor": "nav", "aria-label": "Previous project", onClick: () => S(-1), children: "←" }), e.jsx("button", { type: "button", className: "or-car-btn", "data-mag": "", "data-cursor": "nav", "aria-label": "Next project", onClick: () => S(1), children: "→" })] })] }) } function Jt({ email: o, onClose: d }) { const [m, b] = F.useState(["Product design"]), [O, S] = F.useState(it[1]), [P, g] = F.useState(!1), D = N => b(Z => Z.includes(N) ? Z.filter(le => le !== N) : [...Z, N]); return e.jsxs("form", { className: $("or-form", P && "is-sent"), onSubmit: N => { N.preventDefault(), g(!0) }, children: [d && e.jsx("button", { type: "button", className: "or-sheet-x", "aria-label": "Close the form", onClick: d, children: "×" }), e.jsxs("div", { className: "or-form-row", "data-rise": "", children: [e.jsxs("label", { className: "or-field", children: [e.jsx("span", { children: "Name & company" }), e.jsx("input", { name: "name", autoComplete: "name", placeholder: "Ines from Mallow", required: !0 })] }), e.jsxs("label", { className: "or-field", children: [e.jsx("span", { children: "Your email" }), e.jsx("input", { name: "email", type: "email", autoComplete: "email", placeholder: "you@" + o.split("@")[1], required: !0 })] })] }), e.jsxs("fieldset", { className: "or-chips", "data-rise": "", children: [e.jsx("legend", { children: "I'm interested in…" }), Lt.map(N => e.jsxs("label", { className: $("or-chip", "or-rl", m.includes(N) && "is-on"), "data-cursor": "nav", children: [e.jsx("input", { type: "checkbox", checked: m.includes(N), onChange: () => D(N) }), e.jsx(pe, { children: N })] }, N))] }), e.jsxs("fieldset", { className: "or-chips", "data-rise": "", children: [e.jsx("legend", { children: "Project budget (USD)" }), it.map(N => e.jsxs("label", { className: $("or-chip", "or-rl", O === N && "is-on"), "data-cursor": "nav", children: [e.jsx("input", { type: "radio", name: "budget", checked: O === N, onChange: () => S(N) }), e.jsx(pe, { children: N })] }, N))] }), e.jsxs("label", { className: "or-field or-field-wide", "data-rise": "", children: [e.jsx("span", { children: "Tell us about it" }), e.jsx("textarea", { name: "brief", rows: 2, placeholder: "What are you making, and what should it feel like?" })] }), e.jsxs("div", { className: "or-submit-row", "data-rise": "", children: [e.jsxs("span", { className: "or-pulse", "data-mag": "", "data-cursor": "button", children: [e.jsx("i", {}), e.jsx("i", {}), e.jsx("i", {}), e.jsx("i", {}), e.jsxs("button", { type: "submit", className: "or-submit", children: [e.jsx("span", { children: "Send" }), " ", e.jsx("span", { children: "the" }), " ", e.jsx("span", { children: "brief" })] })] }), e.jsx("p", { className: "or-sent", role: "status", children: P ? "Thank you. We answer every brief within two working days." : "" })] })] }) } function eo({ brand: o = "CampusAxis", headline: d = "A small design studio making calm, considered products and brands that people come back to", projects: m = Et, email: b = "hello@campusaxis.com", height: O = "100svh", theme: S = "auto", fontHref: P = qt, ropeFrames: g, className: D }) { const N = F.useRef(null), Z = F.useRef(null), [le, be] = F.useState("deck"), [E, Ee] = F.useState(!1), [ie, xe] = F.useState(S === "dark"), [ee, fe] = F.useState(!1), [Ae, Re] = F.useState(0), [de, ze] = F.useState(!1); F.useLayoutEffect(() => { const t = N.current, l = window.matchMedia("(hover: hover) and (pointer: fine)"), n = window.matchMedia("(prefers-reduced-motion: reduce)"), j = () => { Ee(n.matches), be(l.matches && !n.matches && t.parentElement.clientWidth >= 760 ? "deck" : "stack"), xe(S === "dark" || S === "auto" && !!t.closest(".dark")) }; j(); const f = new ResizeObserver(j); return f.observe(t.parentElement), l.addEventListener("change", j), n.addEventListener("change", j), () => { f.disconnect(), l.removeEventListener("change", j), n.removeEventListener("change", j) } }, [S]), F.useLayoutEffect(() => { const t = N.current, l = le === "deck", n = (C, I = t) => I.querySelector(C), j = (C, I = t) => [...I.querySelectorAll(C)], f = j(".or-scene"), z = n(".or-probe"), v = () => z.getBoundingClientRect().width, _ = n(".or-header"), re = f.length, T = [], q = (C, I, V, K) => { C.addEventListener(I, V, K), T.push(() => C.removeEventListener(I, V, K)) }, a = { active: 0, cur: 0, target: 0, push: 0, written: 0, busyUntil: 0, lastWheel: 0, stale: !1, changedAt: 0, tone: [], bake: () => { } }, Y = C => ie ? "dark" : a.tone[C] ?? ge[C].tone, G = j(".or-rail button"), U = C => { _.setAttribute("data-tone", C ?? Y(a.active)), G.forEach((I, V) => I.classList.toggle("is-on", V === a.active)) }, je = (C, I) => { a.tone[C] !== I && (a.tone[C] = I, C === a.active && U()) }; t.classList.add("or-live"); const Ie = y.context(() => { const C = i => l ? i : window, I = (i, r, s, u, c) => { if (E) { s.progress(u), c == null || c(u); return } ke.create({ trigger: r, scroller: C(f[i]), start: "top top", end: "bottom bottom", scrub: !0, animation: s, invalidateOnRefresh: !0, onUpdate: c && (h => c(h.progress)), onRefresh: c && (h => c(h.progress)) }) }, V = () => t.clientWidth, K = () => l ? t.clientHeight : window.innerHeight; { const i = n(".or-reel-track"), r = n(".or-reel-mask"); l && !E && y.fromTo(r, { clipPath: () => "inset(0px " + 9.375 * v() + "px " + Math.max(0, K() - 40 * v()) + "px " + 9.375 * v() + "px round " + 1.6 * v() + "px)" }, { clipPath: "inset(0px 0px 0px 0px round 0px)", ease: "none", scrollTrigger: { trigger: i, scroller: f[0], start: "top bottom", end: "top top", scrub: !0, invalidateOnRefresh: !0 } }), E || (y.fromTo(n(".or-reel-in"), { clipPath: "inset(0% 0% 100% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 3, ease: "power2.inOut", delay: .2 }), y.from(n(".or-eye"), { scale: .3, opacity: 0, duration: 2, ease: "power3.out", delay: .4 }), y.from(_, { yPercent: -100, duration: .5, ease: "power2.out" })) } { const r = n(".or-about-track"), s = n(".or-about-row"), u = n(".or-stage", r); if (l && !E) { const c = () => Math.max(0, s.scrollWidth - u.clientWidth), h = () => r.style.height = c() + u.clientHeight + "px"; h(); const p = new ResizeObserver(() => (h(), ke.refresh())); p.observe(s), T.push(() => p.disconnect()); const k = y.to(s, { x: () => -c(), ease: "none", scrollTrigger: { trigger: r, scroller: f[1], start: "top top", end: "bottom bottom", scrub: !0, invalidateOnRefresh: !0 } }); j(".or-card", s).forEach(w => { const x = n(".or-card-pill", w); y.fromTo(x, { x: () => w.clientWidth - x.offsetWidth - 2 * x.offsetLeft }, { x: 0, ease: "none", scrollTrigger: { trigger: w, containerAnimation: k, start: "left 85%", end: "left 10%", scrub: !0, invalidateOnRefresh: !0 } }) }) } } { const r = n(".or-make"), s = n(".or-make-track"), u = n(".or-make-media", r), c = n(".or-mock", r), h = n(".or-slot video", r), p = n("video", u), k = (L, A, X, we, me) => "inset(" + L + "px " + A + "px " + X + "px " + we + "px round " + me + "px)", w = () => { const L = n(".or-slot", r).getBoundingClientRect(), A = r.getBoundingClientRect(); return k(L.top - A.top, A.right - L.right, A.bottom - L.bottom, L.left - A.left, (l ? 1 : .34) * v()) }, x = l ? 1 : .45, M = y.timeline({ paused: !0, defaults: { ease: "none" } }); M.fromTo(n(".or-make-word", r), { x: 0, scale: 1 }, { x: () => -.22 * V(), scale: .42, opacity: 0, duration: .14 }, 0).fromTo(u, { clipPath: () => k(.3 * K(), 0, .3 * K(), V(), 2 * v()) }, { clipPath: () => k(.24 * K(), .05 * V(), .24 * K(), .66 * V(), 2.4 * v()), duration: .07 }, .01).to(u, { clipPath: () => k(0, 0, 0, 0, 0), duration: .09 }, .08).to(u, { clipPath: w, duration: .11, ease: "power1.inOut" }, .21).set(c, { autoAlpha: 1 }, .2).set(u, { autoAlpha: 0 }, .45).fromTo(n(".or-skel", c), { opacity: 1 }, { opacity: 0, duration: .06 }, .38).fromTo(n(".or-mock-in", c), { opacity: 0 }, { opacity: 1, duration: .06 }, .38).fromTo(n(".or-make-light", r), { opacity: 0 }, { opacity: 1, duration: .06 }, .46).fromTo(c, { width: () => 66 * v(), borderRadius: () => 2.25 * v() }, { width: () => 22 * v(), borderRadius: () => 3.4 * v(), duration: .16, ease: "power1.inOut" }, .64).fromTo(n(".or-notch", c), { opacity: 0 }, { opacity: 1, duration: .04 }, .76), j(".or-cur", r).forEach((L, A) => { const X = at[A]; M.fromTo(L, { x: () => X.x * 1.9 * x * v(), y: () => X.y * 2.4 * x * v(), opacity: 0 }, { x: () => X.x * x * v(), y: () => X.y * x * v(), opacity: 1, duration: .09, ease: "power2.out" }, .5 + A * .012).to(L, { x: () => (X.x * .55 + (A % 2 ? 4 : -4)) * x * v(), y: () => (X.y * .9 + A % 3 * 2) * x * v(), duration: .2 }, .62).to(L, { x: () => X.x * 2.2 * x * v(), opacity: 0, duration: .07 }, .9) }); const H = n(".or-tag", r), Q = j(".or-tag-l", H), W = [.3, .47, .64, .82]; let ae = -2; I(2, s, M, .6, L => { const A = Gt(L, W); if (A === ae) return; const X = A > ae; y.to(H, A < 0 ? { opacity: 0, scale: .5, duration: .3 } : { opacity: 1, scale: 1, duration: .5, ease: "back.out(1.6)" }), Q.forEach((we, me) => { me === A ? y.fromTo(we, { yPercent: X ? 100 : -100, opacity: 0 }, { yPercent: 0, opacity: 1, duration: .45, ease: "power3.out" }) : me === ae ? y.to(we, { yPercent: X ? -100 : 100, opacity: 0, duration: .45, ease: "power3.in" }) : y.set(we, { opacity: 0 }) }), ae = A, p && h && L > .3 && Math.abs(h.currentTime - p.currentTime) > .3 && (h.currentTime = p.currentTime) }) } { const r = n(".or-people"), s = n(".or-gap", r), u = j(".or-ava > *", r), c = n(".or-gap-word", r), h = y.timeline({ paused: !0, defaults: { ease: "none" } }), p = n(".or-ava", r); h.set(u, { scale: 0 }, 0).set(c, { opacity: 0 }, 0).set(p, { opacity: 0, scaleX: .2 }, 0).set(j(".or-fly", r), { y: () => K() }, 0).fromTo(s, { width: 0 }, { width: () => p.scrollWidth, duration: .14, ease: "power2.inOut" }, .06).to(p, { opacity: 1, scaleX: 1, transformOrigin: "0% 50%", duration: .14, ease: "power2.inOut" }, .06).fromTo(u, { scale: 0 }, { scale: 1, duration: .06, stagger: .008, ease: "back.out(2)" }, .1).to(u, { y: () => -5 * v(), scale: .5, opacity: 0, duration: .07, stagger: .006 }, .32).to(p, { opacity: 0, duration: .05 }, .37).to(s, { width: () => c.offsetWidth, duration: .1, ease: "power2.inOut" }, .36).fromTo(c, { scale: .5, opacity: 0 }, { scale: 1, opacity: 1, duration: .08 }, .38), j(".or-fly", r).forEach((x, M) => { h.fromTo(x, { y: () => K() * (.7 + M * .1), rotate: [-20, 14, -8][M] }, { y: () => -K() * (.9 + M * .15), rotate: [60, -50, 40][M], duration: .45 }, .18 + M * .06) }); const k = n(".or-swallow", r); h.fromTo(k, { x: () => .7 * V(), scale: .18, rotate: 0 }, { x: 0, scale: 1, rotate: -120, duration: .16, ease: "power2.in" }, .82); let w = 0; I(3, n(".or-people-track"), h, .5, x => { Le(w, x, .93) && je(3, x >= .93 ? "dark" : void 0), w = x }) } { const r = j(".or-q .or-l"), s = n(".or-qbar i"); let u = -1; const c = h => { const p = Vt(h, r.length); p !== u && (r.forEach((k, w) => k.classList.toggle("is-lit", w < p)), u = p, s.style.transform = "scaleY(" + h + ")") }; I(4, n(".or-quote-track"), y.timeline({ paused: !0 }).to({}, { duration: 1 }), 1, c), E || y.from(j(".or-ring-c"), { opacity: 0, scale: .9, duration: .6, stagger: .2, delay: .3, paused: l, id: "rings" }) } { const r = n(".or-work"), s = n(".or-thread path", r), u = y.timeline({ paused: !0, defaults: { ease: "none" } }), c = n(".or-slit", r); u.fromTo(n(".or-work-lift", r), { y: 0 }, { y: () => -1.15 * K(), duration: .36, ease: "power1.in" }, .1).fromTo(n(".or-hand", r), { scale: 1 }, { scale: 0, duration: .2, ease: "power2.in" }, .32).fromTo(s, { strokeDashoffset: 1, opacity: 1 }, { strokeDashoffset: 0, duration: .2 }, .34).fromTo(c, { scaleY: 0, scaleX: () => 1.5 / V() }, { scaleY: 1, duration: .12, ease: "power2.in" }, .54).to(s, { opacity: 0, duration: .05 }, .64).to(c, { scaleX: 1, duration: .24, ease: "power3.in" }, .72); let h = 0; l && I(5, n(".or-work-track"), u, 0, p => { Le(h, p, .9) && je(5, p >= .9 ? "light" : void 0), h = p }) } { const r = y.timeline({ paused: !0, defaults: { ease: "none" } }); r.fromTo(n(".or-cube"), { rotateY: 16 }, { rotateY: -90, duration: .6, ease: "power1.inOut" }, .2), I(6, n(".or-proof-track"), r, 1) } { const r = n(".or-rope"), s = n(".or-squircle", r), u = to(n(".or-rope-c", r), l ? Math.min(2, window.devicePixelRatio) : 1); T.push(u.dispose); const c = n(".or-idea", r), h = j(".or-l", c), p = y.timeline({ paused: !0, defaults: { ease: "none" } }); p.fromTo(n(".or-rope-bg path", r), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .36 }, 0).fromTo(s, { width: () => (l ? 28 : 20) * v(), height: () => (l ? 19 : 14) * v(), borderRadius: () => (l ? 7 : 4.5) * v(), y: 0 }, { width: () => V() - 3 * v(), height: () => K() - 7.5 * v(), borderRadius: () => 4 * v(), y: () => -1.5 * v(), duration: .28, ease: "power2.inOut" }, .58).fromTo(n(".or-rope-fill", r), { opacity: 0 }, { opacity: 1, duration: .2 }, .62).fromTo(n(".or-rope-line", r), { opacity: 1, y: 0 }, { opacity: 0, y: () => -6 * v(), duration: .12 }, .5).fromTo(n(".or-marq", r), { opacity: 0 }, { opacity: 1, duration: .1 }, .8); const k = n(".or-rope-seq", r), w = k.getContext("2d"); let x = null; const M = new Map; let H = [0, 1], Q = -1, W = 0; const ae = B => { if (!x) return; const se = Math.round(W * (x.length - 1)); if (se === Q && !B) return; Q = se; const ce = k.clientWidth, Ne = k.clientHeight, he = x[se]; if (he instanceof Blob) { const ve = M.get(se); if (!ve) { createImageBitmap(he).then(Je => { if (!L) return Je.close(); M.set(se, Je); for (const De of M.keys()) M.size > 8 && Math.abs(De - Q) > 4 && (M.get(De).close(), M.delete(De)); Q === se && ae(!0) }); return } w.clearRect(0, 0, ce, Ne), w.drawImage(ve, 0, H[0] * Ne, ce, (H[1] - H[0]) * Ne); return } if (w.clearRect(0, 0, ce, Ne), g) { const ve = Math.max(ce / he.naturalWidth, Ne / he.naturalHeight); w.drawImage(he, (ce - he.naturalWidth * ve) / 2, (Ne - he.naturalHeight * ve) / 2, he.naturalWidth * ve, he.naturalHeight * ve) } }, oe = () => { const B = l ? Math.min(2, window.devicePixelRatio) : 1; k.width = k.clientWidth * B, k.height = k.clientHeight * B, w.setTransform(B, 0, 0, B, 0, 0), w.imageSmoothingQuality = "high", ae(!0) }; let L = !0; T.push(() => { L = !1, M.forEach(B => B.close()) }); const A = async () => { if (g != null && g.length) { const B = await Promise.all(g.map(se => { const ce = new Image; return ce.decoding = "async", ce.src = se, ce.decode().then(() => ce) })); if (!L) return; x = B } else { const B = await u.bake(l ? Ct : 28); if (!L) return; x = B.frames, H = B.band } r.classList.add("or-seq-on"), oe() }; let X = !1; a.bake = () => { X || (X = !0, A().catch(() => { })) }; const we = l ? 0 : window.setTimeout(a.bake, 1500); T.push(() => clearTimeout(we)); let me = 0; I(7, n(".or-rope-track"), p, 1, B => { W = Yt(B, .04, .62), x ? ae() : u.set(W), Le(me, B, .7) && je(7, B >= .7 ? "light" : void 0); const se = Le(me, B, .74); (se > 0 || E && B >= .74) && y.fromTo(h, { yPercent: 80, opacity: 0 }, { yPercent: 0, opacity: 1, duration: .5, stagger: .02, ease: "power3.out", overwrite: !0 }), se < 0 && y.to(h, { opacity: 0, duration: .2, overwrite: !0 }), me = B }); const $e = new ResizeObserver(() => { u.resize(), x && oe() }); $e.observe(r), T.push(() => $e.disconnect()) } const Ye = f.map(i => j("video", i)), Ge = new Set, We = () => { a.active >= 5 && a.bake(), Ye.forEach((i, r) => i.forEach(s => { l && (r === a.active ? s.play().catch(() => { }) : (s.pause(), r === a.active + 1 && s.preload === "none" && (s.preload = "auto"))) })) }; if (!l) { const i = new IntersectionObserver(r => r.forEach(s => { const u = s.target; s.isIntersecting ? (Ge.add(u), u.play().catch(() => { })) : Ge.has(u) && u.pause() }), { rootMargin: "200px 0px" }); Ye.flat().forEach(r => i.observe(r)), T.push(() => i.disconnect()) } const Ve = () => l ? a.active === 6 : !0, Te = (i, r) => { var w; const s = f[i], u = t.clientHeight, c = s.getBoundingClientRect().top, h = x => { const M = x.getBoundingClientRect(); return M.bottom > c && M.top < c + u }, p = j("[data-rise]", s).filter(h), k = j("[data-spell] .or-l", s).filter(x => !x.closest(".or-idea, .or-q, .or-car-title") && h(x)); if (E) { y.fromTo(s, { opacity: 0 }, { opacity: 1, duration: .35 }); return } y.fromTo(p, { y: 50, rotate: 3, opacity: 0, transformOrigin: "0% 100%" }, { y: 0, rotate: 0, opacity: 1, duration: .6, stagger: .05, ease: "power3.out", delay: r, overwrite: "auto", clearProps: "transform" }), y.fromTo(k, { yPercent: 70, opacity: 0 }, { yPercent: 0, opacity: 1, duration: .5, stagger: .014, ease: "power3.out", delay: r + .05, overwrite: "auto" }), i === 4 && ((w = y.getById("rings")) == null || w.restart(!0)) }, qe = (i, r) => { f.forEach((c, h) => y.set(c, { yPercent: h < i ? -100 : h > i ? 100 : 0 })); const s = f[i], u = s.scrollHeight - s.clientHeight; a.cur = a.target = a.written = r ? u : 0, s.scrollTop = a.cur, a.push = 0, a.active = i, t.setAttribute("data-scene", ge[i].id), U(), We(), ke.update() }, lt = i => { const r = a.active, s = i > r ? 1 : -1, u = performance.now(); a.busyUntil = u + (E ? 400 : _e + 120), a.changedAt = u, a.stale = !0; const c = f[r], h = f[i], p = h.scrollHeight - h.clientHeight; if (a.cur = a.target = a.written = s > 0 ? 0 : p, h.scrollTop = a.cur, a.push = 0, a.active = i, t.setAttribute("data-scene", ge[i].id), E) { qe(i, s < 0), Te(i, 0); return } y.set(h, { yPercent: 100 * s }), y.to(h, { yPercent: 0, duration: _e / 1e3, ease: "power2.inOut" }), y.to(c, { yPercent: -100 * s, duration: _e / 1e3, ease: "power2.inOut", onComplete: We }), Ut(ge[r].id, ge[i].id) ? ct() : U(), We(), ke.update(), Te(i, .22) }, ct = () => { const i = n(".or-flash"); U("dark"), y.set(i, { autoAlpha: 1 }), j(".or-flash-row", i).forEach((r, s) => y.fromTo(r, { xPercent: s % 2 ? -50 : 0 }, { xPercent: s % 2 ? 0 : -50, duration: [1.5, .75, 1.25, .9, .75, 1.1, .8][s], ease: "none", repeat: 1 })), y.delayedCall(.75, () => { y.set(i, { autoAlpha: 0 }), U() }) }, Xe = i => { if (i === a.active || i < 0 || i >= re) return; if (!l) { f[i].scrollIntoView({ behavior: E ? "auto" : "smooth" }); return } if (E) { qe(i, !1), Te(i, 0); return } const r = performance.now(); a.busyUntil = r + 1500, a.changedAt = r + 1e3, a.stale = !0; const s = n(".or-jump"), u = j(".or-jump-logo path, .or-jump-logo text", s); s.setAttribute("data-c", Kt(Y(a.active))), y.timeline().set(s, { autoAlpha: 1 }).fromTo(n(".or-jump-disc", s), { x: () => -2 * Math.max(V(), K()), opacity: 1 }, { x: 0, duration: .45, ease: "power3.out" }).fromTo(u, { strokeDashoffset: 420 }, { strokeDashoffset: 0, duration: .5, ease: "power1.inOut" }, .4).call(() => qe(i, !1), [], .6).to(s, { autoAlpha: 0, duration: .4 }, 1).call(() => Te(i, 0), [], 1) }; if (Z.current = { jump: Xe }, l) { qe(0, !1), Te(0, .15); let i = 0, r = performance.now(); const s = c => { const h = c - r; r = c; const p = f[a.active]; Math.abs(a.target - a.cur) > .01 && (a.cur = Dt(a.cur, a.target, .05, h), p.scrollTop = a.cur, a.written = p.scrollTop), i = requestAnimationFrame(s) }; i = requestAnimationFrame(s), T.push(() => cancelAnimationFrame(i)), f.forEach((c, h) => q(c, "scroll", () => { h === a.active && Math.abs(c.scrollTop - a.written) > 2 && (a.cur = a.target = a.written = c.scrollTop) })), q(t, "focusin", c => { const h = c.target.closest(".or-scene"), p = f.indexOf(h); p >= 0 && p !== a.active && performance.now() > a.busyUntil && qe(p, !1), t.scrollTop = 0, t.scrollLeft = 0 }), q(t, "scroll", () => { t.scrollTop = 0, t.scrollLeft = 0 }); const u = c => { const h = _t(a.active, c, re); return h < 0 ? !1 : (lt(h), !0) }; q(t, "wheel", c => { if (c.ctrlKey || t.classList.contains("or-menu-open")) return; const h = performance.now(), p = h - a.lastWheel; a.lastWheel = h; const k = Ht(c.deltaY, c.deltaMode, t.clientHeight); if (!k) return; if ((p > Ot || h - a.changedAt > 1400) && (a.stale = !1), h < a.busyUntil || a.stale) return c.preventDefault(); const w = f[a.active], x = w.scrollHeight - w.clientHeight, M = Ft(a, k, a.cur, x, Bt, 2.6, t.clientHeight * .9); a.target = M.target, a.push = M.push, !(M.turn && !u(M.turn)) && c.preventDefault() }, { passive: !1 }), q(window, "keydown", c => { const h = c.target; if (c.defaultPrevented || c.altKey || c.ctrlKey || c.metaKey || h.closest("input, textarea, select, [contenteditable]")) return; if (t.classList.contains("or-menu-open")) { c.key === "Escape" && fe(!1); return } const p = Zt(c.key, c.shiftKey, re); if (!p || c.key === " " && h.closest("button, a, label") || (c.preventDefault(), performance.now() < a.busyUntil)) return; if (p.kind === "jump") return Xe(p.to); const k = f[a.active], w = k.scrollHeight - k.clientHeight, x = /Page| /.test(c.key) ? t.clientHeight * .85 : 140; (p.to > 0 ? a.cur >= w - 1.5 : a.cur <= 1.5) ? u(p.to) : a.target = Math.min(w, Math.max(0, a.target + p.to * x)) }) } else f.forEach((i, r) => { ke.create({ trigger: i, start: "top 10%", end: "bottom 10%", onToggle: s => { s.isActive && (a.active = r, U()) } }), j("[data-rise], [data-spell]", i).filter(s => !s.closest(".or-idea, .or-car-title")).forEach(s => E ? y.from(s, { opacity: 0, duration: .5, scrollTrigger: { trigger: s, start: "top 92%", once: !0 } }) : y.from(s.matches("[data-spell]") ? j(".or-l", s) : s, { y: s.matches("[data-spell]") ? 0 : 40, yPercent: s.matches("[data-spell]") ? 70 : 0, rotate: s.matches("[data-spell]") ? 0 : 3, opacity: 0, duration: .5, stagger: .014, ease: "power3.out", scrollTrigger: { trigger: s, start: "top 92%", once: !0 } })) }), U(), We(); const Ze = n(".or-dot"), dt = n(".or-iris"), Be = n(".or-eye"), ht = n(".or-blob"), Ue = j("[data-mag]"), R = { x: -100, y: -100, bx: 0, by: 0, dx: -100, dy: -100, idle: 0, inside: !1 }, Ke = Ue.map(i => f.indexOf(i.closest(".or-scene"))); let Oe = 0; q(window, "pointermove", i => { var s, u; if (i.pointerType !== "mouse") return; R.x = i.clientX, R.y = i.clientY, R.idle = performance.now(), R.inside = !0; const r = (u = (s = i.target).closest) == null ? void 0 : u.call(s, "[data-cursor], a, button, label"); Ze.setAttribute("data-k", r ? r.getAttribute("data-cursor") || "nav" : ""), Be.classList.remove("is-asleep"), clearTimeout(Oe), Oe = window.setTimeout(() => Be.classList.add("is-asleep"), 2e3) }), T.push(() => clearTimeout(Oe)); let He = 0; const Qe = () => { const i = l, r = performance.now() - R.idle > 1500 && Math.abs(R.x - R.dx) < .5 && Math.abs(R.y - R.dy) < .5 && (!Ve() || R.bx === R.x && R.by === R.y); if (i && !r) { const s = Ue.filter((p, k) => Ke[k] < 0 || Ke[k] === a.active), u = s.map(p => p.getBoundingClientRect()), c = a.active === 0 ? Be.getBoundingClientRect() : { width: 0 }, h = t.getBoundingClientRect(); if (R.dx += (R.x - R.dx) * .18, R.dy += (R.y - R.dy) * .18, Ze.style.transform = "translate3d(" + (R.dx - h.left) + "px," + (R.dy - h.top) + "px,0)", s.forEach((p, k) => { const w = u[k], x = w.left + w.width / 2, M = w.top + w.height / 2, H = Math.max(w.width, w.height) * .9 + 30, Q = R.x - x, W = R.y - M, ae = Math.abs(Q) < H && Math.abs(W) < H, oe = p._m ?? [0, 0], L = ae ? Q * .28 : 0, A = ae ? W * .28 : 0; oe[0] += (L - oe[0]) * .12, oe[1] += (A - oe[1]) * .12, p._m = oe, p.style.translate = oe[0].toFixed(2) + "px " + oe[1].toFixed(2) + "px" }), c.width) { const p = R.x - (c.left + c.width / 2), k = R.y - (c.top + c.height / 2), w = Math.hypot(p, k) || 1, x = Math.min(1, w / 300) * 8; dt.setAttribute("transform", "translate(" + (p / w * x).toFixed(2) + " " + (k / w * x * .6).toFixed(2) + ")") } Ve() && (R.bx += (R.x - R.bx) * .04, R.by += (R.y - R.by) * .04, Math.abs(R.x - R.bx) < .3 && Math.abs(R.y - R.by) < .3 && (R.bx = R.x, R.by = R.y), ht.style.transform = "translate3d(" + (R.bx - h.left) + "px," + (R.by - h.top) + "px,0)") } He = requestAnimationFrame(Qe) }; l && (He = requestAnimationFrame(Qe)), T.push(() => cancelAnimationFrame(He)); { const i = n(".or-bubbles"), r = i.getContext("2d"), s = ["#7c8cff", "#f2c86b", "#c39ad6", "#7fd3b4"], u = l ? 30 : 10; let c = []; const h = () => { const H = Math.min(2, window.devicePixelRatio); i.width = i.clientWidth * H, i.height = i.clientHeight * H, r.setTransform(H, 0, 0, H, 0, 0); const Q = i.clientWidth, W = i.clientHeight; c = Array.from({ length: u }, (ae, oe) => ({ x: Math.random() * Q, y: W * (.2 + Math.random()), r: 2.5 + Math.random() * 3.5, v: .4 + Math.random() * 1.2, c: s[oe % s.length] })) }; let p = 0, k = !l; const w = new IntersectionObserver(H => k = H[0].isIntersecting); l || w.observe(i); const x = () => { if (p = requestAnimationFrame(x), E || (l ? a.active !== 6 : !k)) return; const H = i.clientWidth, Q = i.clientHeight; r.clearRect(0, 0, H, Q); for (const W of c) W.y -= W.v, W.y + W.r < 0 && (W.y = Q + 40), r.beginPath(), r.arc(W.x, W.y, W.r, 0, Math.PI * 2), r.fillStyle = W.c, r.fill() }; h(), p = requestAnimationFrame(x); const M = new ResizeObserver(h); M.observe(i), T.push(() => (cancelAnimationFrame(p), M.disconnect(), w.disconnect())) } ke.refresh() }, t); return () => { Z.current = null, T.forEach(C => C()), Ie.revert(), t.classList.remove("or-live") } }, [le, E, ie]), F.useEffect(() => { var t; (t = N.current) == null || t.classList.toggle("or-menu-open", ee) }, [ee]); const te = t => l => { var n, j; l.preventDefault(), ee ? ((n = Z.current) == null || n.jump(t), window.setTimeout(() => fe(!1), le === "deck" ? 500 : 0)) : (j = Z.current) == null || j.jump(t) }, Se = [{ label: "About us", to: 1, panel: e.jsx("span", { style: { background: "#282643" } }) }, { label: "What we make", to: 2, panel: e.jsx("img", { src: J(29008324, 900), alt: "" }) }, { label: "Our work", to: 5, panel: e.jsx("img", { src: m[0].img.replace(/w=\d+/, "w=900"), alt: "" }) }, { label: "Contact", to: 8, panel: e.jsx("span", { style: { background: "#c9ece4" } }) }]; return e.jsxs("div", { ref: N, className: $("or-root", le === "stack" && "or-stack", E && "or-reduced", ie && "or-dark", D), style: { "--h": O }, "data-scene": "home", children: [P && e.jsx("link", { rel: "stylesheet", href: P }), e.jsx("style", { children: ro }), e.jsx("div", { className: "or-probe", "aria-hidden": "true" }), e.jsxs("header", { className: "or-header", "data-tone": "light", children: [e.jsx("nav", { className: $("or-rail", ee && "is-hidden"), "aria-label": "Scene index", children: ge.map((t, l) => e.jsxs("button", { type: "button", className: $(l === 0 && "is-on"), "aria-label": "Go to " + t.label, "data-cursor": "menu", onClick: () => { var n; return (n = Z.current) == null ? void 0 : n.jump(l) }, children: [e.jsx("i", {}), e.jsx("span", { children: String(l + 1).padStart(2, "0") + " " + t.label })] }, t.id)) }), e.jsxs("a", { href: "#home", className: "or-logo or-rl", "data-cursor": "nav", onClick: te(0), "aria-label": o + " home", children: [e.jsx(Pe, { className: "or-logo-m" }), e.jsx("span", { children: o.toLowerCase() })] }), e.jsx("nav", { className: "or-nav", "aria-label": "Scenes", children: [["Home", 0], ["About", 1], ["Work", 5], ["Contact", 8]].map(([t, l]) => e.jsx("a", { href: "#" + ge[l].id, className: "or-rl", "data-cursor": "nav", onClick: te(l), children: e.jsx(pe, { children: t }) }, t)) }), e.jsxs("div", { className: "or-head-r", children: [e.jsxs("a", { href: "/dashboard", className: "or-talk or-rl", "data-cursor": "nav", children: [e.jsx("i", {}), e.jsx(pe, { children: "Dashboard" })] }), e.jsxs("button", { type: "button", className: $("or-burger", ee && "is-open"), "data-mag": "", "data-cursor": "menu", "aria-expanded": ee, "aria-controls": "or-menu", onClick: () => fe(t => !t), children: [e.jsxs("span", { className: "or-burger-t", children: [e.jsx("span", { children: "menu" }), e.jsx("span", { children: "close" })] }), e.jsxs("span", { className: "or-burger-l", "aria-hidden": "true", children: [e.jsx("i", {}), e.jsx("i", {})] })] })] })] }), e.jsxs("section", { className: "or-scene or-s-home", id: "home", "aria-label": "Home", children: [e.jsxs("div", { className: "or-home", children: [e.jsx("h1", { className: "or-hero", children: e.jsx(ne, { text: d }) }), e.jsxs("div", { className: "or-home-meta", "data-rise": "", children: [e.jsxs("span", { className: "or-rate", children: [e.jsx(Pe, { className: "or-rate-m" }), e.jsxs("span", { children: [e.jsx(st, {}), e.jsx("small", { children: "4.9 from 38 client reviews" })] })] }), e.jsx("p", { className: "or-services", children: "Brand systems / Product design / Websites / Motion / 3D / Design systems" }), e.jsx("a", { className: "or-deck-pill or-rl", href: "#work", "data-mag": "", "data-cursor": "nav", onClick: te(5), children: e.jsx(pe, { children: "Studio deck" }) })] }), e.jsx("div", { className: "or-eye-wrap", children: e.jsx(Qt, {}) })] }), e.jsx("div", { className: "or-reel-track", children: e.jsx("div", { className: "or-reel", children: e.jsxs("div", { className: "or-reel-mask", children: [e.jsx("div", { className: "or-reel-in", children: e.jsx(Ce, { src: Pt }) }), e.jsx("span", { className: "or-reel-cap", children: "Showreel 2026 — 01:12" }), e.jsx("button", { type: "button", className: "or-play", "data-mag": "", "data-cursor": "button", "aria-label": "Pause or play the showreel", onClick: t => { const l = t.currentTarget.parentElement.querySelector("video"); l.paused ? l.play() : l.pause(), t.currentTarget.classList.toggle("is-paused", l.paused) }, children: e.jsx("i", {}) })] }) }) })] }), e.jsx("section", { className: "or-scene or-s-about", id: "about", "aria-label": "About", children: e.jsx("div", { className: "or-track or-about-track", children: e.jsx("div", { className: "or-stage", children: e.jsxs("div", { className: "or-about-row", children: [e.jsx("h2", { className: "or-about-h", children: e.jsx(ne, { text: "What is " + o + "?" }) }), At.map((t, l) => e.jsxs("article", { className: "or-card", style: { background: t.tint }, "data-rise": "", children: [e.jsxs("svg", { className: "or-card-rings", viewBox: "0 0 600 600", "aria-hidden": "true", children: [e.jsx("circle", { cx: "160", cy: "180", r: "290" }), e.jsx("circle", { cx: "430", cy: "110", r: "290" })] }), e.jsx("div", { className: "or-card-pill", children: e.jsx(Ce, { src: t.clip }) }), e.jsx("h3", { children: t.title }), e.jsx("p", { children: t.text }), e.jsxs("span", { className: "or-num", "aria-hidden": "true", children: ["0", l + 1] })] }, t.title))] }) }) }) }), e.jsx("section", { className: "or-scene or-s-make", id: "make", "aria-label": "What we make", children: e.jsx("div", { className: "or-track or-make-track", children: e.jsxs("div", { className: "or-stage or-make", children: [e.jsx("div", { className: "or-make-light", "aria-hidden": "true", children: e.jsx("span", { className: "or-grid" }) }), e.jsx("h2", { className: "or-make-word", children: e.jsx(ne, { text: "We make" }) }), e.jsxs("div", { className: "or-mock", "aria-hidden": "true", children: [e.jsxs("div", { className: "or-mock-in", children: [e.jsxs("div", { className: "or-m-top", children: [e.jsx(Pe, { className: "or-m-logo" }), e.jsx("span", { className: "or-m-tab is-on", children: "Projects" }), e.jsx("span", { className: "or-m-tab", children: "Planning" }), e.jsx("span", { className: "or-m-tab", children: "Calendar" }), e.jsx("span", { className: "or-m-search", children: "Search tasks" }), e.jsx("span", { className: "or-m-faces", children: rt.slice(0, 4).map(t => e.jsx("img", { src: J(t, 80, 80), alt: "" }, t)) }), e.jsx("span", { className: "or-m-new", children: "+ New task" })] }), e.jsx("div", { className: "or-m-side", children: [0, 1, 2, 3, 4].map(t => e.jsx("i", { className: $(t === 1 && "is-on") }, t)) }), e.jsx("div", { className: "or-m-stats", children: [["In review", "12", "#7c8cff"], ["Shipped this month", "48", "#3fbf8f"], ["Team focus", "86%", "#f2b84b"]].map(([t, l, n]) => e.jsxs("div", { className: "or-m-stat", children: [e.jsx("small", { children: t }), e.jsx("b", { children: l }), e.jsx("span", { style: { background: n } })] }, t)) }), e.jsxs("div", { className: "or-m-title", children: [e.jsx("small", { children: "Tidepool / Spring launch" }), e.jsx("b", { children: "Today" })] }), [["Backlog", "#9a9aa3", ["Onboarding copy", "Empty states", "Icon audit"]], ["In progress", "#7c8cff", []], ["Done", "#3fbf8f", ["Color tokens", "Pricing page"]]].map(([t, l, n], j) => e.jsxs("div", { className: "or-m-col or-m-col" + j, children: [e.jsxs("div", { className: "or-m-colh", children: [e.jsx("i", { style: { background: l } }), t] }), j === 1 ? e.jsxs("div", { className: "or-m-card or-m-card-big", children: [e.jsx("b", { children: "Launch film" }), e.jsx("small", { children: "Motion · 3D · due Friday" }), e.jsx("div", { className: "or-slot", children: e.jsx(Ce, { src: ot }) })] }) : n.map((f, z) => e.jsxs("div", { className: "or-m-card", children: [e.jsx("b", { children: f }), e.jsxs("small", { children: [["Brand", "Product", "Web"][z % 3], " · ", z + 2, " comments"] }), e.jsx("span", { className: "or-m-bar", children: e.jsx("span", { style: { width: 30 + z * 25 + "%", background: l } }) })] }, f))] }, t))] }), e.jsxs("div", { className: "or-skel", children: [e.jsx("i", { style: { left: "5.5%", top: "4%", width: "30%", height: "6%" } }), e.jsx("i", { style: { left: "70%", top: "4%", width: "24%", height: "6%" } }), [0, 1, 2].map(t => e.jsx("i", { style: { left: 8.3 + t * 30.3 + "%", top: "15%", width: "28%", height: "15%" } }, "s" + t)), e.jsx("i", { style: { left: "8.3%", top: "35%", width: "22%", height: "6%" } }), [8.3, 34.1, 67.4].map((t, l) => e.jsx("i", { style: { left: t + "%", top: "47%", width: l === 1 ? "31.8%" : "24%", height: "48%" } }, "c" + l))] }), e.jsx("span", { className: "or-notch" })] }), e.jsx("div", { className: "or-make-media", "aria-hidden": "true", children: e.jsx(Ce, { src: ot }) }), at.map(t => e.jsxs("span", { className: "or-cur", style: { "--c": t.c }, "aria-hidden": "true", children: [e.jsx("svg", { viewBox: "0 0 16 18", children: e.jsx("path", { d: "M1 1l13 6.5-5.6 1.6L5.8 16Z" }) }), e.jsx("b", { children: t.name })] }, t.name)), e.jsx("div", { className: "or-tag", "aria-live": "polite", children: It.map(t => e.jsx("span", { className: "or-tag-l", children: t }, t)) })] }) }) }), e.jsx("section", { className: "or-scene or-s-people", id: "people", "aria-label": "People", children: e.jsx("div", { className: "or-track or-people-track", children: e.jsxs("div", { className: "or-stage or-people", children: [[J(29008324, 700), J(12932574, 700), J(4464884, 700)].map((t, l) => e.jsx("img", { className: "or-fly or-fly" + l, src: t, alt: "", "aria-hidden": "true" }, t)), e.jsxs("h2", { className: "or-people-h", children: [e.jsx("span", { className: "or-sr", children: "Every designer here was chosen from several hundred others." }), e.jsx("span", { className: "or-pl", "aria-hidden": "true", children: e.jsx(ne, { text: "Every designer here", hidden: !0 }) }), e.jsx("span", { className: "or-pl or-hi", "aria-hidden": "true", children: e.jsx(ne, { text: "was chosen from", hidden: !0 }) }), e.jsxs("span", { className: "or-pl", "aria-hidden": "true", children: [e.jsx(ne, { text: "several", hidden: !0 }), e.jsxs("span", { className: "or-gap", children: [e.jsxs("span", { className: "or-ava", children: [rt.map(t => e.jsx("img", { src: J(t, 120, 120), alt: "" }, t)), e.jsx("b", { children: "+40" })] }), e.jsx("span", { className: "or-gap-word", children: "hundred" })] }), e.jsx(ne, { text: "others", hidden: !0 })] })] }), e.jsx("span", { className: "or-swallow", "aria-hidden": "true" })] }) }) }), e.jsx("section", { className: "or-scene or-s-quote", id: "quote", "aria-label": "What we believe", children: e.jsx("div", { className: "or-track or-quote-track", children: e.jsxs("div", { className: "or-stage or-quote", children: [e.jsx("span", { className: "or-ring-c or-ring-c0", "aria-hidden": "true" }), e.jsx("span", { className: "or-ring-c or-ring-c1", "aria-hidden": "true" }), e.jsx("span", { className: "or-ring-c or-ring-c2", "aria-hidden": "true" }), e.jsx("span", { className: "or-qmark", "aria-hidden": "true", "data-rise": "", children: "“" }), e.jsx("blockquote", { className: "or-q", children: e.jsx(ne, { text: "Anyone can draw a square. Very few can make it feel like a place you want to stay." }) }), e.jsx("span", { className: "or-qbar", "aria-hidden": "true", children: e.jsx("i", {}) }), e.jsx("p", { className: "or-qcap", "data-rise": "", children: "Ines Varga, founder. Every brief starts with this sentence pinned above the table." })] }) }) }), e.jsx("section", { className: "or-scene or-s-work", id: "work", "aria-label": "Selected work", children: e.jsx("div", { className: "or-track or-work-track", children: e.jsxs("div", { className: "or-stage or-work", children: [e.jsxs("div", { className: "or-work-lift", children: [e.jsx("p", { className: "or-work-k", "data-rise": "", children: "Selected work, 2024 – 2026" }), e.jsx("div", { "data-rise": "", className: "or-car-wrap", children: e.jsx($t, { projects: m }) })] }), e.jsx("div", { className: "or-hand", "aria-hidden": "true", children: e.jsx(Ce, { src: Me(15863511, "sd_960_540") }) }), e.jsx("svg", { className: "or-thread", viewBox: "0 0 1440 900", preserveAspectRatio: "none", "aria-hidden": "true", children: e.jsx("path", { pathLength: 1, d: "M1272 748C1262 520 1060 410 900 330C780 270 722 170 720 -10" }) }), e.jsx("span", { className: "or-slit", "aria-hidden": "true" })] }) }) }), e.jsx("section", { className: "or-scene or-s-proof", id: "proof", "aria-label": "Who we work with", children: e.jsx("div", { className: "or-track or-proof-track", children: e.jsxs("div", { className: "or-stage or-proof", children: [e.jsx("canvas", { className: "or-bubbles", "aria-hidden": "true" }), e.jsx("span", { className: "or-blob", "aria-hidden": "true" }), e.jsx("div", { className: "or-cube-wrap", children: e.jsxs("div", { className: "or-cube", children: [e.jsxs("div", { className: "or-face or-face-a", children: [e.jsx("span", { className: "or-sr", children: "We're trusted by 140 teams" }), Array.from({ length: 13 }, (t, l) => e.jsxs("span", { "aria-hidden": "true", className: $(l === 0 && "is-hi"), children: ["We're trusted by ", e.jsx("em", { children: "140 teams" })] }, l))] }), e.jsx("ul", { className: "or-face or-face-b", children: Wt.map(t => e.jsx("li", { children: e.jsx("a", { href: "#work", className: "or-rl", "data-cursor": "nav", onClick: te(5), children: e.jsx(pe, { children: t }) }) }, t)) })] }) })] }) }) }), e.jsx("section", { className: "or-scene or-s-rope", id: "process", "aria-label": "How we work", children: e.jsx("div", { className: "or-track or-rope-track", children: e.jsxs("div", { className: "or-stage or-rope", children: [e.jsx("span", { className: "or-rope-fill", "aria-hidden": "true" }), e.jsx("svg", { className: "or-rope-bg", viewBox: "0 0 1440 900", preserveAspectRatio: "none", "aria-hidden": "true", children: e.jsx("path", { pathLength: 1, d: "M1460 470C1180 560 860 600 640 640C430 680 330 820 230 800C110 776 120 640 300 620C520 596 560 760 470 900" }) }), e.jsx("p", { className: "or-rope-line", "data-rise": "", children: "Our studio is a calm room where knotty problems come undone." }), e.jsxs("div", { className: "or-squircle", children: [e.jsx("canvas", { className: "or-rope-c", "aria-hidden": "true" }), e.jsx("canvas", { className: "or-rope-seq", "aria-hidden": "true" }), e.jsxs("h2", { className: "or-idea", children: [e.jsx("span", { className: "or-sr", children: "Have a knotty idea?" }), e.jsx("span", { className: "or-idea-l", children: e.jsx(ne, { text: "Have a", hidden: !0 }) }), e.jsx("span", { className: "or-idea-l", children: e.jsx(ne, { text: "knotty idea?", hidden: !0 }) })] }), e.jsx("div", { className: "or-marq", "aria-label": "Clients", children: e.jsx("div", { children: [...Fe, ...Fe].map((t, l) => e.jsx("span", { "aria-hidden": l >= Fe.length, children: t }, l)) }) })] })] }) }) }), e.jsxs("section", { className: "or-scene or-s-contact", id: "contact", "aria-label": "Contact", children: [e.jsxs("div", { className: "or-contact", children: [e.jsxs("div", { className: "or-contact-l", children: [e.jsxs("h2", { className: "or-contact-h", "data-rise": "", children: ["Have a ", e.jsx("img", { src: J(29852852, 120, 120), alt: "", className: "or-contact-face" }), " knotty idea?", e.jsx("br", {}), "Tell us about it."] }), e.jsxs("div", { className: "or-trust", "data-rise": "", children: [e.jsx("small", { children: "Clients trust us" }), e.jsxs("span", { className: "or-rate", children: [e.jsx(Pe, { className: "or-rate-m" }), e.jsxs("span", { children: [e.jsx(st, {}), e.jsx("small", { children: "4.9 from 38 client reviews" })] })] })] }), e.jsxs("div", { className: "or-follow", "data-rise": "", children: [e.jsx("small", { children: "Follow us" }), e.jsx("span", { children: ["Instagram", "Dribbble", "LinkedIn", "Read.cv"].map(t => e.jsx("a", { href: "#contact", className: "or-social", "data-cursor": "nav", "aria-label": t, children: t.slice(0, 2) }, t)) })] }), e.jsx("button", { type: "button", className: "or-sheet-open", "data-rise": "", onClick: () => ze(!0), children: "Start a brief" })] }), e.jsx("div", { className: $("or-sheet", de && "is-open"), children: e.jsx(Jt, { email: b, onClose: le === "stack" ? () => ze(!1) : void 0 }) })] }), e.jsxs("footer", { className: "or-foot", children: [e.jsxs("div", { className: "or-foot-big", "aria-hidden": "true", children: [e.jsx(Pe, { className: "or-foot-m" }), o.toLowerCase()] }), e.jsxs("div", { className: "or-foot-row", children: [e.jsxs("address", { children: [o, " Studio", e.jsx("br", {}), "Rua das Flores 14, Porto"] }), e.jsx("a", { className: "or-under", href: "mailto:" + b, "data-cursor": "nav", children: b }), e.jsx("a", { className: "or-deck-pill or-rl", href: "#work", "data-cursor": "nav", onClick: te(5), children: e.jsx(pe, { children: "Studio deck" }) }), e.jsxs("small", { children: ["© 2026 ", o, " Studio · Privacy"] })] })] })] }), e.jsx("div", { className: "or-flash", "aria-hidden": "true", children: e.jsx("div", { className: "or-flash-in", children: Array.from({ length: 7 }, (t, l) => e.jsx("div", { className: "or-flash-row", children: "WE MAKE ".repeat(10) }, l)) }) }), e.jsxs("div", { className: "or-jump", "aria-hidden": "true", children: [e.jsx("span", { className: "or-jump-disc" }), e.jsxs("svg", { className: "or-jump-logo", viewBox: "0 0 300 90", children: [e.jsx("path", { d: "M14 82V42a28 28 0 0 1 56 0v40Z", pathLength: 420 }), e.jsx("path", { d: "M42 18v64M14 50h56", pathLength: 420 }), e.jsx("text", { x: "86", y: "78", pathLength: 420, children: o.toLowerCase() })] })] }), e.jsxs("div", { id: "or-menu", className: $("or-menu", ee && "is-open"), role: "dialog", "aria-modal": "false", "aria-label": "Menu", "aria-hidden": !ee, children: [e.jsxs("div", { className: "or-menu-social", children: [e.jsx("small", { children: "Social" }), ["Instagram", "Dribbble", "Behance", "LinkedIn", "Read.cv"].map(t => e.jsx("a", { href: "#contact", className: "or-rl", "data-cursor": "nav", tabIndex: ee ? 0 : -1, children: e.jsx(pe, { children: t }) }, t)), e.jsx("small", { className: "or-menu-mail", children: "Get in touch" }), e.jsx("a", { href: "mailto:" + b, className: "or-under", tabIndex: ee ? 0 : -1, children: b })] }), e.jsx("div", { className: "or-menu-prev", "aria-hidden": "true", children: Se.map((t, l) => e.jsx("span", { className: $("or-menu-p", Ae === l && "is-on"), children: t.panel }, t.label)) }), e.jsxs("nav", { className: "or-menu-links", "aria-label": "Menu", children: [e.jsx("small", { children: "Menu" }), Se.map((t, l) => e.jsx("a", { href: "#" + ge[t.to].id, className: "or-rl", "data-cursor": "nav", tabIndex: ee ? 0 : -1, onMouseEnter: () => Re(l), onFocus: () => Re(l), onClick: te(t.to), children: e.jsx(pe, { children: t.label }) }, t.label))] })] }), e.jsxs("div", { className: "or-float", children: [e.jsx("a", { href: "mailto:" + b, className: "or-metal or-metal-o", "data-cursor": "nav", "aria-label": "Email " + b, children: e.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: e.jsx("path", { d: "M3 6h18v12H3z M3 7l9 6 9-6" }) }) }), e.jsx("a", { href: "#contact", className: "or-metal or-metal-o", "data-cursor": "nav", "aria-label": "Chat with the studio", onClick: te(8), children: e.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: e.jsx("path", { d: "M4 5h16v11H9l-5 4z" }) }) }), e.jsxs("a", { href: "#contact", className: "or-metal or-metal-p", "data-cursor": "nav", onClick: te(8), children: [e.jsx("svg", { viewBox: "0 0 24 24", "aria-hidden": "true", children: e.jsx("path", { d: "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5" }) }), "Book a call"] })] }), e.jsx("span", { className: "or-dot", "aria-hidden": "true" })] }) } function to(o, d) { const m = new pt({ canvas: o, antialias: !0, alpha: !0 }); m.setPixelRatio(d), m.toneMapping = ft, m.outputColorSpace = mt; const b = new ut, O = new gt(m), S = O.fromScene(new Tt, .04).texture; b.environment = S; const P = new bt(28, 1, .1, 100); P.position.set(0, .4, 15), P.lookAt(0, 0, 0); const g = new et(16773862, 2.2); g.position.set(-4, 6, 8), m.shadowMap.enabled = !0, m.shadowMap.type = xt, g.castShadow = !0, g.shadow.mapSize.set(d > 1 ? 2048 : 1024, d > 1 ? 2048 : 1024), Object.assign(g.shadow.camera, { left: -12, right: 12, top: 5, bottom: -5, near: 1, far: 30 }), g.shadow.radius = 6, g.shadow.bias = -5e-4, b.add(g); const D = new tt(new Rt(60, 20), new wt({ color: 2760540, opacity: .16 })); D.position.z = -.75, D.receiveShadow = !0, b.add(D); const N = new et(13157119, 1.6); N.position.set(6, -2, -4), b.add(N); const Z = document.createElement("canvas"); Z.width = 128, Z.height = 64; const le = Z.getContext("2d"), be = le.createImageData(128, 64); for (let f = 0; f < 64; f++)for (let z = 0; z < 128; z++) { const v = (z + f * 2) / 32 * Math.PI * 2, _ = Math.sin((z * 3 - f) / 9 * Math.PI) * .18, re = Math.cos(v) * .55 + _, T = Math.cos(v) * .35, q = (f * 128 + z) * 4; be.data[q] = 128 + re * 127, be.data[q + 1] = 128 + T * 127, be.data[q + 2] = 235, be.data[q + 3] = 255 } le.putImageData(be, 0, 0); const E = new vt(Z); E.wrapS = E.wrapT = kt, E.repeat.set(70, 1); const Ee = new yt({ color: 5002720, roughness: .58, sheen: 1, sheenRoughness: .45, sheenColor: new Nt(12172543), normalMap: E, normalScale: new jt(.9, .9), envMapIntensity: .9 }), ie = new tt(new Mt, Ee); ie.castShadow = !0, b.add(ie); const xe = [], ee = 56; for (let f = 0; f <= ee; f++) { const z = Math.PI + .42 + f / ee * (2 * Math.PI - .84); xe.push(new ue(Math.sin(z) + 2 * Math.sin(2 * z), Math.cos(z) - 2 * Math.cos(2 * z) + 1.2, -Math.sin(3 * z) * 1.1).multiplyScalar(.42)) } let fe = 9; const Ae = f => { const z = xe[0].clone(), v = xe[xe.length - 1].clone(), _ = [new ue(-f, -.35, .5), new ue(-f * .55, -.25, .45), new ue(-1.6, v.y - .1, .4)], re = [new ue(1.6, z.y - .1, -.4), new ue(f * .55, -.25, -.45), new ue(f, -.35, -.5)], T = [..._, ...[...xe].reverse(), ...re], q = [0]; for (let G = 1; G < T.length; G++)q.push(q[G - 1] + T[G].distanceTo(T[G - 1])); const a = q[q.length - 1], Y = T.map((G, U) => new ue(-f + 2 * f * q[U] / a, -.3, 0)); return { pts: T, straight: Y, s: q.map(G => G / a) } }; let Re = Ae(fe), de = -1; const ze = f => { const z = Re.pts.map((_, re) => { const T = Re.s[re], q = 1 - Math.abs(2 * T - 1), a = Math.min(1, Math.max(0, (f - q * .35) / .65)), Y = a * a * (3 - 2 * a), G = _.clone().lerp(Re.straight[re], Y); return G.z += Math.sin(Math.PI * Y) * .9 * q, G }), v = new zt(new St(z, !1, "centripetal"), d > 1 ? 420 : 240, .17, d > 1 ? 22 : 14, !1); ie.geometry.dispose(), ie.geometry = v }, te = () => m.render(b, P), Se = () => { const f = o.clientWidth, z = o.clientHeight; if (!f || !z) return; m.setSize(f, z, !1), P.aspect = f / z, P.updateProjectionMatrix(); const _ = Math.tan(P.fov * Math.PI / 360) * P.position.z * P.aspect * 1.15; Math.abs(_ - fe) > .05 ? (fe = _, Re = Ae(fe), ye = Math.max(0, de), de = -1, l()) : te() }; let ye = 0, t = 0; const l = () => { t = 0, !(Math.abs(ye - de) < .002) && (de = ye, ie.rotation.y = -.25 + de * .25, ze(de), te()) }, n = f => { ye = f, t || (t = requestAnimationFrame(l)) }, j = async f => { const z = o.width, v = o.height, _ = [.16, .84], re = Math.round(v * _[0]), T = Math.round(v * (_[1] - _[0])), q = Math.min(1, 1280 / z), a = [], Y = document.createElement("canvas"); Y.width = Math.round(z * q), Y.height = Math.round(T * q); const G = Y.getContext("2d"); for (let U = 0; U < f; U++) { const je = U / (f - 1); ie.rotation.y = -.25 + je * .25, ze(je), te(); const Ie = await createImageBitmap(o, 0, re, z, T, { resizeWidth: Y.width, resizeHeight: Y.height, resizeQuality: "high" }); G.clearRect(0, 0, Y.width, Y.height), G.drawImage(Ie, 0, 0), Ie.close(), a.push(await new Promise((C, I) => Y.toBlob(V => V ? C(V) : I(new Error("toBlob")), "image/webp", .88))), U % 2 && await new Promise(C => requestAnimationFrame(C)) } return de = -1, { frames: a, band: _ } }; return Se(), ye = 0, l(), { set: n, bake: j, resize: Se, dispose: () => { cancelAnimationFrame(t), D.geometry.dispose(), D.material.dispose(), ie.geometry.dispose(), Ee.dispose(), E.dispose(), S.dispose(), O.dispose(), m.dispose() } } } const oo = o => o.replace(/(-?\d*\.?\d+)R\b/g, "calc($1*var(--r))"), ro = oo(`
+typeof window < "u" && y.registerPlugin(ke);
+const qt =
+  "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Inter+Tight:wght@300..800&display=swap",
+  J = (o, d = 1400, m = 0) =>
+    "https://images.pexels.com/photos/" +
+    o +
+    "/pexels-photo-" +
+    o +
+    ".jpeg?auto=compress&cs=tinysrgb&w=" +
+    d +
+    (m ? "&h=" + m + "&fit=crop" : ""),
+  Me = (o, d) =>
+    "https://videos.pexels.com/video-files/" +
+    o +
+    "/" +
+    o +
+    "-" +
+    d +
+    "_30fps.mp4",
+  Ct = 48,
+  Pt = Me(19457509, "hd_1920_1080"),
+  ot = Me(19457370, "hd_1920_1080"),
+  Et = [
+    {
+      name: "Mallow",
+      kind: "Skincare identity",
+      year: "2026",
+      img: J(4841519, 1e3),
+    },
+    {
+      name: "Arcadia",
+      kind: "Architecture website",
+      year: "2026",
+      img: J(21849253, 1e3),
+    },
+    {
+      name: "Halcyon",
+      kind: "Meditation app",
+      year: "2025",
+      img: J(29612114, 1e3),
+    },
+    {
+      name: "Pebble",
+      kind: "Savings brand",
+      year: "2025",
+      img: J(15863490, 1e3),
+    },
+    {
+      name: "Casa Rosa",
+      kind: "Hotel website",
+      year: "2025",
+      img: J(11116100, 1e3),
+    },
+    {
+      name: "Fold",
+      kind: "Packaging system",
+      year: "2024",
+      img: J(36339062, 1e3),
+    },
+    {
+      name: "Prism",
+      kind: "Design system",
+      year: "2024",
+      img: J(29579757, 1e3),
+    },
+  ],
+  At = [
+    {
+      tint: "var(--or-warm)",
+      title: "We make good ideas feel obvious",
+      text: "Strategy, identity and product live in one small room here, so the idea that starts a project is the one that ships.",
+      clip: Me(15863510, "sd_960_540"),
+    },
+    {
+      tint: "var(--or-mint)",
+      title: "Small studio, long memory",
+      text: "Eleven designers, two engineers, one long table. Most of the teams we work with have stayed for more than three years.",
+      clip: Me(15863511, "sd_960_540"),
+    },
+    {
+      tint: "var(--or-lilac-soft)",
+      title: "Calm is a craft",
+      text: "We take things away until nothing is left to argue with, then tune the half-second that makes it feel alive.",
+      clip: Me(19493166, "sd_960_540"),
+    },
+  ],
+  rt = [
+    33866498, 15946547, 29852852, 11824896, 38197025, 14669406, 19456417,
+    36439572, 31530222,
+  ],
+  It = [
+    "Brand systems",
+    "Product interfaces",
+    "Apps that travel",
+    "Motion & 3D",
+  ],
+  at = [
+    { name: "Mira", c: "#f08a7e", x: -38, y: -20 },
+    { name: "Jonas", c: "#7c8cff", x: 36, y: -17 },
+    { name: "Ade", c: "#3fbf8f", x: 38, y: 8 },
+    { name: "Lin", c: "#c58cf2", x: -40, y: 12 },
+    { name: "Tomás", c: "#f2b84b", x: -14, y: 22 },
+    { name: "Priya", c: "#4fb7e8", x: 18, y: 23 },
+  ],
+  Wt = [
+    "In fintech",
+    "In health",
+    "In hospitality",
+    "In climate",
+    "In retail",
+    "In education",
+  ],
+  Fe = [
+    "Mallow",
+    "Arcadia",
+    "Halcyon",
+    "Pebble",
+    "Casa Rosa",
+    "Fold",
+    "Prism",
+    "Fernhill",
+    "Lumen",
+    "Tidepool",
+  ],
+  Lt = [
+    "Brand identity",
+    "Product design",
+    "Website",
+    "Motion & 3D",
+    "Design system",
+    "Something else",
+  ],
+  it = ["< $20k", "$20–50k", "$50–100k", "$100k +"],
+  ge = [
+    { id: "home", label: "Home", tone: "light" },
+    { id: "about", label: "About", tone: "light" },
+    { id: "make", label: "What we make", tone: "light" },
+    { id: "people", label: "People", tone: "light" },
+    { id: "quote", label: "Belief", tone: "dark" },
+    { id: "work", label: "Work", tone: "dark" },
+    { id: "proof", label: "Proof", tone: "light" },
+    { id: "rope", label: "Process", tone: "dark" },
+    { id: "contact", label: "Contact", tone: "light" },
+  ],
+  Bt = 260,
+  Ot = 170,
+  _e = 700;
+function Ht(o, d, m) {
+  return d === 1 ? o * 32 : d === 2 ? o * m : o;
+}
+function Dt(o, d, m, b) {
+  const O = 1 - Math.pow(1 - m, Math.min(b, 64) / 16.666666666666668),
+    S = o + (d - o) * O;
+  return Math.abs(d - S) < 0.3 ? d : S;
+}
+function Ft(o, d, m, b, O, S, P = 1 / 0) {
+  if (d > 0) {
+    if (m < b - 1.5)
+      return { target: Math.min(b, o.target + d * S, m + P), push: 0, turn: 0 };
+    const g = Math.max(0, o.push) + d;
+    return g >= O
+      ? { target: b, push: 0, turn: 1 }
+      : { target: b, push: g, turn: 0 };
+  }
+  if (d < 0) {
+    if (m > 1.5)
+      return { target: Math.max(0, o.target + d * S, m - P), push: 0, turn: 0 };
+    const g = Math.min(0, o.push) + d;
+    return g <= -O
+      ? { target: 0, push: 0, turn: -1 }
+      : { target: 0, push: g, turn: 0 };
+  }
+  return { target: o.target, push: o.push, turn: 0 };
+}
+function _t(o, d, m) {
+  const b = o + d;
+  return b < 0 || b >= m ? -1 : b;
+}
+function Le(o, d, m) {
+  return o < m && d >= m ? 1 : o >= m && d < m ? -1 : 0;
+}
+function Yt(o, d, m) {
+  return Math.min(1, Math.max(0, (o - d) / (m - d)));
+}
+function Gt(o, d) {
+  let m = -1;
+  for (let b = 0; b < d.length; b++) o >= d[b] && (m = b);
+  return m;
+}
+function Vt(o, d) {
+  return Math.max(0, Math.min(d, Math.ceil((o / 0.95) * d)));
+}
+function nt(o, d) {
+  return ((o % d) + d) % d;
+}
+function Xt(o, d, m) {
+  let b = nt(o - d, m);
+  return (b > m / 2 && (b -= m), b);
+}
+function Zt(o, d, m) {
+  return o === "ArrowDown" || o === "PageDown" || (o === " " && !d)
+    ? { kind: "step", to: 1 }
+    : o === "ArrowUp" || o === "PageUp" || (o === " " && d)
+      ? { kind: "step", to: -1 }
+      : o === "Home"
+        ? { kind: "jump", to: 0 }
+        : o === "End"
+          ? { kind: "jump", to: m - 1 }
+          : /^[1-9]$/.test(o) && +o <= m
+            ? { kind: "jump", to: +o - 1 }
+            : null;
+}
+function Ut(o, d) {
+  return o === "about" && d === "make";
+}
+function Kt(o) {
+  return o === "dark" ? "light" : "dark";
+}
+const $ = (...o) => o.filter(Boolean).join(" ");
+function ne({ text: o, hidden: d }) {
+  const m = o.split(" ");
+  let b = 0;
+  return e.jsxs(e.Fragment, {
+    children: [
+      !d && e.jsx("span", { className: "or-sr", children: o }),
+      e.jsx("span", {
+        className: "or-spell",
+        "aria-hidden": "true",
+        "data-spell": "",
+        children: m.map((O, S) =>
+          e.jsxs(
+            F.Fragment,
+            {
+              children: [
+                e.jsx("span", {
+                  className: "or-w",
+                  children: [...O].map((P, g) =>
+                    e.jsx(
+                      "span",
+                      { className: "or-l", style: { "--i": b++ }, children: P },
+                      g,
+                    ),
+                  ),
+                }),
+                S < m.length - 1 ? " " : null,
+              ],
+            },
+            S,
+          ),
+        ),
+      }),
+    ],
+  });
+}
+function pe({ children: o }) {
+  return e.jsxs("span", {
+    className: "or-roll",
+    children: [
+      e.jsx("span", { className: "or-roll-s", children: o }),
+      e.jsxs("span", {
+        className: "or-roll-t",
+        "aria-hidden": "true",
+        children: [
+          e.jsx("span", { children: o }),
+          e.jsx("span", { children: o }),
+        ],
+      }),
+    ],
+  });
+}
+function Ce({ src: o, className: d }) {
+  return e.jsx("video", {
+    className: $("or-vid", d),
+    src: o,
+    muted: !0,
+    loop: !0,
+    playsInline: !0,
+    preload: "none",
+    "aria-hidden": "true",
+    tabIndex: -1,
+  });
+}
+function Pe({ className: o }) {
+  return e.jsxs("svg", {
+    viewBox: "0 0 24 28",
+    className: o,
+    "aria-hidden": "true",
+    children: [
+      e.jsx("path", {
+        d: "M3 26.5V12a9 9 0 0 1 18 0v14.5Z",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: "2.6",
+      }),
+      e.jsx("path", {
+        d: "M12 4v22.5M3 15.5h18",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: "2.2",
+      }),
+    ],
+  });
+}
+function Qt() {
+  return e.jsxs("svg", {
+    viewBox: "0 0 140 140",
+    className: "or-eye",
+    "aria-hidden": "true",
+    children: [
+      e.jsxs("defs", {
+        children: [
+          e.jsx("path", {
+            id: "or-ring",
+            d: "M70 70m-55 0a55 55 0 1 1 110 0a55 55 0 1 1 -110 0",
+          }),
+          e.jsx("clipPath", {
+            id: "or-almond",
+            children: e.jsx("path", { d: "M40 70Q70 44 100 70Q70 96 40 70Z" }),
+          }),
+        ],
+      }),
+      e.jsx("g", {
+        className: "or-eye-ring",
+        children: e.jsx("text", {
+          children: e.jsx("textPath", {
+            href: "#or-ring",
+            startOffset: "0",
+            children: "CAMPUSAXIS · SCROLL DOWN · SEE WHAT WE MAKE ·",
+          }),
+        }),
+      }),
+      e.jsx("g", {
+        className: "or-lash",
+        children: e.jsx("path", {
+          d: "M55 52l-3-6M70 49v-7M85 52l3-6M47 58l-5-4M93 58l5-4",
+        }),
+      }),
+      e.jsx("path", { d: "M40 70Q70 44 100 70Q70 96 40 70Z", fill: "#fff" }),
+      e.jsxs("g", {
+        clipPath: "url(#or-almond)",
+        children: [
+          e.jsxs("g", {
+            className: "or-iris",
+            children: [
+              e.jsx("circle", { cx: "70", cy: "70", r: "13", fill: "#dad2f4" }),
+              e.jsx("circle", { cx: "70", cy: "70", r: "7", fill: "#17171a" }),
+              e.jsx("circle", { cx: "73", cy: "67", r: "2", fill: "#fff" }),
+            ],
+          }),
+          e.jsx("rect", {
+            className: "or-lid or-lid-t",
+            x: "38",
+            y: "42",
+            width: "64",
+            height: "29",
+          }),
+          e.jsx("rect", {
+            className: "or-lid or-lid-b",
+            x: "38",
+            y: "69",
+            width: "64",
+            height: "29",
+          }),
+        ],
+      }),
+      e.jsx("path", {
+        d: "M40 70Q70 44 100 70Q70 96 40 70Z",
+        fill: "none",
+        stroke: "#17171a",
+        strokeWidth: "2.4",
+        strokeLinejoin: "round",
+      }),
+    ],
+  });
+}
+function st() {
+  return e.jsx("span", {
+    className: "or-stars",
+    "aria-hidden": "true",
+    children: [0, 1, 2, 3, 4].map((o) =>
+      e.jsx(
+        "svg",
+        {
+          viewBox: "0 0 20 20",
+          children: e.jsx("path", {
+            d: "M10 1.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L10 14.8l-5.2 2.8 1-5.8L1.5 7.7l5.9-.8Z",
+          }),
+        },
+        o,
+      ),
+    ),
+  });
+}
+function $t({ projects: o }) {
+  const [d, m] = F.useState(0),
+    b = o.length,
+    O = F.useRef(null),
+    S = (g) => m((D) => nt(D + g, b)),
+    P = o[d];
+  return e.jsxs("div", {
+    className: "or-car",
+    role: "region",
+    "aria-roledescription": "carousel",
+    "aria-label": "Selected work",
+    onPointerDown: (g) => (O.current = g.clientX),
+    onPointerUp: (g) => {
+      if (O.current == null) return;
+      const D = g.clientX - O.current;
+      ((O.current = null), Math.abs(D) > 40 && S(D < 0 ? 1 : -1));
+    },
+    onKeyDown: (g) => {
+      (g.key === "ArrowRight" && (S(1), g.preventDefault()),
+        g.key === "ArrowLeft" && (S(-1), g.preventDefault()));
+    },
+    children: [
+      e.jsx("div", {
+        className: "or-car-ring",
+        children: o.map((g, D) => {
+          const N = Xt(D, d, b);
+          return e.jsxs(
+            "figure",
+            {
+              className: $("or-car-card", N === 0 && "is-on"),
+              style: { "--d": N, opacity: Math.abs(N) > 1 ? 0 : 1 },
+              "aria-hidden": N !== 0,
+              onClick: () => N && S(N),
+              children: [
+                e.jsx("img", {
+                  src: g.img,
+                  alt: g.name + ", " + g.kind,
+                  draggable: !1,
+                }),
+                e.jsxs("figcaption", {
+                  className: "or-car-meta",
+                  children: [
+                    e.jsx("span", { children: g.kind }),
+                    e.jsx("span", { children: g.year }),
+                  ],
+                }),
+              ],
+            },
+            g.name,
+          );
+        }),
+      }),
+      e.jsx(
+        "h3",
+        {
+          className: "or-car-title",
+          "aria-live": "polite",
+          children: e.jsx(ne, { text: P.name }),
+        },
+        P.name,
+      ),
+      e.jsxs("div", {
+        className: "or-car-foot",
+        children: [
+          e.jsx("div", {
+            className: "or-car-bars",
+            "aria-hidden": "true",
+            children: o.map((g, D) =>
+              e.jsx("span", { className: $(D === d && "is-on") }, g.name),
+            ),
+          }),
+          e.jsxs("span", {
+            className: "or-car-count",
+            children: [
+              String(d + 1).padStart(2, "0"),
+              " / ",
+              String(b).padStart(2, "0"),
+            ],
+          }),
+          e.jsx("button", {
+            type: "button",
+            className: "or-car-btn",
+            "data-mag": "",
+            "data-cursor": "nav",
+            "aria-label": "Previous project",
+            onClick: () => S(-1),
+            children: "←",
+          }),
+          e.jsx("button", {
+            type: "button",
+            className: "or-car-btn",
+            "data-mag": "",
+            "data-cursor": "nav",
+            "aria-label": "Next project",
+            onClick: () => S(1),
+            children: "→",
+          }),
+        ],
+      }),
+    ],
+  });
+}
+function Jt({ email: o, onClose: d }) {
+  const [m, b] = F.useState(["Product design"]),
+    [O, S] = F.useState(it[1]),
+    [P, g] = F.useState(!1),
+    D = (N) =>
+      b((Z) => (Z.includes(N) ? Z.filter((le) => le !== N) : [...Z, N]));
+  return e.jsxs("form", {
+    className: $("or-form", P && "is-sent"),
+    onSubmit: (N) => {
+      (N.preventDefault(), g(!0));
+    },
+    children: [
+      d &&
+      e.jsx("button", {
+        type: "button",
+        className: "or-sheet-x",
+        "aria-label": "Close the form",
+        onClick: d,
+        children: "×",
+      }),
+      e.jsxs("div", {
+        className: "or-form-row",
+        "data-rise": "",
+        children: [
+          e.jsxs("label", {
+            className: "or-field",
+            children: [
+              e.jsx("span", { children: "Name & company" }),
+              e.jsx("input", {
+                name: "name",
+                autoComplete: "name",
+                placeholder: "Ines from Mallow",
+                required: !0,
+              }),
+            ],
+          }),
+          e.jsxs("label", {
+            className: "or-field",
+            children: [
+              e.jsx("span", { children: "Your email" }),
+              e.jsx("input", {
+                name: "email",
+                type: "email",
+                autoComplete: "email",
+                placeholder: "you@" + o.split("@")[1],
+                required: !0,
+              }),
+            ],
+          }),
+        ],
+      }),
+      e.jsxs("fieldset", {
+        className: "or-chips",
+        "data-rise": "",
+        children: [
+          e.jsx("legend", { children: "I'm interested in…" }),
+          Lt.map((N) =>
+            e.jsxs(
+              "label",
+              {
+                className: $("or-chip", "or-rl", m.includes(N) && "is-on"),
+                "data-cursor": "nav",
+                children: [
+                  e.jsx("input", {
+                    type: "checkbox",
+                    checked: m.includes(N),
+                    onChange: () => D(N),
+                  }),
+                  e.jsx(pe, { children: N }),
+                ],
+              },
+              N,
+            ),
+          ),
+        ],
+      }),
+      e.jsxs("fieldset", {
+        className: "or-chips",
+        "data-rise": "",
+        children: [
+          e.jsx("legend", { children: "Project budget (USD)" }),
+          it.map((N) =>
+            e.jsxs(
+              "label",
+              {
+                className: $("or-chip", "or-rl", O === N && "is-on"),
+                "data-cursor": "nav",
+                children: [
+                  e.jsx("input", {
+                    type: "radio",
+                    name: "budget",
+                    checked: O === N,
+                    onChange: () => S(N),
+                  }),
+                  e.jsx(pe, { children: N }),
+                ],
+              },
+              N,
+            ),
+          ),
+        ],
+      }),
+      e.jsxs("label", {
+        className: "or-field or-field-wide",
+        "data-rise": "",
+        children: [
+          e.jsx("span", { children: "Tell us about it" }),
+          e.jsx("textarea", {
+            name: "brief",
+            rows: 2,
+            placeholder: "What are you making, and what should it feel like?",
+          }),
+        ],
+      }),
+      e.jsxs("div", {
+        className: "or-submit-row",
+        "data-rise": "",
+        children: [
+          e.jsxs("span", {
+            className: "or-pulse",
+            "data-mag": "",
+            "data-cursor": "button",
+            children: [
+              e.jsx("i", {}),
+              e.jsx("i", {}),
+              e.jsx("i", {}),
+              e.jsx("i", {}),
+              e.jsxs("button", {
+                type: "submit",
+                className: "or-submit",
+                children: [
+                  e.jsx("span", { children: "Send" }),
+                  " ",
+                  e.jsx("span", { children: "the" }),
+                  " ",
+                  e.jsx("span", { children: "brief" }),
+                ],
+              }),
+            ],
+          }),
+          e.jsx("p", {
+            className: "or-sent",
+            role: "status",
+            children: P
+              ? "Thank you. We answer every brief within two working days."
+              : "",
+          }),
+        ],
+      }),
+    ],
+  });
+}
+function eo({
+  brand: o = "CampusAxis",
+  headline:
+  d = "A small design studio making calm, considered products and brands that people come back to",
+  projects: m = Et,
+  email: b = "hello@campusaxis.com",
+  height: O = "100svh",
+  theme: S = "auto",
+  fontHref: P = qt,
+  ropeFrames: g,
+  className: D,
+}) {
+  const N = F.useRef(null),
+    Z = F.useRef(null),
+    [le, be] = F.useState("deck"),
+    [E, Ee] = F.useState(!1),
+    [ie, xe] = F.useState(S === "dark"),
+    [ee, fe] = F.useState(!1),
+    [Ae, Re] = F.useState(0),
+    [de, ze] = F.useState(!1);
+  (F.useLayoutEffect(() => {
+    const t = N.current,
+      l = window.matchMedia("(hover: hover) and (pointer: fine)"),
+      n = window.matchMedia("(prefers-reduced-motion: reduce)"),
+      j = () => {
+        (Ee(n.matches),
+          be(
+            l.matches && !n.matches && t.parentElement.clientWidth >= 760
+              ? "deck"
+              : "stack",
+          ),
+          xe(S === "dark" || (S === "auto" && !!t.closest(".dark"))));
+      };
+    j();
+    const f = new ResizeObserver(j);
+    return (
+      f.observe(t.parentElement),
+      l.addEventListener("change", j),
+      n.addEventListener("change", j),
+      () => {
+        (f.disconnect(),
+          l.removeEventListener("change", j),
+          n.removeEventListener("change", j));
+      }
+    );
+  }, [S]),
+    F.useLayoutEffect(() => {
+      const t = N.current,
+        l = le === "deck",
+        n = (C, I = t) => I.querySelector(C),
+        j = (C, I = t) => [...I.querySelectorAll(C)],
+        f = j(".or-scene"),
+        z = n(".or-probe"),
+        v = () => z.getBoundingClientRect().width,
+        _ = n(".or-header"),
+        re = f.length,
+        T = [],
+        q = (C, I, V, K) => {
+          (C.addEventListener(I, V, K),
+            T.push(() => C.removeEventListener(I, V, K)));
+        },
+        a = {
+          active: 0,
+          cur: 0,
+          target: 0,
+          push: 0,
+          written: 0,
+          busyUntil: 0,
+          lastWheel: 0,
+          stale: !1,
+          changedAt: 0,
+          tone: [],
+          bake: () => { },
+        },
+        Y = (C) => (ie ? "dark" : (a.tone[C] ?? ge[C].tone)),
+        G = j(".or-rail button"),
+        U = (C) => {
+          (_.setAttribute("data-tone", C ?? Y(a.active)),
+            G.forEach((I, V) => I.classList.toggle("is-on", V === a.active)));
+        },
+        je = (C, I) => {
+          a.tone[C] !== I && ((a.tone[C] = I), C === a.active && U());
+        };
+      t.classList.add("or-live");
+      const Ie = y.context(() => {
+        const C = (i) => (l ? i : window),
+          I = (i, r, s, u, c) => {
+            if (E) {
+              (s.progress(u), c == null || c(u));
+              return;
+            }
+            ke.create({
+              trigger: r,
+              scroller: C(f[i]),
+              start: "top top",
+              end: "bottom bottom",
+              scrub: !0,
+              animation: s,
+              invalidateOnRefresh: !0,
+              onUpdate: c && ((h) => c(h.progress)),
+              onRefresh: c && ((h) => c(h.progress)),
+            });
+          },
+          V = () => t.clientWidth,
+          K = () => (l ? t.clientHeight : window.innerHeight);
+        {
+          const i = n(".or-reel-track"),
+            r = n(".or-reel-mask");
+          (l &&
+            !E &&
+            y.fromTo(
+              r,
+              {
+                clipPath: () =>
+                  "inset(0px " +
+                  9.375 * v() +
+                  "px " +
+                  Math.max(0, K() - 40 * v()) +
+                  "px " +
+                  9.375 * v() +
+                  "px round " +
+                  1.6 * v() +
+                  "px)",
+              },
+              {
+                clipPath: "inset(0px 0px 0px 0px round 0px)",
+                ease: "none",
+                scrollTrigger: {
+                  trigger: i,
+                  scroller: f[0],
+                  start: "top bottom",
+                  end: "top top",
+                  scrub: !0,
+                  invalidateOnRefresh: !0,
+                },
+              },
+            ),
+            E ||
+            (y.fromTo(
+              n(".or-reel-in"),
+              { clipPath: "inset(0% 0% 100% 0%)" },
+              {
+                clipPath: "inset(0% 0% 0% 0%)",
+                duration: 3,
+                ease: "power2.inOut",
+                delay: 0.2,
+              },
+            ),
+              y.from(n(".or-eye"), {
+                scale: 0.3,
+                opacity: 0,
+                duration: 2,
+                ease: "power3.out",
+                delay: 0.4,
+              }),
+              y.from(_, {
+                yPercent: -100,
+                duration: 0.5,
+                ease: "power2.out",
+              })));
+        }
+        {
+          const r = n(".or-about-track"),
+            s = n(".or-about-row"),
+            u = n(".or-stage", r);
+          if (l && !E) {
+            const c = () => Math.max(0, s.scrollWidth - u.clientWidth),
+              h = () => (r.style.height = c() + u.clientHeight + "px");
+            h();
+            const p = new ResizeObserver(() => (h(), ke.refresh()));
+            (p.observe(s), T.push(() => p.disconnect()));
+            const k = y.to(s, {
+              x: () => -c(),
+              ease: "none",
+              scrollTrigger: {
+                trigger: r,
+                scroller: f[1],
+                start: "top top",
+                end: "bottom bottom",
+                scrub: !0,
+                invalidateOnRefresh: !0,
+              },
+            });
+            j(".or-card", s).forEach((w) => {
+              const x = n(".or-card-pill", w);
+              y.fromTo(
+                x,
+                { x: () => w.clientWidth - x.offsetWidth - 2 * x.offsetLeft },
+                {
+                  x: 0,
+                  ease: "none",
+                  scrollTrigger: {
+                    trigger: w,
+                    containerAnimation: k,
+                    start: "left 85%",
+                    end: "left 10%",
+                    scrub: !0,
+                    invalidateOnRefresh: !0,
+                  },
+                },
+              );
+            });
+          }
+        }
+        {
+          const r = n(".or-make"),
+            s = n(".or-make-track"),
+            u = n(".or-make-media", r),
+            c = n(".or-mock", r),
+            h = n(".or-slot video", r),
+            p = n("video", u),
+            k = (L, A, X, we, me) =>
+              "inset(" +
+              L +
+              "px " +
+              A +
+              "px " +
+              X +
+              "px " +
+              we +
+              "px round " +
+              me +
+              "px)",
+            w = () => {
+              const L = n(".or-slot", r).getBoundingClientRect(),
+                A = r.getBoundingClientRect();
+              return k(
+                L.top - A.top,
+                A.right - L.right,
+                A.bottom - L.bottom,
+                L.left - A.left,
+                (l ? 1 : 0.34) * v(),
+              );
+            },
+            x = l ? 1 : 0.45,
+            M = y.timeline({ paused: !0, defaults: { ease: "none" } });
+          (M.fromTo(
+            n(".or-make-word", r),
+            { x: 0, scale: 1 },
+            { x: () => -0.22 * V(), scale: 0.42, opacity: 0, duration: 0.14 },
+            0,
+          )
+            .fromTo(
+              u,
+              { clipPath: () => k(0.3 * K(), 0, 0.3 * K(), V(), 2 * v()) },
+              {
+                clipPath: () =>
+                  k(0.24 * K(), 0.05 * V(), 0.24 * K(), 0.66 * V(), 2.4 * v()),
+                duration: 0.07,
+              },
+              0.01,
+            )
+            .to(u, { clipPath: () => k(0, 0, 0, 0, 0), duration: 0.09 }, 0.08)
+            .to(u, { clipPath: w, duration: 0.11, ease: "power1.inOut" }, 0.21)
+            .set(c, { autoAlpha: 1 }, 0.2)
+            .set(u, { autoAlpha: 0 }, 0.45)
+            .fromTo(
+              n(".or-skel", c),
+              { opacity: 1 },
+              { opacity: 0, duration: 0.06 },
+              0.38,
+            )
+            .fromTo(
+              n(".or-mock-in", c),
+              { opacity: 0 },
+              { opacity: 1, duration: 0.06 },
+              0.38,
+            )
+            .fromTo(
+              n(".or-make-light", r),
+              { opacity: 0 },
+              { opacity: 1, duration: 0.06 },
+              0.46,
+            )
+            .fromTo(
+              c,
+              { width: () => 66 * v(), borderRadius: () => 2.25 * v() },
+              {
+                width: () => 22 * v(),
+                borderRadius: () => 3.4 * v(),
+                duration: 0.16,
+                ease: "power1.inOut",
+              },
+              0.64,
+            )
+            .fromTo(
+              n(".or-notch", c),
+              { opacity: 0 },
+              { opacity: 1, duration: 0.04 },
+              0.76,
+            ),
+            j(".or-cur", r).forEach((L, A) => {
+              const X = at[A];
+              M.fromTo(
+                L,
+                {
+                  x: () => X.x * 1.9 * x * v(),
+                  y: () => X.y * 2.4 * x * v(),
+                  opacity: 0,
+                },
+                {
+                  x: () => X.x * x * v(),
+                  y: () => X.y * x * v(),
+                  opacity: 1,
+                  duration: 0.09,
+                  ease: "power2.out",
+                },
+                0.5 + A * 0.012,
+              )
+                .to(
+                  L,
+                  {
+                    x: () => (X.x * 0.55 + (A % 2 ? 4 : -4)) * x * v(),
+                    y: () => (X.y * 0.9 + (A % 3) * 2) * x * v(),
+                    duration: 0.2,
+                  },
+                  0.62,
+                )
+                .to(
+                  L,
+                  { x: () => X.x * 2.2 * x * v(), opacity: 0, duration: 0.07 },
+                  0.9,
+                );
+            }));
+          const H = n(".or-tag", r),
+            Q = j(".or-tag-l", H),
+            W = [0.3, 0.47, 0.64, 0.82];
+          let ae = -2;
+          I(2, s, M, 0.6, (L) => {
+            const A = Gt(L, W);
+            if (A === ae) return;
+            const X = A > ae;
+            (y.to(
+              H,
+              A < 0
+                ? { opacity: 0, scale: 0.5, duration: 0.3 }
+                : {
+                  opacity: 1,
+                  scale: 1,
+                  duration: 0.5,
+                  ease: "back.out(1.6)",
+                },
+            ),
+              Q.forEach((we, me) => {
+                me === A
+                  ? y.fromTo(
+                    we,
+                    { yPercent: X ? 100 : -100, opacity: 0 },
+                    {
+                      yPercent: 0,
+                      opacity: 1,
+                      duration: 0.45,
+                      ease: "power3.out",
+                    },
+                  )
+                  : me === ae
+                    ? y.to(we, {
+                      yPercent: X ? -100 : 100,
+                      opacity: 0,
+                      duration: 0.45,
+                      ease: "power3.in",
+                    })
+                    : y.set(we, { opacity: 0 });
+              }),
+              (ae = A),
+              p &&
+              h &&
+              L > 0.3 &&
+              Math.abs(h.currentTime - p.currentTime) > 0.3 &&
+              (h.currentTime = p.currentTime));
+          });
+        }
+        {
+          const r = n(".or-people"),
+            s = n(".or-gap", r),
+            u = j(".or-ava > *", r),
+            c = n(".or-gap-word", r),
+            h = y.timeline({ paused: !0, defaults: { ease: "none" } }),
+            p = n(".or-ava", r);
+          (h
+            .set(u, { scale: 0 }, 0)
+            .set(c, { opacity: 0 }, 0)
+            .set(p, { opacity: 0, scaleX: 0.2 }, 0)
+            .set(j(".or-fly", r), { y: () => K() }, 0)
+            .fromTo(
+              s,
+              { width: 0 },
+              {
+                width: () => p.scrollWidth,
+                duration: 0.14,
+                ease: "power2.inOut",
+              },
+              0.06,
+            )
+            .to(
+              p,
+              {
+                opacity: 1,
+                scaleX: 1,
+                transformOrigin: "0% 50%",
+                duration: 0.14,
+                ease: "power2.inOut",
+              },
+              0.06,
+            )
+            .fromTo(
+              u,
+              { scale: 0 },
+              { scale: 1, duration: 0.06, stagger: 0.008, ease: "back.out(2)" },
+              0.1,
+            )
+            .to(
+              u,
+              {
+                y: () => -5 * v(),
+                scale: 0.5,
+                opacity: 0,
+                duration: 0.07,
+                stagger: 0.006,
+              },
+              0.32,
+            )
+            .to(p, { opacity: 0, duration: 0.05 }, 0.37)
+            .to(
+              s,
+              {
+                width: () => c.offsetWidth,
+                duration: 0.1,
+                ease: "power2.inOut",
+              },
+              0.36,
+            )
+            .fromTo(
+              c,
+              { scale: 0.5, opacity: 0 },
+              { scale: 1, opacity: 1, duration: 0.08 },
+              0.38,
+            ),
+            j(".or-fly", r).forEach((x, M) => {
+              h.fromTo(
+                x,
+                { y: () => K() * (0.7 + M * 0.1), rotate: [-20, 14, -8][M] },
+                {
+                  y: () => -K() * (0.9 + M * 0.15),
+                  rotate: [60, -50, 40][M],
+                  duration: 0.45,
+                },
+                0.18 + M * 0.06,
+              );
+            }));
+          const k = n(".or-swallow", r);
+          h.fromTo(
+            k,
+            { x: () => 0.7 * V(), scale: 0.18, rotate: 0 },
+            { x: 0, scale: 1, rotate: -120, duration: 0.16, ease: "power2.in" },
+            0.82,
+          );
+          let w = 0;
+          I(3, n(".or-people-track"), h, 0.5, (x) => {
+            (Le(w, x, 0.93) && je(3, x >= 0.93 ? "dark" : void 0), (w = x));
+          });
+        }
+        {
+          const r = j(".or-q .or-l"),
+            s = n(".or-qbar i");
+          let u = -1;
+          const c = (h) => {
+            const p = Vt(h, r.length);
+            p !== u &&
+              (r.forEach((k, w) => k.classList.toggle("is-lit", w < p)),
+                (u = p),
+                (s.style.transform = "scaleY(" + h + ")"));
+          };
+          (I(
+            4,
+            n(".or-quote-track"),
+            y.timeline({ paused: !0 }).to({}, { duration: 1 }),
+            1,
+            c,
+          ),
+            E ||
+            y.from(j(".or-ring-c"), {
+              opacity: 0,
+              scale: 0.9,
+              duration: 0.6,
+              stagger: 0.2,
+              delay: 0.3,
+              paused: l,
+              id: "rings",
+            }));
+        }
+        {
+          const r = n(".or-work"),
+            s = n(".or-thread path", r),
+            u = y.timeline({ paused: !0, defaults: { ease: "none" } }),
+            c = n(".or-slit", r);
+          u.fromTo(
+            n(".or-work-lift", r),
+            { y: 0 },
+            { y: () => -1.15 * K(), duration: 0.36, ease: "power1.in" },
+            0.1,
+          )
+            .fromTo(
+              n(".or-hand", r),
+              { scale: 1 },
+              { scale: 0, duration: 0.2, ease: "power2.in" },
+              0.32,
+            )
+            .fromTo(
+              s,
+              { strokeDashoffset: 1, opacity: 1 },
+              { strokeDashoffset: 0, duration: 0.2 },
+              0.34,
+            )
+            .fromTo(
+              c,
+              { scaleY: 0, scaleX: () => 1.5 / V() },
+              { scaleY: 1, duration: 0.12, ease: "power2.in" },
+              0.54,
+            )
+            .to(s, { opacity: 0, duration: 0.05 }, 0.64)
+            .to(c, { scaleX: 1, duration: 0.24, ease: "power3.in" }, 0.72);
+          let h = 0;
+          l &&
+            I(5, n(".or-work-track"), u, 0, (p) => {
+              (Le(h, p, 0.9) && je(5, p >= 0.9 ? "light" : void 0), (h = p));
+            });
+        }
+        {
+          const r = y.timeline({ paused: !0, defaults: { ease: "none" } });
+          (r.fromTo(
+            n(".or-cube"),
+            { rotateY: 16 },
+            { rotateY: -90, duration: 0.6, ease: "power1.inOut" },
+            0.2,
+          ),
+            I(6, n(".or-proof-track"), r, 1));
+        }
+        {
+          const r = n(".or-rope"),
+            s = n(".or-squircle", r),
+            u = to(
+              n(".or-rope-c", r),
+              l ? Math.min(2, window.devicePixelRatio) : 1,
+            );
+          T.push(u.dispose);
+          const c = n(".or-idea", r),
+            h = j(".or-l", c),
+            p = y.timeline({ paused: !0, defaults: { ease: "none" } });
+          p.fromTo(
+            n(".or-rope-bg path", r),
+            { strokeDashoffset: 1 },
+            { strokeDashoffset: 0, duration: 0.36 },
+            0,
+          )
+            .fromTo(
+              s,
+              {
+                width: () => (l ? 28 : 20) * v(),
+                height: () => (l ? 19 : 14) * v(),
+                borderRadius: () => (l ? 7 : 4.5) * v(),
+                y: 0,
+              },
+              {
+                width: () => V() - 3 * v(),
+                height: () => K() - 7.5 * v(),
+                borderRadius: () => 4 * v(),
+                y: () => -1.5 * v(),
+                duration: 0.28,
+                ease: "power2.inOut",
+              },
+              0.58,
+            )
+            .fromTo(
+              n(".or-rope-fill", r),
+              { opacity: 0 },
+              { opacity: 1, duration: 0.2 },
+              0.62,
+            )
+            .fromTo(
+              n(".or-rope-line", r),
+              { opacity: 1, y: 0 },
+              { opacity: 0, y: () => -6 * v(), duration: 0.12 },
+              0.5,
+            )
+            .fromTo(
+              n(".or-marq", r),
+              { opacity: 0 },
+              { opacity: 1, duration: 0.1 },
+              0.8,
+            );
+          const k = n(".or-rope-seq", r),
+            w = k.getContext("2d");
+          let x = null;
+          const M = new Map();
+          let H = [0, 1],
+            Q = -1,
+            W = 0;
+          const ae = (B) => {
+            if (!x) return;
+            const se = Math.round(W * (x.length - 1));
+            if (se === Q && !B) return;
+            Q = se;
+            const ce = k.clientWidth,
+              Ne = k.clientHeight,
+              he = x[se];
+            if (he instanceof Blob) {
+              const ve = M.get(se);
+              if (!ve) {
+                createImageBitmap(he).then((Je) => {
+                  if (!L) return Je.close();
+                  M.set(se, Je);
+                  for (const De of M.keys())
+                    M.size > 8 &&
+                      Math.abs(De - Q) > 4 &&
+                      (M.get(De).close(), M.delete(De));
+                  Q === se && ae(!0);
+                });
+                return;
+              }
+              (w.clearRect(0, 0, ce, Ne),
+                w.drawImage(ve, 0, H[0] * Ne, ce, (H[1] - H[0]) * Ne));
+              return;
+            }
+            if ((w.clearRect(0, 0, ce, Ne), g)) {
+              const ve = Math.max(
+                ce / he.naturalWidth,
+                Ne / he.naturalHeight,
+              );
+              w.drawImage(
+                he,
+                (ce - he.naturalWidth * ve) / 2,
+                (Ne - he.naturalHeight * ve) / 2,
+                he.naturalWidth * ve,
+                he.naturalHeight * ve,
+              );
+            }
+          },
+            oe = () => {
+              const B = l ? Math.min(2, window.devicePixelRatio) : 1;
+              ((k.width = k.clientWidth * B),
+                (k.height = k.clientHeight * B),
+                w.setTransform(B, 0, 0, B, 0, 0),
+                (w.imageSmoothingQuality = "high"),
+                ae(!0));
+            };
+          let L = !0;
+          T.push(() => {
+            ((L = !1), M.forEach((B) => B.close()));
+          });
+          const A = async () => {
+            if (g != null && g.length) {
+              const B = await Promise.all(
+                g.map((se) => {
+                  const ce = new Image();
+                  return (
+                    (ce.decoding = "async"),
+                    (ce.src = se),
+                    ce.decode().then(() => ce)
+                  );
+                }),
+              );
+              if (!L) return;
+              x = B;
+            } else {
+              const B = await u.bake(l ? Ct : 28);
+              if (!L) return;
+              ((x = B.frames), (H = B.band));
+            }
+            (r.classList.add("or-seq-on"), oe());
+          };
+          let X = !1;
+          a.bake = () => {
+            X || ((X = !0), A().catch(() => { }));
+          };
+          const we = l ? 0 : window.setTimeout(a.bake, 1500);
+          T.push(() => clearTimeout(we));
+          let me = 0;
+          I(7, n(".or-rope-track"), p, 1, (B) => {
+            ((W = Yt(B, 0.04, 0.62)),
+              x ? ae() : u.set(W),
+              Le(me, B, 0.7) && je(7, B >= 0.7 ? "light" : void 0));
+            const se = Le(me, B, 0.74);
+            ((se > 0 || (E && B >= 0.74)) &&
+              y.fromTo(
+                h,
+                { yPercent: 80, opacity: 0 },
+                {
+                  yPercent: 0,
+                  opacity: 1,
+                  duration: 0.5,
+                  stagger: 0.02,
+                  ease: "power3.out",
+                  overwrite: !0,
+                },
+              ),
+              se < 0 && y.to(h, { opacity: 0, duration: 0.2, overwrite: !0 }),
+              (me = B));
+          });
+          const $e = new ResizeObserver(() => {
+            (u.resize(), x && oe());
+          });
+          ($e.observe(r), T.push(() => $e.disconnect()));
+        }
+        const Ye = f.map((i) => j("video", i)),
+          Ge = new Set(),
+          We = () => {
+            (a.active >= 5 && a.bake(),
+              Ye.forEach((i, r) =>
+                i.forEach((s) => {
+                  l &&
+                    (r === a.active
+                      ? s.play().catch(() => { })
+                      : (s.pause(),
+                        r === a.active + 1 &&
+                        s.preload === "none" &&
+                        (s.preload = "auto")));
+                }),
+              ));
+          };
+        if (!l) {
+          const i = new IntersectionObserver(
+            (r) =>
+              r.forEach((s) => {
+                const u = s.target;
+                s.isIntersecting
+                  ? (Ge.add(u), u.play().catch(() => { }))
+                  : Ge.has(u) && u.pause();
+              }),
+            { rootMargin: "200px 0px" },
+          );
+          (Ye.flat().forEach((r) => i.observe(r)),
+            T.push(() => i.disconnect()));
+        }
+        const Ve = () => (l ? a.active === 6 : !0),
+          Te = (i, r) => {
+            var w;
+            const s = f[i],
+              u = t.clientHeight,
+              c = s.getBoundingClientRect().top,
+              h = (x) => {
+                const M = x.getBoundingClientRect();
+                return M.bottom > c && M.top < c + u;
+              },
+              p = j("[data-rise]", s).filter(h),
+              k = j("[data-spell] .or-l", s).filter(
+                (x) => !x.closest(".or-idea, .or-q, .or-car-title") && h(x),
+              );
+            if (E) {
+              y.fromTo(s, { opacity: 0 }, { opacity: 1, duration: 0.35 });
+              return;
+            }
+            (y.fromTo(
+              p,
+              { y: 50, rotate: 3, opacity: 0, transformOrigin: "0% 100%" },
+              {
+                y: 0,
+                rotate: 0,
+                opacity: 1,
+                duration: 0.6,
+                stagger: 0.05,
+                ease: "power3.out",
+                delay: r,
+                overwrite: "auto",
+                clearProps: "transform",
+              },
+            ),
+              y.fromTo(
+                k,
+                { yPercent: 70, opacity: 0 },
+                {
+                  yPercent: 0,
+                  opacity: 1,
+                  duration: 0.5,
+                  stagger: 0.014,
+                  ease: "power3.out",
+                  delay: r + 0.05,
+                  overwrite: "auto",
+                },
+              ),
+              i === 4 && ((w = y.getById("rings")) == null || w.restart(!0)));
+          },
+          qe = (i, r) => {
+            f.forEach((c, h) =>
+              y.set(c, { yPercent: h < i ? -100 : h > i ? 100 : 0 }),
+            );
+            const s = f[i],
+              u = s.scrollHeight - s.clientHeight;
+            ((a.cur = a.target = a.written = r ? u : 0),
+              (s.scrollTop = a.cur),
+              (a.push = 0),
+              (a.active = i),
+              t.setAttribute("data-scene", ge[i].id),
+              U(),
+              We(),
+              ke.update());
+          },
+          lt = (i) => {
+            const r = a.active,
+              s = i > r ? 1 : -1,
+              u = performance.now();
+            ((a.busyUntil = u + (E ? 400 : _e + 120)),
+              (a.changedAt = u),
+              (a.stale = !0));
+            const c = f[r],
+              h = f[i],
+              p = h.scrollHeight - h.clientHeight;
+            if (
+              ((a.cur = a.target = a.written = s > 0 ? 0 : p),
+                (h.scrollTop = a.cur),
+                (a.push = 0),
+                (a.active = i),
+                t.setAttribute("data-scene", ge[i].id),
+                E)
+            ) {
+              (qe(i, s < 0), Te(i, 0));
+              return;
+            }
+            (y.set(h, { yPercent: 100 * s }),
+              y.to(h, {
+                yPercent: 0,
+                duration: _e / 1e3,
+                ease: "power2.inOut",
+              }),
+              y.to(c, {
+                yPercent: -100 * s,
+                duration: _e / 1e3,
+                ease: "power2.inOut",
+                onComplete: We,
+              }),
+              Ut(ge[r].id, ge[i].id) ? ct() : U(),
+              We(),
+              ke.update(),
+              Te(i, 0.22));
+          },
+          ct = () => {
+            const i = n(".or-flash");
+            (U("dark"),
+              y.set(i, { autoAlpha: 1 }),
+              j(".or-flash-row", i).forEach((r, s) =>
+                y.fromTo(
+                  r,
+                  { xPercent: s % 2 ? -50 : 0 },
+                  {
+                    xPercent: s % 2 ? 0 : -50,
+                    duration: [1.5, 0.75, 1.25, 0.9, 0.75, 1.1, 0.8][s],
+                    ease: "none",
+                    repeat: 1,
+                  },
+                ),
+              ),
+              y.delayedCall(0.75, () => {
+                (y.set(i, { autoAlpha: 0 }), U());
+              }));
+          },
+          Xe = (i) => {
+            if (i === a.active || i < 0 || i >= re) return;
+            if (!l) {
+              f[i].scrollIntoView({ behavior: E ? "auto" : "smooth" });
+              return;
+            }
+            if (E) {
+              (qe(i, !1), Te(i, 0));
+              return;
+            }
+            const r = performance.now();
+            ((a.busyUntil = r + 1500), (a.changedAt = r + 1e3), (a.stale = !0));
+            const s = n(".or-jump"),
+              u = j(".or-jump-logo path, .or-jump-logo text", s);
+            (s.setAttribute("data-c", Kt(Y(a.active))),
+              y
+                .timeline()
+                .set(s, { autoAlpha: 1 })
+                .fromTo(
+                  n(".or-jump-disc", s),
+                  { x: () => -2 * Math.max(V(), K()), opacity: 1 },
+                  { x: 0, duration: 0.45, ease: "power3.out" },
+                )
+                .fromTo(
+                  u,
+                  { strokeDashoffset: 420 },
+                  { strokeDashoffset: 0, duration: 0.5, ease: "power1.inOut" },
+                  0.4,
+                )
+                .call(() => qe(i, !1), [], 0.6)
+                .to(s, { autoAlpha: 0, duration: 0.4 }, 1)
+                .call(() => Te(i, 0), [], 1));
+          };
+        if (((Z.current = { jump: Xe }), l)) {
+          (qe(0, !1), Te(0, 0.15));
+          let i = 0,
+            r = performance.now();
+          const s = (c) => {
+            const h = c - r;
+            r = c;
+            const p = f[a.active];
+            (Math.abs(a.target - a.cur) > 0.01 &&
+              ((a.cur = Dt(a.cur, a.target, 0.05, h)),
+                (p.scrollTop = a.cur),
+                (a.written = p.scrollTop)),
+              (i = requestAnimationFrame(s)));
+          };
+          ((i = requestAnimationFrame(s)),
+            T.push(() => cancelAnimationFrame(i)),
+            f.forEach((c, h) =>
+              q(c, "scroll", () => {
+                h === a.active &&
+                  Math.abs(c.scrollTop - a.written) > 2 &&
+                  (a.cur = a.target = a.written = c.scrollTop);
+              }),
+            ),
+            q(t, "focusin", (c) => {
+              const h = c.target.closest(".or-scene"),
+                p = f.indexOf(h);
+              (p >= 0 &&
+                p !== a.active &&
+                performance.now() > a.busyUntil &&
+                qe(p, !1),
+                (t.scrollTop = 0),
+                (t.scrollLeft = 0));
+            }),
+            q(t, "scroll", () => {
+              ((t.scrollTop = 0), (t.scrollLeft = 0));
+            }));
+          const u = (c) => {
+            const h = _t(a.active, c, re);
+            return h < 0 ? !1 : (lt(h), !0);
+          };
+          (q(
+            t,
+            "wheel",
+            (c) => {
+              if (c.ctrlKey || t.classList.contains("or-menu-open")) return;
+              const h = performance.now(),
+                p = h - a.lastWheel;
+              a.lastWheel = h;
+              const k = Ht(c.deltaY, c.deltaMode, t.clientHeight);
+              if (!k) return;
+              if (
+                ((p > Ot || h - a.changedAt > 1400) && (a.stale = !1),
+                  h < a.busyUntil || a.stale)
+              )
+                return c.preventDefault();
+              const w = f[a.active],
+                x = w.scrollHeight - w.clientHeight,
+                M = Ft(a, k, a.cur, x, Bt, 2.6, t.clientHeight * 0.9);
+              ((a.target = M.target),
+                (a.push = M.push),
+                !(M.turn && !u(M.turn)) && c.preventDefault());
+            },
+            { passive: !1 },
+          ),
+            q(window, "keydown", (c) => {
+              const h = c.target;
+              if (
+                c.defaultPrevented ||
+                c.altKey ||
+                c.ctrlKey ||
+                c.metaKey ||
+                h.closest("input, textarea, select, [contenteditable]")
+              )
+                return;
+              if (t.classList.contains("or-menu-open")) {
+                c.key === "Escape" && fe(!1);
+                return;
+              }
+              const p = Zt(c.key, c.shiftKey, re);
+              if (
+                !p ||
+                (c.key === " " && h.closest("button, a, label")) ||
+                (c.preventDefault(), performance.now() < a.busyUntil)
+              )
+                return;
+              if (p.kind === "jump") return Xe(p.to);
+              const k = f[a.active],
+                w = k.scrollHeight - k.clientHeight,
+                x = /Page| /.test(c.key) ? t.clientHeight * 0.85 : 140;
+              (p.to > 0 ? a.cur >= w - 1.5 : a.cur <= 1.5)
+                ? u(p.to)
+                : (a.target = Math.min(w, Math.max(0, a.target + p.to * x)));
+            }));
+        } else
+          (f.forEach((i, r) => {
+            (ke.create({
+              trigger: i,
+              start: "top 10%",
+              end: "bottom 10%",
+              onToggle: (s) => {
+                s.isActive && ((a.active = r), U());
+              },
+            }),
+              j("[data-rise], [data-spell]", i)
+                .filter((s) => !s.closest(".or-idea, .or-car-title"))
+                .forEach((s) =>
+                  E
+                    ? y.from(s, {
+                      opacity: 0,
+                      duration: 0.5,
+                      scrollTrigger: {
+                        trigger: s,
+                        start: "top 92%",
+                        once: !0,
+                      },
+                    })
+                    : y.from(s.matches("[data-spell]") ? j(".or-l", s) : s, {
+                      y: s.matches("[data-spell]") ? 0 : 40,
+                      yPercent: s.matches("[data-spell]") ? 70 : 0,
+                      rotate: s.matches("[data-spell]") ? 0 : 3,
+                      opacity: 0,
+                      duration: 0.5,
+                      stagger: 0.014,
+                      ease: "power3.out",
+                      scrollTrigger: {
+                        trigger: s,
+                        start: "top 92%",
+                        once: !0,
+                      },
+                    }),
+                ));
+          }),
+            U(),
+            We());
+        const Ze = n(".or-dot"),
+          dt = n(".or-iris"),
+          Be = n(".or-eye"),
+          ht = n(".or-blob"),
+          Ue = j("[data-mag]"),
+          R = {
+            x: -100,
+            y: -100,
+            bx: 0,
+            by: 0,
+            dx: -100,
+            dy: -100,
+            idle: 0,
+            inside: !1,
+          },
+          Ke = Ue.map((i) => f.indexOf(i.closest(".or-scene")));
+        let Oe = 0;
+        (q(window, "pointermove", (i) => {
+          var s, u;
+          if (i.pointerType !== "mouse") return;
+          ((R.x = i.clientX),
+            (R.y = i.clientY),
+            (R.idle = performance.now()),
+            (R.inside = !0));
+          const r =
+            (u = (s = i.target).closest) == null
+              ? void 0
+              : u.call(s, "[data-cursor], a, button, label");
+          (Ze.setAttribute(
+            "data-k",
+            r ? r.getAttribute("data-cursor") || "nav" : "",
+          ),
+            Be.classList.remove("is-asleep"),
+            clearTimeout(Oe),
+            (Oe = window.setTimeout(() => Be.classList.add("is-asleep"), 2e3)));
+        }),
+          T.push(() => clearTimeout(Oe)));
+        let He = 0;
+        const Qe = () => {
+          const i = l,
+            r =
+              performance.now() - R.idle > 1500 &&
+              Math.abs(R.x - R.dx) < 0.5 &&
+              Math.abs(R.y - R.dy) < 0.5 &&
+              (!Ve() || (R.bx === R.x && R.by === R.y));
+          if (i && !r) {
+            const s = Ue.filter((p, k) => Ke[k] < 0 || Ke[k] === a.active),
+              u = s.map((p) => p.getBoundingClientRect()),
+              c = a.active === 0 ? Be.getBoundingClientRect() : { width: 0 },
+              h = t.getBoundingClientRect();
+            if (
+              ((R.dx += (R.x - R.dx) * 0.18),
+                (R.dy += (R.y - R.dy) * 0.18),
+                (Ze.style.transform =
+                  "translate3d(" +
+                  (R.dx - h.left) +
+                  "px," +
+                  (R.dy - h.top) +
+                  "px,0)"),
+                s.forEach((p, k) => {
+                  const w = u[k],
+                    x = w.left + w.width / 2,
+                    M = w.top + w.height / 2,
+                    H = Math.max(w.width, w.height) * 0.9 + 30,
+                    Q = R.x - x,
+                    W = R.y - M,
+                    ae = Math.abs(Q) < H && Math.abs(W) < H,
+                    oe = p._m ?? [0, 0],
+                    L = ae ? Q * 0.28 : 0,
+                    A = ae ? W * 0.28 : 0;
+                  ((oe[0] += (L - oe[0]) * 0.12),
+                    (oe[1] += (A - oe[1]) * 0.12),
+                    (p._m = oe),
+                    (p.style.translate =
+                      oe[0].toFixed(2) + "px " + oe[1].toFixed(2) + "px"));
+                }),
+                c.width)
+            ) {
+              const p = R.x - (c.left + c.width / 2),
+                k = R.y - (c.top + c.height / 2),
+                w = Math.hypot(p, k) || 1,
+                x = Math.min(1, w / 300) * 8;
+              dt.setAttribute(
+                "transform",
+                "translate(" +
+                ((p / w) * x).toFixed(2) +
+                " " +
+                ((k / w) * x * 0.6).toFixed(2) +
+                ")",
+              );
+            }
+            Ve() &&
+              ((R.bx += (R.x - R.bx) * 0.04),
+                (R.by += (R.y - R.by) * 0.04),
+                Math.abs(R.x - R.bx) < 0.3 &&
+                Math.abs(R.y - R.by) < 0.3 &&
+                ((R.bx = R.x), (R.by = R.y)),
+                (ht.style.transform =
+                  "translate3d(" +
+                  (R.bx - h.left) +
+                  "px," +
+                  (R.by - h.top) +
+                  "px,0)"));
+          }
+          He = requestAnimationFrame(Qe);
+        };
+        (l && (He = requestAnimationFrame(Qe)),
+          T.push(() => cancelAnimationFrame(He)));
+        {
+          const i = n(".or-bubbles"),
+            r = i.getContext("2d"),
+            s = ["#7c8cff", "#f2c86b", "#c39ad6", "#7fd3b4"],
+            u = l ? 30 : 10;
+          let c = [];
+          const h = () => {
+            const H = Math.min(2, window.devicePixelRatio);
+            ((i.width = i.clientWidth * H),
+              (i.height = i.clientHeight * H),
+              r.setTransform(H, 0, 0, H, 0, 0));
+            const Q = i.clientWidth,
+              W = i.clientHeight;
+            c = Array.from({ length: u }, (ae, oe) => ({
+              x: Math.random() * Q,
+              y: W * (0.2 + Math.random()),
+              r: 2.5 + Math.random() * 3.5,
+              v: 0.4 + Math.random() * 1.2,
+              c: s[oe % s.length],
+            }));
+          };
+          let p = 0,
+            k = !l;
+          const w = new IntersectionObserver((H) => (k = H[0].isIntersecting));
+          l || w.observe(i);
+          const x = () => {
+            if (
+              ((p = requestAnimationFrame(x)), E || (l ? a.active !== 6 : !k))
+            )
+              return;
+            const H = i.clientWidth,
+              Q = i.clientHeight;
+            r.clearRect(0, 0, H, Q);
+            for (const W of c)
+              ((W.y -= W.v),
+                W.y + W.r < 0 && (W.y = Q + 40),
+                r.beginPath(),
+                r.arc(W.x, W.y, W.r, 0, Math.PI * 2),
+                (r.fillStyle = W.c),
+                r.fill());
+          };
+          (h(), (p = requestAnimationFrame(x)));
+          const M = new ResizeObserver(h);
+          (M.observe(i),
+            T.push(
+              () => (cancelAnimationFrame(p), M.disconnect(), w.disconnect()),
+            ));
+        }
+        ke.refresh();
+      }, t);
+      return () => {
+        ((Z.current = null),
+          T.forEach((C) => C()),
+          Ie.revert(),
+          t.classList.remove("or-live"));
+      };
+    }, [le, E, ie]),
+    F.useEffect(() => {
+      var t;
+      (t = N.current) == null || t.classList.toggle("or-menu-open", ee);
+    }, [ee]));
+  const te = (t) => (l) => {
+    var n, j;
+    (l.preventDefault(),
+      ee
+        ? ((n = Z.current) == null || n.jump(t),
+          window.setTimeout(() => fe(!1), le === "deck" ? 500 : 0))
+        : (j = Z.current) == null || j.jump(t));
+  },
+    Se = [
+      {
+        label: "About us",
+        to: 1,
+        panel: e.jsx("span", { style: { background: "#282643" } }),
+      },
+      {
+        label: "What we make",
+        to: 2,
+        panel: e.jsx("img", { src: J(29008324, 900), alt: "" }),
+      },
+      {
+        label: "Our work",
+        to: 5,
+        panel: e.jsx("img", {
+          src: m[0].img.replace(/w=\d+/, "w=900"),
+          alt: "",
+        }),
+      },
+      {
+        label: "Contact",
+        to: 8,
+        panel: e.jsx("span", { style: { background: "#c9ece4" } }),
+      },
+    ];
+  return e.jsxs("div", {
+    ref: N,
+    className: $(
+      "or-root",
+      le === "stack" && "or-stack",
+      E && "or-reduced",
+      ie && "or-dark",
+      D,
+    ),
+    style: { "--h": O },
+    "data-scene": "home",
+    children: [
+      P && e.jsx("link", { rel: "stylesheet", href: P }),
+      e.jsx("style", { children: ro }),
+      e.jsx("div", { className: "or-probe", "aria-hidden": "true" }),
+      e.jsxs("header", {
+        className: "or-header",
+        "data-tone": "light",
+        children: [
+          e.jsx("nav", {
+            className: $("or-rail", ee && "is-hidden"),
+            "aria-label": "Scene index",
+            children: ge.map((t, l) =>
+              e.jsxs(
+                "button",
+                {
+                  type: "button",
+                  className: $(l === 0 && "is-on"),
+                  "aria-label": "Go to " + t.label,
+                  "data-cursor": "menu",
+                  onClick: () => {
+                    var n;
+                    return (n = Z.current) == null ? void 0 : n.jump(l);
+                  },
+                  children: [
+                    e.jsx("i", {}),
+                    e.jsx("span", {
+                      children: String(l + 1).padStart(2, "0") + " " + t.label,
+                    }),
+                  ],
+                },
+                t.id,
+              ),
+            ),
+          }),
+          e.jsxs("a", {
+            href: "#home",
+            className: "or-logo or-rl",
+            "data-cursor": "nav",
+            onClick: te(0),
+            "aria-label": o + " home",
+            children: [
+              e.jsx(Pe, { className: "or-logo-m" }),
+              e.jsx("span", { children: o.toLowerCase() }),
+            ],
+          }),
+          e.jsx("nav", {
+            className: "or-nav",
+            "aria-label": "Scenes",
+            children: [
+              ["Home", 0],
+              ["About", 1],
+              ["Work", 5],
+              ["Contact", 8],
+            ].map(([t, l]) =>
+              e.jsx(
+                "a",
+                {
+                  href: "#" + ge[l].id,
+                  className: "or-rl",
+                  "data-cursor": "nav",
+                  onClick: te(l),
+                  children: e.jsx(pe, { children: t }),
+                },
+                t,
+              ),
+            ),
+          }),
+          e.jsxs("div", {
+            className: "or-head-r",
+            children: [
+              e.jsxs("a", {
+                href: "/dashboard",
+                className: "or-talk or-rl",
+                "data-cursor": "nav",
+                children: [
+                  e.jsx("i", {}),
+                  e.jsx(pe, { children: "Dashboard" }),
+                ],
+              }),
+              e.jsxs("button", {
+                type: "button",
+                className: $("or-burger", ee && "is-open"),
+                "data-mag": "",
+                "data-cursor": "menu",
+                "aria-expanded": ee,
+                "aria-controls": "or-menu",
+                onClick: () => fe((t) => !t),
+                children: [
+                  e.jsxs("span", {
+                    className: "or-burger-t",
+                    children: [
+                      e.jsx("span", { children: "menu" }),
+                      e.jsx("span", { children: "close" }),
+                    ],
+                  }),
+                  e.jsxs("span", {
+                    className: "or-burger-l",
+                    "aria-hidden": "true",
+                    children: [e.jsx("i", {}), e.jsx("i", {})],
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      }),
+      e.jsxs("section", {
+        className: "or-scene or-s-home",
+        id: "home",
+        "aria-label": "Home",
+        children: [
+          e.jsxs("div", {
+            className: "or-home",
+            children: [
+              e.jsx("h1", {
+                className: "or-hero",
+                children: e.jsx(ne, { text: d }),
+              }),
+              e.jsxs("div", {
+                className: "or-home-meta",
+                "data-rise": "",
+                children: [
+                  e.jsxs("span", {
+                    className: "or-rate",
+                    children: [
+                      e.jsx(Pe, { className: "or-rate-m" }),
+                      e.jsxs("span", {
+                        children: [
+                          e.jsx(st, {}),
+                          e.jsx("small", {
+                            children: "4.9 from 38 client reviews",
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  e.jsx("p", {
+                    className: "or-services",
+                    children:
+                      "Brand systems / Product design / Websites / Motion / 3D / Design systems",
+                  }),
+                  e.jsx("a", {
+                    className: "or-deck-pill or-rl",
+                    href: "#work",
+                    "data-mag": "",
+                    "data-cursor": "nav",
+                    onClick: te(5),
+                    children: e.jsx(pe, { children: "Studio deck" }),
+                  }),
+                ],
+              }),
+              e.jsx("div", {
+                className: "or-eye-wrap",
+                children: e.jsx(Qt, {}),
+              }),
+            ],
+          }),
+          e.jsx("div", {
+            className: "or-reel-track",
+            children: e.jsx("div", {
+              className: "or-reel",
+              children: e.jsxs("div", {
+                className: "or-reel-mask",
+                children: [
+                  e.jsx("div", {
+                    className: "or-reel-in",
+                    children: e.jsx(Ce, { src: Pt }),
+                  }),
+                  e.jsx("span", {
+                    className: "or-reel-cap",
+                    children: "Showreel 2026 — 01:12",
+                  }),
+                  e.jsx("button", {
+                    type: "button",
+                    className: "or-play",
+                    "data-mag": "",
+                    "data-cursor": "button",
+                    "aria-label": "Pause or play the showreel",
+                    onClick: (t) => {
+                      const l =
+                        t.currentTarget.parentElement.querySelector("video");
+                      (l.paused ? l.play() : l.pause(),
+                        t.currentTarget.classList.toggle(
+                          "is-paused",
+                          l.paused,
+                        ));
+                    },
+                    children: e.jsx("i", {}),
+                  }),
+                ],
+              }),
+            }),
+          }),
+        ],
+      }),
+      e.jsx("section", {
+        className: "or-scene or-s-about",
+        id: "about",
+        "aria-label": "About",
+        children: e.jsx("div", {
+          className: "or-track or-about-track",
+          children: e.jsx("div", {
+            className: "or-stage",
+            children: e.jsxs("div", {
+              className: "or-about-row",
+              children: [
+                e.jsx("h2", {
+                  className: "or-about-h",
+                  children: e.jsx(ne, { text: "What is " + o + "?" }),
+                }),
+                At.map((t, l) =>
+                  e.jsxs(
+                    "article",
+                    {
+                      className: "or-card",
+                      style: { background: t.tint },
+                      "data-rise": "",
+                      children: [
+                        e.jsxs("svg", {
+                          className: "or-card-rings",
+                          viewBox: "0 0 600 600",
+                          "aria-hidden": "true",
+                          children: [
+                            e.jsx("circle", { cx: "160", cy: "180", r: "290" }),
+                            e.jsx("circle", { cx: "430", cy: "110", r: "290" }),
+                          ],
+                        }),
+                        e.jsx("div", {
+                          className: "or-card-pill",
+                          children: e.jsx(Ce, { src: t.clip }),
+                        }),
+                        e.jsx("h3", { children: t.title }),
+                        e.jsx("p", { children: t.text }),
+                        e.jsxs("span", {
+                          className: "or-num",
+                          "aria-hidden": "true",
+                          children: ["0", l + 1],
+                        }),
+                      ],
+                    },
+                    t.title,
+                  ),
+                ),
+              ],
+            }),
+          }),
+        }),
+      }),
+      e.jsx("section", {
+        className: "or-scene or-s-make",
+        id: "make",
+        "aria-label": "What we make",
+        children: e.jsx("div", {
+          className: "or-track or-make-track",
+          children: e.jsxs("div", {
+            className: "or-stage or-make",
+            children: [
+              e.jsx("div", {
+                className: "or-make-light",
+                "aria-hidden": "true",
+                children: e.jsx("span", { className: "or-grid" }),
+              }),
+              e.jsx("h2", {
+                className: "or-make-word",
+                children: e.jsx(ne, { text: "We make" }),
+              }),
+              e.jsxs("div", {
+                className: "or-mock",
+                "aria-hidden": "true",
+                children: [
+                  e.jsxs("div", {
+                    className: "or-mock-in",
+                    children: [
+                      e.jsxs("div", {
+                        className: "or-m-top",
+                        children: [
+                          e.jsx(Pe, { className: "or-m-logo" }),
+                          e.jsx("span", {
+                            className: "or-m-tab is-on",
+                            children: "Projects",
+                          }),
+                          e.jsx("span", {
+                            className: "or-m-tab",
+                            children: "Planning",
+                          }),
+                          e.jsx("span", {
+                            className: "or-m-tab",
+                            children: "Calendar",
+                          }),
+                          e.jsx("span", {
+                            className: "or-m-search",
+                            children: "Search tasks",
+                          }),
+                          e.jsx("span", {
+                            className: "or-m-faces",
+                            children: rt
+                              .slice(0, 4)
+                              .map((t) =>
+                                e.jsx("img", { src: J(t, 80, 80), alt: "" }, t),
+                              ),
+                          }),
+                          e.jsx("span", {
+                            className: "or-m-new",
+                            children: "+ New task",
+                          }),
+                        ],
+                      }),
+                      e.jsx("div", {
+                        className: "or-m-side",
+                        children: [0, 1, 2, 3, 4].map((t) =>
+                          e.jsx("i", { className: $(t === 1 && "is-on") }, t),
+                        ),
+                      }),
+                      e.jsx("div", {
+                        className: "or-m-stats",
+                        children: [
+                          ["In review", "12", "#7c8cff"],
+                          ["Shipped this month", "48", "#3fbf8f"],
+                          ["Team focus", "86%", "#f2b84b"],
+                        ].map(([t, l, n]) =>
+                          e.jsxs(
+                            "div",
+                            {
+                              className: "or-m-stat",
+                              children: [
+                                e.jsx("small", { children: t }),
+                                e.jsx("b", { children: l }),
+                                e.jsx("span", { style: { background: n } }),
+                              ],
+                            },
+                            t,
+                          ),
+                        ),
+                      }),
+                      e.jsxs("div", {
+                        className: "or-m-title",
+                        children: [
+                          e.jsx("small", {
+                            children: "Tidepool / Spring launch",
+                          }),
+                          e.jsx("b", { children: "Today" }),
+                        ],
+                      }),
+                      [
+                        [
+                          "Backlog",
+                          "#9a9aa3",
+                          ["Onboarding copy", "Empty states", "Icon audit"],
+                        ],
+                        ["In progress", "#7c8cff", []],
+                        ["Done", "#3fbf8f", ["Color tokens", "Pricing page"]],
+                      ].map(([t, l, n], j) =>
+                        e.jsxs(
+                          "div",
+                          {
+                            className: "or-m-col or-m-col" + j,
+                            children: [
+                              e.jsxs("div", {
+                                className: "or-m-colh",
+                                children: [
+                                  e.jsx("i", { style: { background: l } }),
+                                  t,
+                                ],
+                              }),
+                              j === 1
+                                ? e.jsxs("div", {
+                                  className: "or-m-card or-m-card-big",
+                                  children: [
+                                    e.jsx("b", { children: "Launch film" }),
+                                    e.jsx("small", {
+                                      children: "Motion · 3D · due Friday",
+                                    }),
+                                    e.jsx("div", {
+                                      className: "or-slot",
+                                      children: e.jsx(Ce, { src: ot }),
+                                    }),
+                                  ],
+                                })
+                                : n.map((f, z) =>
+                                  e.jsxs(
+                                    "div",
+                                    {
+                                      className: "or-m-card",
+                                      children: [
+                                        e.jsx("b", { children: f }),
+                                        e.jsxs("small", {
+                                          children: [
+                                            ["Brand", "Product", "Web"][
+                                            z % 3
+                                            ],
+                                            " · ",
+                                            z + 2,
+                                            " comments",
+                                          ],
+                                        }),
+                                        e.jsx("span", {
+                                          className: "or-m-bar",
+                                          children: e.jsx("span", {
+                                            style: {
+                                              width: 30 + z * 25 + "%",
+                                              background: l,
+                                            },
+                                          }),
+                                        }),
+                                      ],
+                                    },
+                                    f,
+                                  ),
+                                ),
+                            ],
+                          },
+                          t,
+                        ),
+                      ),
+                    ],
+                  }),
+                  e.jsxs("div", {
+                    className: "or-skel",
+                    children: [
+                      e.jsx("i", {
+                        style: {
+                          left: "5.5%",
+                          top: "4%",
+                          width: "30%",
+                          height: "6%",
+                        },
+                      }),
+                      e.jsx("i", {
+                        style: {
+                          left: "70%",
+                          top: "4%",
+                          width: "24%",
+                          height: "6%",
+                        },
+                      }),
+                      [0, 1, 2].map((t) =>
+                        e.jsx(
+                          "i",
+                          {
+                            style: {
+                              left: 8.3 + t * 30.3 + "%",
+                              top: "15%",
+                              width: "28%",
+                              height: "15%",
+                            },
+                          },
+                          "s" + t,
+                        ),
+                      ),
+                      e.jsx("i", {
+                        style: {
+                          left: "8.3%",
+                          top: "35%",
+                          width: "22%",
+                          height: "6%",
+                        },
+                      }),
+                      [8.3, 34.1, 67.4].map((t, l) =>
+                        e.jsx(
+                          "i",
+                          {
+                            style: {
+                              left: t + "%",
+                              top: "47%",
+                              width: l === 1 ? "31.8%" : "24%",
+                              height: "48%",
+                            },
+                          },
+                          "c" + l,
+                        ),
+                      ),
+                    ],
+                  }),
+                  e.jsx("span", { className: "or-notch" }),
+                ],
+              }),
+              e.jsx("div", {
+                className: "or-make-media",
+                "aria-hidden": "true",
+                children: e.jsx(Ce, { src: ot }),
+              }),
+              at.map((t) =>
+                e.jsxs(
+                  "span",
+                  {
+                    className: "or-cur",
+                    style: { "--c": t.c },
+                    "aria-hidden": "true",
+                    children: [
+                      e.jsx("svg", {
+                        viewBox: "0 0 16 18",
+                        children: e.jsx("path", {
+                          d: "M1 1l13 6.5-5.6 1.6L5.8 16Z",
+                        }),
+                      }),
+                      e.jsx("b", { children: t.name }),
+                    ],
+                  },
+                  t.name,
+                ),
+              ),
+              e.jsx("div", {
+                className: "or-tag",
+                "aria-live": "polite",
+                children: It.map((t) =>
+                  e.jsx("span", { className: "or-tag-l", children: t }, t),
+                ),
+              }),
+            ],
+          }),
+        }),
+      }),
+      e.jsx("section", {
+        className: "or-scene or-s-people",
+        id: "people",
+        "aria-label": "People",
+        children: e.jsx("div", {
+          className: "or-track or-people-track",
+          children: e.jsxs("div", {
+            className: "or-stage or-people",
+            children: [
+              [J(29008324, 700), J(12932574, 700), J(4464884, 700)].map(
+                (t, l) =>
+                  e.jsx(
+                    "img",
+                    {
+                      className: "or-fly or-fly" + l,
+                      src: t,
+                      alt: "",
+                      "aria-hidden": "true",
+                    },
+                    t,
+                  ),
+              ),
+              e.jsxs("h2", {
+                className: "or-people-h",
+                children: [
+                  e.jsx("span", {
+                    className: "or-sr",
+                    children:
+                      "Every designer here was chosen from several hundred others.",
+                  }),
+                  e.jsx("span", {
+                    className: "or-pl",
+                    "aria-hidden": "true",
+                    children: e.jsx(ne, {
+                      text: "Every designer here",
+                      hidden: !0,
+                    }),
+                  }),
+                  e.jsx("span", {
+                    className: "or-pl or-hi",
+                    "aria-hidden": "true",
+                    children: e.jsx(ne, {
+                      text: "was chosen from",
+                      hidden: !0,
+                    }),
+                  }),
+                  e.jsxs("span", {
+                    className: "or-pl",
+                    "aria-hidden": "true",
+                    children: [
+                      e.jsx(ne, { text: "several", hidden: !0 }),
+                      e.jsxs("span", {
+                        className: "or-gap",
+                        children: [
+                          e.jsxs("span", {
+                            className: "or-ava",
+                            children: [
+                              rt.map((t) =>
+                                e.jsx(
+                                  "img",
+                                  { src: J(t, 120, 120), alt: "" },
+                                  t,
+                                ),
+                              ),
+                              e.jsx("b", { children: "+40" }),
+                            ],
+                          }),
+                          e.jsx("span", {
+                            className: "or-gap-word",
+                            children: "hundred",
+                          }),
+                        ],
+                      }),
+                      e.jsx(ne, { text: "others", hidden: !0 }),
+                    ],
+                  }),
+                ],
+              }),
+              e.jsx("span", { className: "or-swallow", "aria-hidden": "true" }),
+            ],
+          }),
+        }),
+      }),
+      e.jsx("section", {
+        className: "or-scene or-s-quote",
+        id: "quote",
+        "aria-label": "What we believe",
+        children: e.jsx("div", {
+          className: "or-track or-quote-track",
+          children: e.jsxs("div", {
+            className: "or-stage or-quote",
+            children: [
+              e.jsx("span", {
+                className: "or-ring-c or-ring-c0",
+                "aria-hidden": "true",
+              }),
+              e.jsx("span", {
+                className: "or-ring-c or-ring-c1",
+                "aria-hidden": "true",
+              }),
+              e.jsx("span", {
+                className: "or-ring-c or-ring-c2",
+                "aria-hidden": "true",
+              }),
+              e.jsx("span", {
+                className: "or-qmark",
+                "aria-hidden": "true",
+                "data-rise": "",
+                children: "“",
+              }),
+              e.jsx("blockquote", {
+                className: "or-q",
+                children: e.jsx(ne, {
+                  text: "Anyone can draw a square. Very few can make it feel like a place you want to stay.",
+                }),
+              }),
+              e.jsx("span", {
+                className: "or-qbar",
+                "aria-hidden": "true",
+                children: e.jsx("i", {}),
+              }),
+              e.jsx("p", {
+                className: "or-qcap",
+                "data-rise": "",
+                children:
+                  "Ines Varga, founder. Every brief starts with this sentence pinned above the table.",
+              }),
+            ],
+          }),
+        }),
+      }),
+      e.jsx("section", {
+        className: "or-scene or-s-work",
+        id: "work",
+        "aria-label": "Selected work",
+        children: e.jsx("div", {
+          className: "or-track or-work-track",
+          children: e.jsxs("div", {
+            className: "or-stage or-work",
+            children: [
+              e.jsxs("div", {
+                className: "or-work-lift",
+                children: [
+                  e.jsx("p", {
+                    className: "or-work-k",
+                    "data-rise": "",
+                    children: "Selected work, 2024 – 2026",
+                  }),
+                  e.jsx("div", {
+                    "data-rise": "",
+                    className: "or-car-wrap",
+                    children: e.jsx($t, { projects: m }),
+                  }),
+                ],
+              }),
+              e.jsx("div", {
+                className: "or-hand",
+                "aria-hidden": "true",
+                children: e.jsx(Ce, { src: Me(15863511, "sd_960_540") }),
+              }),
+              e.jsx("svg", {
+                className: "or-thread",
+                viewBox: "0 0 1440 900",
+                preserveAspectRatio: "none",
+                "aria-hidden": "true",
+                children: e.jsx("path", {
+                  pathLength: 1,
+                  d: "M1272 748C1262 520 1060 410 900 330C780 270 722 170 720 -10",
+                }),
+              }),
+              e.jsx("span", { className: "or-slit", "aria-hidden": "true" }),
+            ],
+          }),
+        }),
+      }),
+      e.jsx("section", {
+        className: "or-scene or-s-proof",
+        id: "proof",
+        "aria-label": "Who we work with",
+        children: e.jsx("div", {
+          className: "or-track or-proof-track",
+          children: e.jsxs("div", {
+            className: "or-stage or-proof",
+            children: [
+              e.jsx("canvas", {
+                className: "or-bubbles",
+                "aria-hidden": "true",
+              }),
+              e.jsx("span", { className: "or-blob", "aria-hidden": "true" }),
+              e.jsx("div", {
+                className: "or-cube-wrap",
+                children: e.jsxs("div", {
+                  className: "or-cube",
+                  children: [
+                    e.jsxs("div", {
+                      className: "or-face or-face-a",
+                      children: [
+                        e.jsx("span", {
+                          className: "or-sr",
+                          children: "We're trusted by 140 teams",
+                        }),
+                        Array.from({ length: 13 }, (t, l) =>
+                          e.jsxs(
+                            "span",
+                            {
+                              "aria-hidden": "true",
+                              className: $(l === 0 && "is-hi"),
+                              children: [
+                                "We're trusted by ",
+                                e.jsx("em", { children: "140 teams" }),
+                              ],
+                            },
+                            l,
+                          ),
+                        ),
+                      ],
+                    }),
+                    e.jsx("ul", {
+                      className: "or-face or-face-b",
+                      children: Wt.map((t) =>
+                        e.jsx(
+                          "li",
+                          {
+                            children: e.jsx("a", {
+                              href: "#work",
+                              className: "or-rl",
+                              "data-cursor": "nav",
+                              onClick: te(5),
+                              children: e.jsx(pe, { children: t }),
+                            }),
+                          },
+                          t,
+                        ),
+                      ),
+                    }),
+                  ],
+                }),
+              }),
+            ],
+          }),
+        }),
+      }),
+      e.jsx("section", {
+        className: "or-scene or-s-rope",
+        id: "process",
+        "aria-label": "How we work",
+        children: e.jsx("div", {
+          className: "or-track or-rope-track",
+          children: e.jsxs("div", {
+            className: "or-stage or-rope",
+            children: [
+              e.jsx("span", {
+                className: "or-rope-fill",
+                "aria-hidden": "true",
+              }),
+              e.jsx("svg", {
+                className: "or-rope-bg",
+                viewBox: "0 0 1440 900",
+                preserveAspectRatio: "none",
+                "aria-hidden": "true",
+                children: e.jsx("path", {
+                  pathLength: 1,
+                  d: "M1460 470C1180 560 860 600 640 640C430 680 330 820 230 800C110 776 120 640 300 620C520 596 560 760 470 900",
+                }),
+              }),
+              e.jsx("p", {
+                className: "or-rope-line",
+                "data-rise": "",
+                children:
+                  "Our studio is a calm room where knotty problems come undone.",
+              }),
+              e.jsxs("div", {
+                className: "or-squircle",
+                children: [
+                  e.jsx("canvas", {
+                    className: "or-rope-c",
+                    "aria-hidden": "true",
+                  }),
+                  e.jsx("canvas", {
+                    className: "or-rope-seq",
+                    "aria-hidden": "true",
+                  }),
+                  e.jsxs("h2", {
+                    className: "or-idea",
+                    children: [
+                      e.jsx("span", {
+                        className: "or-sr",
+                        children: "Have a knotty idea?",
+                      }),
+                      e.jsx("span", {
+                        className: "or-idea-l",
+                        children: e.jsx(ne, { text: "Have a", hidden: !0 }),
+                      }),
+                      e.jsx("span", {
+                        className: "or-idea-l",
+                        children: e.jsx(ne, {
+                          text: "knotty idea?",
+                          hidden: !0,
+                        }),
+                      }),
+                    ],
+                  }),
+                  e.jsx("div", {
+                    className: "or-marq",
+                    "aria-label": "Clients",
+                    children: e.jsx("div", {
+                      children: [...Fe, ...Fe].map((t, l) =>
+                        e.jsx(
+                          "span",
+                          { "aria-hidden": l >= Fe.length, children: t },
+                          l,
+                        ),
+                      ),
+                    }),
+                  }),
+                ],
+              }),
+            ],
+          }),
+        }),
+      }),
+      e.jsxs("section", {
+        className: "or-scene or-s-contact",
+        id: "contact",
+        "aria-label": "Contact",
+        children: [
+          e.jsxs("div", {
+            className: "or-contact",
+            children: [
+              e.jsxs("div", {
+                className: "or-contact-l",
+                children: [
+                  e.jsxs("h2", {
+                    className: "or-contact-h",
+                    "data-rise": "",
+                    children: [
+                      "Have a ",
+                      e.jsx("img", {
+                        src: J(29852852, 120, 120),
+                        alt: "",
+                        className: "or-contact-face",
+                      }),
+                      " knotty idea?",
+                      e.jsx("br", {}),
+                      "Tell us about it.",
+                    ],
+                  }),
+                  e.jsxs("div", {
+                    className: "or-trust",
+                    "data-rise": "",
+                    children: [
+                      e.jsx("small", { children: "Clients trust us" }),
+                      e.jsxs("span", {
+                        className: "or-rate",
+                        children: [
+                          e.jsx(Pe, { className: "or-rate-m" }),
+                          e.jsxs("span", {
+                            children: [
+                              e.jsx(st, {}),
+                              e.jsx("small", {
+                                children: "4.9 from 38 client reviews",
+                              }),
+                            ],
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  e.jsxs("div", {
+                    className: "or-follow",
+                    "data-rise": "",
+                    children: [
+                      e.jsx("small", { children: "Follow us" }),
+                      e.jsx("span", {
+                        children: [
+                          "Instagram",
+                          "Dribbble",
+                          "LinkedIn",
+                          "Read.cv",
+                        ].map((t) =>
+                          e.jsx(
+                            "a",
+                            {
+                              href: "#contact",
+                              className: "or-social",
+                              "data-cursor": "nav",
+                              "aria-label": t,
+                              children: t.slice(0, 2),
+                            },
+                            t,
+                          ),
+                        ),
+                      }),
+                    ],
+                  }),
+                  e.jsx("button", {
+                    type: "button",
+                    className: "or-sheet-open",
+                    "data-rise": "",
+                    onClick: () => ze(!0),
+                    children: "Start a brief",
+                  }),
+                ],
+              }),
+              e.jsx("div", {
+                className: $("or-sheet", de && "is-open"),
+                children: e.jsx(Jt, {
+                  email: b,
+                  onClose: le === "stack" ? () => ze(!1) : void 0,
+                }),
+              }),
+            ],
+          }),
+          e.jsxs("footer", {
+            className: "or-foot",
+            children: [
+              e.jsxs("div", {
+                className: "or-foot-big",
+                "aria-hidden": "true",
+                children: [
+                  e.jsx(Pe, { className: "or-foot-m" }),
+                  o.toLowerCase(),
+                ],
+              }),
+              e.jsxs("div", {
+                className: "or-foot-row",
+                children: [
+                  e.jsxs("address", {
+                    children: [
+                      o,
+                      " Studio",
+                      e.jsx("br", {}),
+                      "Rua das Flores 14, Porto",
+                    ],
+                  }),
+                  e.jsx("a", {
+                    className: "or-under",
+                    href: "mailto:" + b,
+                    "data-cursor": "nav",
+                    children: b,
+                  }),
+                  e.jsx("a", {
+                    className: "or-deck-pill or-rl",
+                    href: "#work",
+                    "data-cursor": "nav",
+                    onClick: te(5),
+                    children: e.jsx(pe, { children: "Studio deck" }),
+                  }),
+                  e.jsxs("small", {
+                    children: ["© 2026 ", o, " Studio · Privacy"],
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      }),
+      e.jsx("div", {
+        className: "or-flash",
+        "aria-hidden": "true",
+        children: e.jsx("div", {
+          className: "or-flash-in",
+          children: Array.from({ length: 7 }, (t, l) =>
+            e.jsx(
+              "div",
+              { className: "or-flash-row", children: "WE MAKE ".repeat(10) },
+              l,
+            ),
+          ),
+        }),
+      }),
+      e.jsxs("div", {
+        className: "or-jump",
+        "aria-hidden": "true",
+        children: [
+          e.jsx("span", { className: "or-jump-disc" }),
+          e.jsxs("svg", {
+            className: "or-jump-logo",
+            viewBox: "0 0 300 90",
+            children: [
+              e.jsx("path", {
+                d: "M14 82V42a28 28 0 0 1 56 0v40Z",
+                pathLength: 420,
+              }),
+              e.jsx("path", { d: "M42 18v64M14 50h56", pathLength: 420 }),
+              e.jsx("text", {
+                x: "86",
+                y: "78",
+                pathLength: 420,
+                children: o.toLowerCase(),
+              }),
+            ],
+          }),
+        ],
+      }),
+      e.jsxs("div", {
+        id: "or-menu",
+        className: $("or-menu", ee && "is-open"),
+        role: "dialog",
+        "aria-modal": "false",
+        "aria-label": "Menu",
+        "aria-hidden": !ee,
+        children: [
+          e.jsxs("div", {
+            className: "or-menu-social",
+            children: [
+              e.jsx("small", { children: "Social" }),
+              ["Instagram", "Dribbble", "Behance", "LinkedIn", "Read.cv"].map(
+                (t) =>
+                  e.jsx(
+                    "a",
+                    {
+                      href: "#contact",
+                      className: "or-rl",
+                      "data-cursor": "nav",
+                      tabIndex: ee ? 0 : -1,
+                      children: e.jsx(pe, { children: t }),
+                    },
+                    t,
+                  ),
+              ),
+              e.jsx("small", {
+                className: "or-menu-mail",
+                children: "Get in touch",
+              }),
+              e.jsx("a", {
+                href: "mailto:" + b,
+                className: "or-under",
+                tabIndex: ee ? 0 : -1,
+                children: b,
+              }),
+            ],
+          }),
+          e.jsx("div", {
+            className: "or-menu-prev",
+            "aria-hidden": "true",
+            children: Se.map((t, l) =>
+              e.jsx(
+                "span",
+                {
+                  className: $("or-menu-p", Ae === l && "is-on"),
+                  children: t.panel,
+                },
+                t.label,
+              ),
+            ),
+          }),
+          e.jsxs("nav", {
+            className: "or-menu-links",
+            "aria-label": "Menu",
+            children: [
+              e.jsx("small", { children: "Menu" }),
+              Se.map((t, l) =>
+                e.jsx(
+                  "a",
+                  {
+                    href: "#" + ge[t.to].id,
+                    className: "or-rl",
+                    "data-cursor": "nav",
+                    tabIndex: ee ? 0 : -1,
+                    onMouseEnter: () => Re(l),
+                    onFocus: () => Re(l),
+                    onClick: te(t.to),
+                    children: e.jsx(pe, { children: t.label }),
+                  },
+                  t.label,
+                ),
+              ),
+            ],
+          }),
+        ],
+      }),
+      e.jsxs("div", {
+        className: "or-float",
+        children: [
+          e.jsx("a", {
+            href: "mailto:" + b,
+            className: "or-metal or-metal-o",
+            "data-cursor": "nav",
+            "aria-label": "Email " + b,
+            children: e.jsx("svg", {
+              viewBox: "0 0 24 24",
+              "aria-hidden": "true",
+              children: e.jsx("path", { d: "M3 6h18v12H3z M3 7l9 6 9-6" }),
+            }),
+          }),
+          e.jsx("a", {
+            href: "#contact",
+            className: "or-metal or-metal-o",
+            "data-cursor": "nav",
+            "aria-label": "Chat with the studio",
+            onClick: te(8),
+            children: e.jsx("svg", {
+              viewBox: "0 0 24 24",
+              "aria-hidden": "true",
+              children: e.jsx("path", { d: "M4 5h16v11H9l-5 4z" }),
+            }),
+          }),
+          e.jsxs("a", {
+            href: "#contact",
+            className: "or-metal or-metal-p",
+            "data-cursor": "nav",
+            onClick: te(8),
+            children: [
+              e.jsx("svg", {
+                viewBox: "0 0 24 24",
+                "aria-hidden": "true",
+                children: e.jsx("path", {
+                  d: "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5",
+                }),
+              }),
+              "Book a call",
+            ],
+          }),
+        ],
+      }),
+      e.jsx("span", { className: "or-dot", "aria-hidden": "true" }),
+    ],
+  });
+}
+function to(o, d) {
+  const m = new pt({ canvas: o, antialias: !0, alpha: !0 });
+  (m.setPixelRatio(d), (m.toneMapping = ft), (m.outputColorSpace = mt));
+  const b = new ut(),
+    O = new gt(m),
+    S = O.fromScene(new Tt(), 0.04).texture;
+  b.environment = S;
+  const P = new bt(28, 1, 0.1, 100);
+  (P.position.set(0, 0.4, 15), P.lookAt(0, 0, 0));
+  const g = new et(16773862, 2.2);
+  (g.position.set(-4, 6, 8),
+    (m.shadowMap.enabled = !0),
+    (m.shadowMap.type = xt),
+    (g.castShadow = !0),
+    g.shadow.mapSize.set(d > 1 ? 2048 : 1024, d > 1 ? 2048 : 1024),
+    Object.assign(g.shadow.camera, {
+      left: -12,
+      right: 12,
+      top: 5,
+      bottom: -5,
+      near: 1,
+      far: 30,
+    }),
+    (g.shadow.radius = 6),
+    (g.shadow.bias = -5e-4),
+    b.add(g));
+  const D = new tt(new Rt(60, 20), new wt({ color: 2760540, opacity: 0.16 }));
+  ((D.position.z = -0.75), (D.receiveShadow = !0), b.add(D));
+  const N = new et(13157119, 1.6);
+  (N.position.set(6, -2, -4), b.add(N));
+  const Z = document.createElement("canvas");
+  ((Z.width = 128), (Z.height = 64));
+  const le = Z.getContext("2d"),
+    be = le.createImageData(128, 64);
+  for (let f = 0; f < 64; f++)
+    for (let z = 0; z < 128; z++) {
+      const v = ((z + f * 2) / 32) * Math.PI * 2,
+        _ = Math.sin(((z * 3 - f) / 9) * Math.PI) * 0.18,
+        re = Math.cos(v) * 0.55 + _,
+        T = Math.cos(v) * 0.35,
+        q = (f * 128 + z) * 4;
+      ((be.data[q] = 128 + re * 127),
+        (be.data[q + 1] = 128 + T * 127),
+        (be.data[q + 2] = 235),
+        (be.data[q + 3] = 255));
+    }
+  le.putImageData(be, 0, 0);
+  const E = new vt(Z);
+  ((E.wrapS = E.wrapT = kt), E.repeat.set(70, 1));
+  const Ee = new yt({
+    color: 5002720,
+    roughness: 0.58,
+    sheen: 1,
+    sheenRoughness: 0.45,
+    sheenColor: new Nt(12172543),
+    normalMap: E,
+    normalScale: new jt(0.9, 0.9),
+    envMapIntensity: 0.9,
+  }),
+    ie = new tt(new Mt(), Ee);
+  ((ie.castShadow = !0), b.add(ie));
+  const xe = [],
+    ee = 56;
+  for (let f = 0; f <= ee; f++) {
+    const z = Math.PI + 0.42 + (f / ee) * (2 * Math.PI - 0.84);
+    xe.push(
+      new ue(
+        Math.sin(z) + 2 * Math.sin(2 * z),
+        Math.cos(z) - 2 * Math.cos(2 * z) + 1.2,
+        -Math.sin(3 * z) * 1.1,
+      ).multiplyScalar(0.42),
+    );
+  }
+  let fe = 9;
+  const Ae = (f) => {
+    const z = xe[0].clone(),
+      v = xe[xe.length - 1].clone(),
+      _ = [
+        new ue(-f, -0.35, 0.5),
+        new ue(-f * 0.55, -0.25, 0.45),
+        new ue(-1.6, v.y - 0.1, 0.4),
+      ],
+      re = [
+        new ue(1.6, z.y - 0.1, -0.4),
+        new ue(f * 0.55, -0.25, -0.45),
+        new ue(f, -0.35, -0.5),
+      ],
+      T = [..._, ...[...xe].reverse(), ...re],
+      q = [0];
+    for (let G = 1; G < T.length; G++)
+      q.push(q[G - 1] + T[G].distanceTo(T[G - 1]));
+    const a = q[q.length - 1],
+      Y = T.map((G, U) => new ue(-f + (2 * f * q[U]) / a, -0.3, 0));
+    return { pts: T, straight: Y, s: q.map((G) => G / a) };
+  };
+  let Re = Ae(fe),
+    de = -1;
+  const ze = (f) => {
+    const z = Re.pts.map((_, re) => {
+      const T = Re.s[re],
+        q = 1 - Math.abs(2 * T - 1),
+        a = Math.min(1, Math.max(0, (f - q * 0.35) / 0.65)),
+        Y = a * a * (3 - 2 * a),
+        G = _.clone().lerp(Re.straight[re], Y);
+      return ((G.z += Math.sin(Math.PI * Y) * 0.9 * q), G);
+    }),
+      v = new zt(
+        new St(z, !1, "centripetal"),
+        d > 1 ? 420 : 240,
+        0.17,
+        d > 1 ? 22 : 14,
+        !1,
+      );
+    (ie.geometry.dispose(), (ie.geometry = v));
+  },
+    te = () => m.render(b, P),
+    Se = () => {
+      const f = o.clientWidth,
+        z = o.clientHeight;
+      if (!f || !z) return;
+      (m.setSize(f, z, !1), (P.aspect = f / z), P.updateProjectionMatrix());
+      const _ =
+        Math.tan((P.fov * Math.PI) / 360) * P.position.z * P.aspect * 1.15;
+      Math.abs(_ - fe) > 0.05
+        ? ((fe = _), (Re = Ae(fe)), (ye = Math.max(0, de)), (de = -1), l())
+        : te();
+    };
+  let ye = 0,
+    t = 0;
+  const l = () => {
+    ((t = 0),
+      !(Math.abs(ye - de) < 0.002) &&
+      ((de = ye), (ie.rotation.y = -0.25 + de * 0.25), ze(de), te()));
+  },
+    n = (f) => {
+      ((ye = f), t || (t = requestAnimationFrame(l)));
+    },
+    j = async (f) => {
+      const z = o.width,
+        v = o.height,
+        _ = [0.16, 0.84],
+        re = Math.round(v * _[0]),
+        T = Math.round(v * (_[1] - _[0])),
+        q = Math.min(1, 1280 / z),
+        a = [],
+        Y = document.createElement("canvas");
+      ((Y.width = Math.round(z * q)), (Y.height = Math.round(T * q)));
+      const G = Y.getContext("2d");
+      for (let U = 0; U < f; U++) {
+        const je = U / (f - 1);
+        ((ie.rotation.y = -0.25 + je * 0.25), ze(je), te());
+        const Ie = await createImageBitmap(o, 0, re, z, T, {
+          resizeWidth: Y.width,
+          resizeHeight: Y.height,
+          resizeQuality: "high",
+        });
+        (G.clearRect(0, 0, Y.width, Y.height),
+          G.drawImage(Ie, 0, 0),
+          Ie.close(),
+          a.push(
+            await new Promise((C, I) =>
+              Y.toBlob(
+                (V) => (V ? C(V) : I(new Error("toBlob"))),
+                "image/webp",
+                0.88,
+              ),
+            ),
+          ),
+          U % 2 && (await new Promise((C) => requestAnimationFrame(C))));
+      }
+      return ((de = -1), { frames: a, band: _ });
+    };
+  return (
+    Se(),
+    (ye = 0),
+    l(),
+    {
+      set: n,
+      bake: j,
+      resize: Se,
+      dispose: () => {
+        (cancelAnimationFrame(t),
+          D.geometry.dispose(),
+          D.material.dispose(),
+          ie.geometry.dispose(),
+          Ee.dispose(),
+          E.dispose(),
+          S.dispose(),
+          O.dispose(),
+          m.dispose());
+      },
+    }
+  );
+}
+const oo = (o) => o.replace(/(-?\d*\.?\d+)R\b/g, "calc($1*var(--r))"),
+  ro = oo(`
 .or-root{--or-paper:#ffffff;--or-warm:#f6f3f1;--or-mint:#e9f6f1;--or-lilac:#dcd3f2;--or-lilac-soft:#f1ecf6;--or-blush:#f7c3b4;--or-ink:#0b0b0c;--or-mute:#8b8a90;--or-line:#e6e4e2;--or-night:#050505;--or-hi:#ffffff;--or-blush-soft:#fbf0ec;
   --r:min(calc(100cqw / 90),calc(100cqh / 56.25));
   position:relative;width:100%;height:var(--h);overflow:hidden;container-type:size;isolation:isolate;
@@ -465,4 +3674,8 @@ typeof window < "u" && y.registerPlugin(ke); const qt = "https://fonts.googleapi
 .or-reduced .or-roll-t>span,.or-reduced .or-menu,.or-reduced .or-menu>*{transition-duration:.01s!important}
 .or-reduced .or-idea .or-l{opacity:1}
 @media (prefers-reduced-motion:reduce){.or-root *{scroll-behavior:auto}}
-`); function co() { return e.jsx("div", { className: "w-full", children: e.jsx(eo, {}) }) } export { co as default };
+`);
+function co() {
+  return e.jsx("div", { className: "w-full", children: e.jsx(eo, {}) });
+}
+export { co as default };
