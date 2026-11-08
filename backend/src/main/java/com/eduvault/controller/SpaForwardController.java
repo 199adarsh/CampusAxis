@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class SpaForwardController {
 
     @GetMapping(value = {
+        "/dashboard",
+        "/dashboard/**",
+        "/landing",
         "/notes",
         "/notes/**",
         "/pyqs",
