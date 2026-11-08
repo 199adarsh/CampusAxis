@@ -111,7 +111,7 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
             {
                 name: 'Home',
                 icon: DashboardSquare02Icon,
-                path: '/'
+                path: '/dashboard'
             },
             {
                 name: 'Notes & PYQs',
@@ -207,7 +207,7 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                                 <NavLink
                                     key={item.path}
                                     to={item.path}
-                                    end={item.path === '/'}
+                                    end={item.path === '/dashboard'}
                                     title={collapsed ? item.name : undefined}
                                     onClick={() => setMobileMenuOpen && setMobileMenuOpen(false)}
                                     className={({ isActive }) => cn(

@@ -3,7 +3,7 @@ import { cn } from '../../lib/utils';
 import { getSubjectAbbreviation, normalizeDateKey } from '../../lib/attendanceUtils';
 import { PresentBadgeIcon, AbsentBadgeIcon } from './AttendanceAnalytics';
 
-export function buildSharedHeatmapData(subjects) {
+export function buildSharedHeatmapData(subjects, minBoxes = 140) {
   const dayMap = new Map();
   const dates = [];
 
@@ -40,33 +40,34 @@ export function buildSharedHeatmapData(subjects) {
   });
 
   const today = new Date();
-  let startOfGrid;
-  let weeksToShow;
+  const minWeeks = Math.ceil(minBoxes / 7); // Default 140 boxes = 20 weeks
+
+  let weeksToShow = minWeeks;
+  let endSaturday;
 
   if (dates.length > 0) {
     const sortedDates = [...dates].sort();
     const earliest = new Date(sortedDates[0].replace(/-/g, '/'));
     const latest = new Date(sortedDates[sortedDates.length - 1].replace(/-/g, '/'));
 
-    // Start on Sunday of the earliest recorded heat
-    const startSunday = new Date(earliest);
-    startSunday.setDate(earliest.getDate() - earliest.getDay());
+    const refEnd = new Date(Math.max(latest.getTime(), today.getTime()));
+    endSaturday = new Date(refEnd);
+    endSaturday.setDate(refEnd.getDate() + (6 - refEnd.getDay()));
 
-    // End on Saturday of the latest recorded heat
-    const endSaturday = new Date(latest);
-    endSaturday.setDate(latest.getDate() + (6 - latest.getDay()));
+    const startEarliest = new Date(earliest);
+    startEarliest.setDate(earliest.getDate() - earliest.getDay());
 
-    const totalDays = Math.max(7, Math.ceil((endSaturday.getTime() - startSunday.getTime()) / (24 * 60 * 60 * 1000)) + 1);
-    weeksToShow = Math.max(1, Math.ceil(totalDays / 7));
-    startOfGrid = startSunday;
+    const totalDays = Math.ceil((endSaturday.getTime() - startEarliest.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    const recordedWeeks = Math.ceil(totalDays / 7);
+    weeksToShow = Math.max(minWeeks, recordedWeeks);
   } else {
-    const endSaturday = new Date(today);
+    endSaturday = new Date(today);
     endSaturday.setDate(today.getDate() + (6 - today.getDay()));
-    const startSunday = new Date(endSaturday);
-    startSunday.setDate(endSaturday.getDate() - 27);
-    startOfGrid = startSunday;
-    weeksToShow = 4;
+    weeksToShow = minWeeks;
   }
+
+  const startOfGrid = new Date(endSaturday);
+  startOfGrid.setDate(endSaturday.getDate() - (weeksToShow * 7 - 1));
 
   const grid = [];
   let cursor = new Date(startOfGrid);
@@ -85,20 +86,21 @@ export function buildSharedHeatmapData(subjects) {
     grid.push(week);
   }
 
-  return { grid, dayMap, weeksToShow };
+  return { grid, dayMap, weeksToShow, totalBoxes: weeksToShow * 7 };
 }
 
 const DAY_LABELS = ['', 'M', '', 'W', '', 'F', ''];
 
 const SharedAttendanceHeatmap = ({
   subjects = [],
+  minBoxes = 140,
   className = ''
 }) => {
   const [hoveredDay, setHoveredDay] = useState(null);
 
   const { grid } = useMemo(
-    () => buildSharedHeatmapData(subjects),
-    [subjects]
+    () => buildSharedHeatmapData(subjects, minBoxes),
+    [subjects, minBoxes]
   );
 
   const visibleWeeks = useMemo(() => grid, [grid]);

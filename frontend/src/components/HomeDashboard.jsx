@@ -283,21 +283,10 @@ const HomeDashboard = () => {
   const [teacherId, setTeacherId] = useState('');
   const [teacherPassword, setTeacherPassword] = useState('');
 
-  const TEACHER_ACCOUNTS = [
-    { id: 'DRP@Eduvault', name: 'D R Patil', pass: 'DRP@Eduvault2026', dept: 'AI & Data Science' },
-    { id: 'HPM@Eduvault', name: 'H P Magdum', pass: 'HPM@Eduvault2026', dept: 'AI & Data Science' },
-    { id: 'TIB@Eduvault', name: 'T I Bagban', pass: 'TIB@Eduvault2026', dept: 'AI & Data Science' },
-    { id: 'PMM@Eduvault', name: 'P M Mathpati', pass: 'PMM@Eduvault2026', dept: 'AI & Data Science' }
-  ];
-
   const handleTeacherLogin = async (e) => {
     e.preventDefault();
-    const account = TEACHER_ACCOUNTS.find(
-      t => t.id.toLowerCase() === teacherId.trim().toLowerCase() && t.pass === teacherPassword.trim()
-    );
-
-    if (!account) {
-      toast.error('Invalid Faculty ID or Password');
+    if (!teacherId.trim() || !teacherPassword.trim()) {
+      toast.error('Please enter Faculty ID and Password');
       return;
     }
 
@@ -306,15 +295,25 @@ const HomeDashboard = () => {
     setSyncProgress(50);
 
     try {
+      const res = await axios.post(`${API_BASE}/portal/faculty/login`, {
+        facultyId: teacherId.trim(),
+        password: teacherPassword.trim()
+      });
+
+      const account = res.data;
+      if (!account || !account.name) {
+        throw new Error('Invalid Faculty ID or Password');
+      }
+
       localStorage.setItem('eduvault_user_role', 'teacher');
-      localStorage.setItem('eduvault_teacher_id', account.id);
+      localStorage.setItem('eduvault_teacher_id', account.prn || account.id);
       localStorage.setItem('eduvault_teacher_name', account.name);
 
       const teacherProfile = {
         name: account.name,
-        prn: account.id,
+        prn: account.prn || account.id,
         dob: 'TEACHER',
-        department: account.dept,
+        department: account.department || account.dept || 'Engineering',
         role: 'teacher'
       };
       localStorage.setItem('eduvault_profile', JSON.stringify(teacherProfile));
@@ -328,11 +327,17 @@ const HomeDashboard = () => {
 
       setSyncProgress(100);
       setSyncStage('Signed in successfully!');
-      toast.success(`Welcome, Prof. ${account.name}`);
+      toast.success(`Welcome, ${account.name}`);
 
       if (refreshData) {
         await refreshData(teacherProfile, []);
       }
+    } catch (err) {
+      toast.error(err.response?.data?.error || err.message || 'Invalid Faculty ID or Password');
+    } finally {
+      setSyncing(false);
+    }
+  };
     } catch (err) {
       console.error('Faculty login error:', err);
       toast.error('Failed to sign in');

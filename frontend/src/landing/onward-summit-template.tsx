@@ -1714,7 +1714,7 @@ export default function OnwardSummitTemplate({
           </section>
         )}
 
-        {/* ---------------- testimonials ---------------- */}
+        {/* ---------------- testimonials ---------------- *
         <section className="ows-sec ows-wrap" data-sec="testimonials" style={{ paddingTop: "clamp(56px, 8vw, 96px)", paddingBottom: "clamp(24px, 4vw, 48px)" }}>
           <div className="ows-sec-head">
             <div>
@@ -1725,7 +1725,7 @@ export default function OnwardSummitTemplate({
           <div className="ows-rise">
             <TestimonialsEditorial />
           </div>
-        </section>
+        </section>/}
 
         {/* ---------------- FAQ ---------------- */}
         {faq && (
@@ -1804,23 +1804,15 @@ export default function OnwardSummitTemplate({
 
       {/* ---------------- Auth Modal Popup ---------------- */}
       {authModalOpen && (
-        <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"
           onClick={() => setAuthModalOpen(false)}
         >
-          <div 
-            className="relative w-full max-w-[450px]"
+          <div
+            className="relative w-full max-w-[420px]"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              onClick={() => setAuthModalOpen(false)}
-              className="absolute -top-3.5 -right-3.5 z-20 w-8 h-8 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105"
-              aria-label="Close modal"
-            >
-              ✕
-            </button>
-            <SwapForm onSuccess={() => setAuthModalOpen(false)} />
+            <SwapForm onSuccess={() => setAuthModalOpen(false)} onClose={() => setAuthModalOpen(false)} />
           </div>
         </div>
       )}
@@ -1836,7 +1828,7 @@ const OWS_CSS = `
 html:has(.ows-root),body:has(.ows-root),.ows-root{scrollbar-width:none!important;-ms-overflow-style:none!important}
 html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.ows-root::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
 .ows-root{position:relative;background:var(--ows-paper);color:var(--ows-ink);overflow-x:clip;font-family:"Inter Tight","Inter","Geist","Helvetica Neue",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;line-height:1.4;letter-spacing:-.006em}
-.ows-root :where(button){font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit}
+.ows-root :where(button:not([class*="!"]):not([class*="bg-"]):not([type="submit"])){font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit}
 .ows-root :where(a){color:inherit;text-decoration:none}
 .ows-root :where(p,h1,h2,h3,ul,ol){margin:0;padding:0}
 .ows-root :where(ul,ol){list-style:none}

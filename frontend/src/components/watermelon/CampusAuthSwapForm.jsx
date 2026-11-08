@@ -27,30 +27,15 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
-const TEACHER_ACCOUNTS = [
-  { id: 'DRP@Eduvault', name: 'D R Patil', pass: 'DRP@Eduvault2026', dept: 'AI & Data Science' },
-  { id: 'HPM@Eduvault', name: 'H P Magdum', pass: 'HPM@Eduvault2026', dept: 'AI & Data Science' },
-  { id: 'TIB@Eduvault', name: 'T I Bagban', pass: 'TIB@Eduvault2026', dept: 'AI & Data Science' },
-  { id: 'PMM@Eduvault', name: 'P M Mathpati', pass: 'PMM@Eduvault2026', dept: 'AI & Data Science' }
+const FACULTY_LIST = [
+  { id: 'DRP@Eduvault', name: 'D R Patil', dept: 'AI & Data Science' },
+  { id: 'HPM@Eduvault', name: 'H P Magdum', dept: 'AI & Data Science' },
+  { id: 'TIB@Eduvault', name: 'T I Bagban', dept: 'AI & Data Science' },
+  { id: 'PMM@Eduvault', name: 'P M Mathpati', dept: 'AI & Data Science' }
 ];
 
-const MOCK_STUDENT_PROFILE = {
-  name: 'Adarsh Patil',
-  prn: '24uad019',
-  dob: '15-08-2005',
-  department: 'Artificial Intelligence & Data Science',
-  semester: 'SEM 04',
-  section: 'A',
-  rollNo: '19',
-  role: 'student'
-};
 
-const MOCK_STUDENT_SUBJECTS = [
-  { code: 'AIDS401', name: 'Machine Learning', attendance: 88, cie: 22, maxCie: 25, totalConducted: 40, totalAttended: 35, totalScheduled: 50, stillToGo: 10, credit: 4, lecturesPerWeek: 4 },
-  { code: 'AIDS402', name: 'Database Management Systems', attendance: 78, cie: 20, maxCie: 25, totalConducted: 36, totalAttended: 28, totalScheduled: 46, stillToGo: 10, credit: 3, lecturesPerWeek: 3 },
-  { code: 'AIDS403', name: 'Operating Systems', attendance: 82, cie: 21, maxCie: 25, totalConducted: 38, totalAttended: 31, totalScheduled: 48, stillToGo: 10, credit: 3, lecturesPerWeek: 3 },
-  { code: 'AIDS404', name: 'Computer Networks', attendance: 74, cie: 19, maxCie: 25, totalConducted: 35, totalAttended: 26, totalScheduled: 45, stillToGo: 10, credit: 3, lecturesPerWeek: 3 }
-];
+
 
 export default function CampusAuthSwapForm({ onAuthSuccess, className = '' }) {
   const navigate = useNavigate();
@@ -66,7 +51,7 @@ export default function CampusAuthSwapForm({ onAuthSuccess, className = '' }) {
         const decoded = JSON.parse(atob(saved));
         return decoded?.prn || '';
       }
-    } catch {}
+    } catch { }
     return '';
   });
 
@@ -77,7 +62,7 @@ export default function CampusAuthSwapForm({ onAuthSuccess, className = '' }) {
         const decoded = JSON.parse(atob(saved));
         return decoded?.dob || '';
       }
-    } catch {}
+    } catch { }
     return '';
   });
 
@@ -125,7 +110,7 @@ export default function CampusAuthSwapForm({ onAuthSuccess, className = '' }) {
           return;
         }
       }
-    } catch {}
+    } catch { }
     setActiveSession(null);
   };
 
@@ -244,38 +229,25 @@ export default function CampusAuthSwapForm({ onAuthSuccess, className = '' }) {
       let portalSuccess = false;
 
       // Attempt live portal scrape first
-      try {
-        setSyncStep(2);
-        setSyncStage('Connecting to DKTE examination portal...');
-        const portalRes = await axios.post(`${API_BASE}/portal/dashboard`, {
-          prn: cleanPrn,
-          dob: cleanDob
-        }, { timeout: 8000 });
 
-        if (portalRes.data) {
-          studentProfile = {
-            ...(portalRes.data.profile || {}),
-            prn: cleanPrn,
-            dob: cleanDob,
-            role: 'student'
-          };
-          studentSubjects = portalRes.data.subjects || [];
-          portalSuccess = true;
-        }
-      } catch (portalErr) {
-        // If portal fails but credentials are the verified mock demo, safely fallback
-        if (isMockDemo) {
-          studentProfile = {
-            ...MOCK_STUDENT_PROFILE,
-            prn: cleanPrn,
-            dob: cleanDob
-          };
-          studentSubjects = MOCK_STUDENT_SUBJECTS;
-          portalSuccess = true;
-        } else {
-          throw portalErr;
-        }
+      setSyncStep(2);
+      setSyncStage('Connecting to DKTE examination portal...');
+      const portalRes = await axios.post(`${API_BASE}/portal/dashboard`, {
+        prn: cleanPrn,
+        dob: cleanDob
+      }, { timeout: 8000 });
+
+      if (portalRes.data) {
+        studentProfile = {
+          ...(portalRes.data.profile || {}),
+          prn: cleanPrn,
+          dob: cleanDob,
+          role: 'student'
+        };
+        studentSubjects = portalRes.data.subjects || [];
+        portalSuccess = true;
       }
+
 
       if (!portalSuccess || !studentProfile) {
         throw new Error('Invalid credentials');
@@ -521,14 +493,13 @@ export default function CampusAuthSwapForm({ onAuthSuccess, className = '' }) {
         >
           {/* Main Top Card */}
           <div className="p-6 sm:p-8 pb-7 bg-white dark:bg-zinc-950 rounded-[28px] border-b border-[#E6E6EF] dark:border-zinc-800 transition-colors">
-            
+
             {/* Header with Mode Badge */}
             <div className="flex items-center justify-between mb-2">
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                isStudentMode
-                  ? 'bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-900'
-                  : 'bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900'
-              }`}>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${isStudentMode
+                ? 'bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-900'
+                : 'bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900'
+                }`}>
                 <Shield01Icon size={13} />
                 {isStudentMode ? 'Student Portal' : 'Faculty Access'}
               </span>
@@ -567,7 +538,7 @@ export default function CampusAuthSwapForm({ onAuthSuccess, className = '' }) {
               <div className="mb-5 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 space-y-1.5">
                 <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400 block">Select Faculty Account:</span>
                 <div className="flex flex-wrap gap-1">
-                  {TEACHER_ACCOUNTS.map((acc) => (
+                  {FACULTY_LIST.map((acc) => (
                     <button
                       key={acc.id}
                       type="button"
@@ -707,7 +678,7 @@ export default function CampusAuthSwapForm({ onAuthSuccess, className = '' }) {
                     maxLength={32}
                     value={facultyId}
                     onChange={(e) => handleFacultyIdChange(e.target.value)}
-                    placeholder="e.g. DRP@Eduvault"
+                    placeholder="e.g. Name@Campusaxis"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm font-mono text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
                     required
                     disabled={lockoutSec > 0}

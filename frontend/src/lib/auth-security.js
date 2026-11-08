@@ -43,24 +43,24 @@ const TRAVERSAL_PATTERNS = [
  */
 export function sanitizeString(val, maxLength = 64) {
   if (typeof val !== 'string') return '';
-  
+
   // Remove null bytes and invisible control characters (ASCII 0-31 except tab/newline)
   let clean = val.replace(/\0/g, '').replace(/[\x01-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '');
-  
+
   // Strip potential HTML tags
   clean = clean.replace(/<[^>]*>?/gm, '');
-  
+
   // Strip javascript: pseudo-protocols
   clean = clean.replace(/javascript:/gi, '');
-  
+
   // Trim whitespace
   clean = clean.trim();
-  
+
   // Truncate to safe length
   if (clean.length > maxLength) {
     clean = clean.slice(0, maxLength);
   }
-  
+
   return clean;
 }
 
@@ -132,7 +132,7 @@ export function validatePrn(prn) {
   }
 
   const cleaned = prn.trim();
-  
+
   if (cleaned.length < 4 || cleaned.length > 25) {
     return { valid: false, error: 'PRN must be between 4 and 25 alphanumeric characters.' };
   }
@@ -167,11 +167,11 @@ export function validateDob(dob) {
     const parts = cleaned.split('-');
     cleaned = `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[2]}`;
   }
-  
+
   // Format check: DD-MM-YYYY
   const dobRegex = /^(\d{2})-(\d{2})-(\d{4})$/;
   const match = cleaned.match(dobRegex);
-  
+
   if (!match) {
     return { valid: false, error: 'Date of birth must be in DD-MM-YYYY format (e.g. 15-08-2005).' };
   }
@@ -219,7 +219,7 @@ export function validateFacultyId(id) {
   const facultyRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$/;
   const simpleFacultyRegex = /^[a-zA-Z0-9@._-]{3,32}$/;
   if (!facultyRegex.test(cleaned) && !simpleFacultyRegex.test(cleaned)) {
-    return { valid: false, error: 'Invalid Faculty ID format (e.g. DRP@Eduvault).' };
+    return { valid: false, error: 'Invalid Faculty ID format (e.g. Name@Campusaxis).' };
   }
 
   const threat = detectSecurityThreats(cleaned);
