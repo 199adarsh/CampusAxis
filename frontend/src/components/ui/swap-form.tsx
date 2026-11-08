@@ -269,7 +269,7 @@ export function SwapForm({
           style={{ backgroundColor: "#285BE8", color: "#ffffff" }}
           className="w-full h-11 rounded-lg font-semibold text-sm !bg-[#285BE8] hover:!bg-[#234FCB] active:!bg-[#1D43AD] !text-white flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-[0_4px_10px_rgba(40,91,232,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#285BE8]/30 focus-visible:ring-offset-2"
         >
-          <span>Continue to Dashboard</span>
+          <span style={{ color: "#ffffff" }}>Continue to Dashboard</span>
           <ArrowRight01Icon className="w-4 h-4" />
         </button>
 

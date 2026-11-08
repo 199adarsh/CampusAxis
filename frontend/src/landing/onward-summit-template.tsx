@@ -1,116 +1,124 @@
-"use client"
+"use client";
 
+import * as React from "react";
+import WebhookRelay from "../components/ui/webhook-relay";
+import SwapForm from "../components/ui/swap-form";
 
-import * as React from "react"
-import WebhookRelay from "../components/ui/webhook-relay"
-import TestimonialsEditorial from "../components/ui/editorial-testimonial"
-import SwapForm from "../components/ui/swap-form"
+export type OwsLink = { label: string; href?: string };
 
-export type OwsLink = { label: string; href?: string }
-
-export type OwsGlyph = "arrow" | "plus" | "ring" | "dot"
+export type OwsGlyph = "arrow" | "plus" | "ring" | "dot";
 
 export type OwsFeature = {
   /** One of the three drawn marks, or your own node. */
-  icon?: "arrow" | "ring" | "plus" | React.ReactNode
-  title: string
-  text: string
-}
+  icon?: "arrow" | "ring" | "plus" | React.ReactNode;
+  title: string;
+  text: string;
+};
 
-export type OwsAudience = { role: string; pitch: string }
+export type OwsAudience = { role: string; pitch: string };
 
 export type OwsSession = {
   /** 24-hour venue time, e.g. "13:30". */
-  start: string
+  start: string;
   /** Minutes. Sets the end time and the calendar entry. */
-  duration: number
-  title: string
-  speakers?: string[]
+  duration: number;
+  title: string;
+  speakers?: string[];
   /** Becomes a filter chip. */
-  track?: string
-  description?: string
-}
+  track?: string;
+  description?: string;
+};
 
 export type OwsSpeaker = {
-  name: string
-  role: string
-  company?: string
-  bio?: string
+  name: string;
+  role: string;
+  company?: string;
+  bio?: string;
   /** A photo URL. Without one the speaker is drawn as an arrow halftone. */
-  photo?: string
-}
+  photo?: string;
+};
 
 export type OwsVenue = {
-  name: string
-  address: string
-  city?: string
-  notes?: string[]
+  name: string;
+  address: string;
+  city?: string;
+  notes?: string[];
   /** "Get directions" link. Defaults to a maps search for the address. */
-  mapHref?: string
-}
+  mapHref?: string;
+};
 
-export type OwsFaq = { q: string; a: string }
+export type OwsFaq = { q: string; a: string };
 
-export type OwsRegistration = { name: string; email: string; company: string; role: string }
+export type OwsRegistration = {
+  name: string;
+  email: string;
+  company: string;
+  role: string;
+};
 
-export type OwsPaletteName = "cobalt" | "emerald" | "dusk" | "ember"
+export type OwsPaletteName = "cobalt" | "emerald" | "dusk" | "ember";
 
 export type OwsPalette = {
   /** Top of the hero. */
-  deep: string
+  deep: string;
   /** The hero's middle, headings' accents, links. */
-  mid: string
+  mid: string;
   /** Where the hero thins out toward the page. */
-  light: string
-  paper: string
-  ink: string
-  muted: string
+  light: string;
+  paper: string;
+  ink: string;
+  muted: string;
   /** The register button. */
-  accent: string
-  accentInk: string
+  accent: string;
+  accentInk: string;
   /** Soft surfaces: the active chip, the map, the ticket. */
-  tint: string
+  tint: string;
   /** Glyphs on the dark part of the field, and on the dark part. */
-  glyphLight: string
-  glyphDark: string
+  glyphLight: string;
+  glyphDark: string;
   /** The marks' gradient: light, deep. */
-  icon: [string, string]
-}
+  icon: [string, string];
+};
 
 export interface OnwardSummitTemplateProps {
   /** Wordmark in the nav and footer. */
-  brand?: string
+  brand?: string;
   /** Replaces the drawn mark beside the wordmark. */
-  logo?: React.ReactNode
+  logo?: React.ReactNode;
   /** The event's name, set huge in the hero. */
-  title?: string
+  title?: string;
   /** Under the name. "\n" breaks the line. */
-  tagline?: string
+  tagline?: string;
   /** Shown in the nav as written. */
-  date?: string
-  city?: string
+  date?: string;
+  city?: string;
   /** ISO start with its UTC offset, e.g. "2026-11-12T08:00:00-05:00". Drives the countdown and every calendar file. */
-  startsAt?: string
+  startsAt?: string;
   /** ISO end, same form. Defaults to the end of the last session. */
-  endsAt?: string
+  endsAt?: string;
   /** The nav button. Without an href it scrolls to the form. */
-  register?: OwsLink
-  expect?: { title?: string; intro?: string; features?: OwsFeature[] } | null
-  guests?: { title?: string; audiences?: OwsAudience[] } | null
-  agenda?: { title?: string; intro?: string; sessions?: OwsSession[] } | null
-  speakers?: { title?: string; intro?: string; people?: OwsSpeaker[] } | null
-  venue?: (OwsVenue & { title?: string }) | null
-  faq?: { title?: string; items?: OwsFaq[] } | null
-  cta?: { kicker?: string; title?: string; subtitle?: string; seats?: { total: number; taken: number } } | null
-  footer?: { links?: OwsLink[]; note?: string } | null
-  palette?: OwsPaletteName | OwsPaletteInput
+  register?: OwsLink;
+  expect?: { title?: string; intro?: string; features?: OwsFeature[] } | null;
+  guests?: { title?: string; audiences?: OwsAudience[] } | null;
+  agenda?: { title?: string; intro?: string; sessions?: OwsSession[] } | null;
+  speakers?: { title?: string; intro?: string; people?: OwsSpeaker[] } | null;
+  venue?: (OwsVenue & { title?: string }) | null;
+  faq?: { title?: string; items?: OwsFaq[] } | null;
+  cta?: {
+    kicker?: string;
+    title?: string;
+    subtitle?: string;
+    seats?: { total: number; taken: number };
+  } | null;
+  footer?: { links?: OwsLink[]; note?: string } | null;
+  palette?: OwsPaletteName | OwsPaletteInput;
   /** The glyph the hero field and the portraits are made of. */
-  glyph?: OwsGlyph
+  glyph?: OwsGlyph;
   /** Called with the form's fields. Return (or resolve to) `false`, or throw, to show an error. */
-  onRegister?: (data: OwsRegistration) => unknown
+  onRegister?: (data: OwsRegistration) => unknown;
   /** Minimum height of the hero. A definite length, so it survives any host layout. */
-  height?: string
-  className?: string
+  height?: string;
+  className?: string;
 }
 
 // #region content
@@ -171,13 +179,25 @@ const PALETTES = {
     glyphDark: "#e0561f",
     icon: ["#ffbf9c", "#c9401a"] as [string, string],
   },
-}
+};
 
 const DEFAULT_FEATURES: OwsFeature[] = [
-  { icon: "arrow", title: "Structured Roadmaps", text: "Step-by-step Career Roadmaps that pinpoint what to learn and when." },
-  { icon: "ring", title: "Intelligence Over Notes", text: "RAG-based retrieval across all study materials to find relevant answers for exam preparation" },
-  { icon: "plus", title: "Smart Attendance Tracking", text: "Continuous sync with your college ERP to keep your 75% target safe." },
-]
+  {
+    icon: "arrow",
+    title: "Structured Roadmaps",
+    text: "Step-by-step Career Roadmaps that pinpoint what to learn and when.",
+  },
+  {
+    icon: "ring",
+    title: "Intelligence Over Notes",
+    text: "RAG-based retrieval across all study materials to find relevant answers for exam preparation",
+  },
+  {
+    icon: "plus",
+    title: "Smart Attendance Tracking",
+    text: "Continuous sync with your college ERP to keep your 75% target safe.",
+  },
+];
 
 const DEFAULT_AUDIENCES: OwsAudience[] = [
   {
@@ -195,17 +215,25 @@ const DEFAULT_AUDIENCES: OwsAudience[] = [
     pitch:
       "Direct college portal sync tracks your lectures automatically, projecting exactly what you need to keep your 75% safe.",
   },
-]
+];
 
 const DEFAULT_SESSIONS: OwsSession[] = [
-  { start: "08:00", duration: 50, title: "Doors, coffee and badge pickup", track: "Breaks", description: "Pick up your badge, find your table and meet the people you'll be trading notes with all day." },
+  {
+    start: "08:00",
+    duration: 50,
+    title: "Doors, coffee and badge pickup",
+    track: "Breaks",
+    description:
+      "Pick up your badge, find your table and meet the people you'll be trading notes with all day.",
+  },
   {
     start: "09:00",
     duration: 45,
     title: "Opening keynote: the finance team of 2030",
     speakers: ["Maya Okafor"],
     track: "Keynote",
-    description: "What a ten-person finance team will be able to do in four years, and the three decisions to make this quarter so you're ready.",
+    description:
+      "What a ten-person finance team will be able to do in four years, and the three decisions to make this quarter so you're ready.",
   },
   {
     start: "10:00",
@@ -213,7 +241,8 @@ const DEFAULT_SESSIONS: OwsSession[] = [
     title: "The five-day close, in practice",
     speakers: ["Daniel Reyes", "Priya Natarajan"],
     track: "Panel",
-    description: "Two controllers walk through the exact calendar, owners and checklists that took their close from twelve days to five.",
+    description:
+      "Two controllers walk through the exact calendar, owners and checklists that took their close from twelve days to five.",
   },
   {
     start: "11:00",
@@ -221,16 +250,25 @@ const DEFAULT_SESSIONS: OwsSession[] = [
     title: "Workshop: prompting for the general ledger",
     speakers: ["Lena Fischer"],
     track: "Workshop",
-    description: "Bring a laptop. Build prompts that draft accrual memos, explain variances and flag mis-codings, with guardrails your auditors will sign off on.",
+    description:
+      "Bring a laptop. Build prompts that draft accrual memos, explain variances and flag mis-codings, with guardrails your auditors will sign off on.",
   },
-  { start: "12:15", duration: 60, title: "Lunch roundtables by role", track: "Roundtable", description: "Tables are grouped by role and company size, each hosted by a speaker. Pick yours at check-in." },
+  {
+    start: "12:15",
+    duration: 60,
+    title: "Lunch roundtables by role",
+    track: "Roundtable",
+    description:
+      "Tables are grouped by role and company size, each hosted by a speaker. Pick yours at check-in.",
+  },
   {
     start: "13:30",
     duration: 45,
     title: "Spend is strategy: procurement as a profit center",
     speakers: ["Sam Whitaker", "Elena Varga"],
     track: "Panel",
-    description: "How intake, approvals and renewals become a lever on margin, with the metrics that convince a board.",
+    description:
+      "How intake, approvals and renewals become a lever on margin, with the metrics that convince a board.",
   },
   {
     start: "14:30",
@@ -238,7 +276,8 @@ const DEFAULT_SESSIONS: OwsSession[] = [
     title: "Workshop: a rolling forecast in an afternoon",
     speakers: ["Aiko Tanaka"],
     track: "Workshop",
-    description: "Start from last year's actuals and leave with a driver-based forecast that updates itself every month.",
+    description:
+      "Start from last year's actuals and leave with a driver-based forecast that updates itself every month.",
   },
   {
     start: "15:45",
@@ -246,10 +285,18 @@ const DEFAULT_SESSIONS: OwsSession[] = [
     title: "Fireside: raising, cutting and staying calm",
     speakers: ["Jordan Blake", "Maya Okafor"],
     track: "Keynote",
-    description: "An investor and an operator on the conversations a CFO has in a down round, and the ones to have before it.",
+    description:
+      "An investor and an operator on the conversations a CFO has in a down round, and the ones to have before it.",
   },
-  { start: "17:00", duration: 120, title: "Rooftop reception", track: "Breaks", description: "Drinks, small plates and the view. The best conversations of the day usually happen here." },
-]
+  {
+    start: "17:00",
+    duration: 120,
+    title: "Rooftop reception",
+    track: "Breaks",
+    description:
+      "Drinks, small plates and the view. The best conversations of the day usually happen here.",
+  },
+];
 
 const DEFAULT_SPEAKERS: OwsSpeaker[] = [
   {
@@ -280,7 +327,7 @@ const DEFAULT_SPEAKERS: OwsSpeaker[] = [
     bio: "Hackathons, tech contests, and submission deadlines slip through group chats. CampusAxis keeps every opportunity front and center.",
     photo: "/landing/feature-events.jpg",
   },
-]
+];
 
 const DEFAULT_FAQ: OwsFaq[] = [
   {
@@ -303,262 +350,396 @@ const DEFAULT_FAQ: OwsFaq[] = [
     q: "Is CampusAxis free for students?",
     a: "Yes! Core academic tracking, bunk calculator, study roadmaps, and community note sharing are completely free for all verified students.",
   },
-]
+];
 // #endregion content
 
 // #region logic
 function clamp(v: number, lo: number, hi: number): number {
-  return v < lo ? lo : v > hi ? hi : v
+  return v < lo ? lo : v > hi ? hi : v;
 }
 
 function smoothstep(a: number, b: number, x: number): number {
-  const t = clamp((x - a) / (b - a), 0, 1)
-  return t * t * (3 - 2 * t)
+  const t = clamp((x - a) / (b - a), 0, 1);
+  return t * t * (3 - 2 * t);
 }
 
 function hashString(s: string): number {
-  let h = 2166136261
+  let h = 2166136261;
   for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i)
-    h = Math.imul(h, 16777619)
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
   }
-  return h >>> 0
+  return h >>> 0;
 }
 
 function mulberry32(seed: number): () => number {
-  let a = seed >>> 0
+  let a = seed >>> 0;
   return () => {
-    a = (a + 0x6d2b79f5) >>> 0
-    let t = a
-    t = Math.imul(t ^ (t >>> 15), t | 1)
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 // The signed angle in (-PI, PI] that turns 0 into a.
 function shortestAngle(a: number): number {
-  const T = Math.PI * 2
-  let r = (((a + Math.PI) % T) + T) % T - Math.PI
-  if (r === -Math.PI) r = Math.PI
-  return r
+  const T = Math.PI * 2;
+  let r = ((((a + Math.PI) % T) + T) % T) - Math.PI;
+  if (r === -Math.PI) r = Math.PI;
+  return r;
 }
 
 // How much of each glyph colour a cell of the field gets, at (u, v) in the
 // box (0..1 each) with the box's width / height. Light glyphs live on the
 // navy, dark ones on the pale, and both part around the title.
-function fieldWeights(mode: "hero" | "band", u: number, v: number, aspect: number): [number, number] {
+function fieldWeights(
+  mode: "hero" | "band",
+  u: number,
+  v: number,
+  aspect: number,
+): [number, number] {
   if (mode === "band") {
-    const edge = smoothstep(0, 0.14, v) * smoothstep(0, 0.14, 1 - v)
-    const side = 0.25 + 0.75 * smoothstep(0.1, 0.8, u)
-    return [0.55 * edge * side, 0]
+    const edge = smoothstep(0, 0.14, v) * smoothstep(0, 0.14, 1 - v);
+    const side = 0.25 + 0.75 * smoothstep(0.1, 0.8, u);
+    return [0.55 * edge * side, 0];
   }
-  const rise = 0.3 + 0.7 * smoothstep(0.02, 0.48, v)
-  const light = rise * (1 - smoothstep(0.5, 0.74, v))
-  const dark = smoothstep(0.54, 0.72, v) * (1 - smoothstep(0.8, 0.985, v))
-  const dx = (u - 0.5) * aspect
-  const dy = (v - 0.47) * 1.25
-  const d = Math.sqrt(dx * dx + dy * dy)
-  const part = 0.1 + 0.9 * smoothstep(0.1, 0.4, d)
-  return [light * part, dark * part * 0.9]
+  const rise = 0.3 + 0.7 * smoothstep(0.02, 0.48, v);
+  const light = rise * (1 - smoothstep(0.5, 0.74, v));
+  const dark = smoothstep(0.54, 0.72, v) * (1 - smoothstep(0.8, 0.985, v));
+  const dx = (u - 0.5) * aspect;
+  const dy = (v - 0.47) * 1.25;
+  const d = Math.sqrt(dx * dx + dy * dy);
+  const part = 0.1 + 0.9 * smoothstep(0.1, 0.4, d);
+  return [light * part, dark * part * 0.9];
 }
 
 function pad2(n: number | string): string {
-  const s = String(n)
-  return s.length < 2 ? "0" + s : s
+  const s = String(n);
+  return s.length < 2 ? "0" + s : s;
 }
 
 function parseClock(hhmm: string): number | null {
-  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim())
-  if (!m) return null
-  const h = +m[1]
-  const mm = +m[2]
-  return h > 23 || mm > 59 ? null : h * 60 + mm
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim());
+  if (!m) return null;
+  const h = +m[1];
+  const mm = +m[2];
+  return h > 23 || mm > 59 ? null : h * 60 + mm;
 }
 
 function formatClock(hhmm: string): string {
-  const t = parseClock(hhmm)
-  if (t === null) return hhmm
-  const h = Math.floor(t / 60)
-  return (h % 12 || 12) + ":" + pad2(t % 60) + " " + (h >= 12 ? "PM" : "AM")
+  const t = parseClock(hhmm);
+  if (t === null) return hhmm;
+  const h = Math.floor(t / 60);
+  return (h % 12 || 12) + ":" + pad2(t % 60) + " " + (h >= 12 ? "PM" : "AM");
 }
 
 function addMinutes(hhmm: string, mins: number): string {
-  const t = parseClock(hhmm)
-  if (t === null) return hhmm
-  const x = (((t + Math.round(mins)) % 1440) + 1440) % 1440
-  return pad2(Math.floor(x / 60)) + ":" + pad2(x % 60)
+  const t = parseClock(hhmm);
+  if (t === null) return hhmm;
+  const x = (((t + Math.round(mins)) % 1440) + 1440) % 1440;
+  return pad2(Math.floor(x / 60)) + ":" + pad2(x % 60);
 }
 
 // "2026-11-12T08:00:00-05:00" -> the venue's date and its UTC offset.
 function eventParts(iso: string): { date: string; offset: string } {
-  const m = /^(\d{4}-\d{2}-\d{2})(?:T[\d:.]+)?(Z|[+-]\d{2}:\d{2})?$/.exec((iso || "").trim())
-  return m ? { date: m[1], offset: m[2] || "" } : { date: "", offset: "" }
+  const m = /^(\d{4}-\d{2}-\d{2})(?:T[\d:.]+)?(Z|[+-]\d{2}:\d{2})?$/.exec(
+    (iso || "").trim(),
+  );
+  return m ? { date: m[1], offset: m[2] || "" } : { date: "", offset: "" };
 }
 
 // A venue-time "HH:MM" on the event's day, as an instant.
 function atVenueTime(iso: string, hhmm: string): Date | null {
-  const p = eventParts(iso)
-  const t = parseClock(hhmm)
-  if (!p.date || t === null) return null
-  const d = new Date(p.date + "T" + pad2(Math.floor(t / 60)) + ":" + pad2(t % 60) + ":00" + p.offset)
-  return isNaN(d.getTime()) ? null : d
+  const p = eventParts(iso);
+  const t = parseClock(hhmm);
+  if (!p.date || t === null) return null;
+  const d = new Date(
+    p.date +
+    "T" +
+    pad2(Math.floor(t / 60)) +
+    ":" +
+    pad2(t % 60) +
+    ":00" +
+    p.offset,
+  );
+  return isNaN(d.getTime()) ? null : d;
 }
 
 function icsStamp(d: Date): string {
-  return d.toISOString().replace(/\.\d{3}/, "").replace(/[-:]/g, "")
+  return d
+    .toISOString()
+    .replace(/\.\d{3}/, "")
+    .replace(/[-:]/g, "");
 }
 
 function icsEscape(s: string): string {
-  return s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n")
+  return s
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r?\n/g, "\\n");
 }
 
 // RFC 5545 caps a line at 75 octets; longer ones continue after a CRLF + space.
 function icsFold(line: string): string {
-  if (line.length <= 75) return line
-  const out = [line.slice(0, 75)]
-  for (let i = 75; i < line.length; i += 74) out.push(" " + line.slice(i, i + 74))
-  return out.join("\r\n")
+  if (line.length <= 75) return line;
+  const out = [line.slice(0, 75)];
+  for (let i = 75; i < line.length; i += 74)
+    out.push(" " + line.slice(i, i + 74));
+  return out.join("\r\n");
 }
 
-type IcsEvent = { title: string; start: Date; end: Date; location?: string; description?: string }
+type IcsEvent = {
+  title: string;
+  start: Date;
+  end: Date;
+  location?: string;
+  description?: string;
+};
 
 function buildIcs(events: IcsEvent[], now: Date): string {
-  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//onward-summit-template//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH"]
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//onward-summit-template//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+  ];
   for (const e of events) {
     lines.push(
       "BEGIN:VEVENT",
-      "UID:" + hashString(e.title + icsStamp(e.start)).toString(36) + "@onward-summit",
+      "UID:" +
+      hashString(e.title + icsStamp(e.start)).toString(36) +
+      "@onward-summit",
       "DTSTAMP:" + icsStamp(now),
       "DTSTART:" + icsStamp(e.start),
       "DTEND:" + icsStamp(e.end),
       "SUMMARY:" + icsEscape(e.title),
-    )
-    if (e.location) lines.push("LOCATION:" + icsEscape(e.location))
-    if (e.description) lines.push("DESCRIPTION:" + icsEscape(e.description))
-    lines.push("END:VEVENT")
+    );
+    if (e.location) lines.push("LOCATION:" + icsEscape(e.location));
+    if (e.description) lines.push("DESCRIPTION:" + icsEscape(e.description));
+    lines.push("END:VEVENT");
   }
-  lines.push("END:VCALENDAR")
-  return lines.map(icsFold).join("\r\n") + "\r\n"
+  lines.push("END:VCALENDAR");
+  return lines.map(icsFold).join("\r\n") + "\r\n";
 }
 
-function countdown(ms: number): { days: number; hours: number; minutes: number; seconds: number; done: boolean } {
-  if (!(ms > 0)) return { days: 0, hours: 0, minutes: 0, seconds: 0, done: true }
-  const s = Math.floor(ms / 1000)
-  return { days: Math.floor(s / 86400), hours: Math.floor(s / 3600) % 24, minutes: Math.floor(s / 60) % 60, seconds: s % 60, done: false }
+function countdown(ms: number): {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  done: boolean;
+} {
+  if (!(ms > 0))
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, done: true };
+  const s = Math.floor(ms / 1000);
+  return {
+    days: Math.floor(s / 86400),
+    hours: Math.floor(s / 3600) % 24,
+    minutes: Math.floor(s / 60) % 60,
+    seconds: s % 60,
+    done: false,
+  };
 }
 
 function isEmail(s: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.trim())
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.trim());
 }
 
 // A short, readable, stable ticket code: the event's first letters and four
 // characters that never read as one another (no 0/O, 1/I).
 function ticketCode(event: string, seed: string): string {
-  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-  const prefix = (event.replace(/[^a-z]/gi, "").slice(0, 3) || "EVT").toUpperCase()
-  const r = mulberry32(hashString(seed.trim().toLowerCase()))
-  let tail = ""
-  for (let i = 0; i < 4; i++) tail += A[Math.floor(r() * A.length)]
-  return prefix + "-" + tail
+  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const prefix = (
+    event.replace(/[^a-z]/gi, "").slice(0, 3) || "EVT"
+  ).toUpperCase();
+  const r = mulberry32(hashString(seed.trim().toLowerCase()));
+  let tail = "";
+  for (let i = 0; i < 4; i++) tail += A[Math.floor(r() * A.length)];
+  return prefix + "-" + tail;
 }
 
 function nextIndex(i: number, key: string, n: number): number {
-  if (n <= 0) return 0
-  if (key === "ArrowRight" || key === "ArrowDown") return (i + 1) % n
-  if (key === "ArrowLeft" || key === "ArrowUp") return (i - 1 + n) % n
-  if (key === "Home") return 0
-  if (key === "End") return n - 1
-  return i
+  if (n <= 0) return 0;
+  if (key === "ArrowRight" || key === "ArrowDown") return (i + 1) % n;
+  if (key === "ArrowLeft" || key === "ArrowUp") return (i - 1 + n) % n;
+  if (key === "Home") return 0;
+  if (key === "End") return n - 1;
+  return i;
 }
 
 function tracksOf(sessions: OwsSession[]): string[] {
-  const out = ["All"]
-  for (const s of sessions) if (s.track && !out.includes(s.track)) out.push(s.track)
-  return out
+  const out = ["All"];
+  for (const s of sessions)
+    if (s.track && !out.includes(s.track)) out.push(s.track);
+  return out;
 }
 
-function seatsLeft(seats: { total: number; taken: number } | undefined): number {
-  return seats ? Math.max(0, Math.round(seats.total - seats.taken)) : 0
+function seatsLeft(
+  seats: { total: number; taken: number } | undefined,
+): number {
+  return seats ? Math.max(0, Math.round(seats.total - seats.taken)) : 0;
 }
 
 // One glyph as a stroked path at (x, y), s across.
 function glyphPath(kind: OwsGlyph, x: number, y: number, s: number): string {
-  const h = s / 2
-  const f = (n: number) => +n.toFixed(1)
-  if (kind === "plus") return "M" + f(x - h) + " " + f(y) + "H" + f(x + h) + "M" + f(x) + " " + f(y - h) + "V" + f(y + h)
+  const h = s / 2;
+  const f = (n: number) => +n.toFixed(1);
+  if (kind === "plus")
+    return (
+      "M" +
+      f(x - h) +
+      " " +
+      f(y) +
+      "H" +
+      f(x + h) +
+      "M" +
+      f(x) +
+      " " +
+      f(y - h) +
+      "V" +
+      f(y + h)
+    );
   if (kind === "ring" || kind === "dot") {
-    const r = kind === "dot" ? h * 0.3 : h * 0.72
-    return "M" + f(x - r) + " " + f(y) + "a" + f(r) + " " + f(r) + " 0 1 0 " + f(2 * r) + " 0a" + f(r) + " " + f(r) + " 0 1 0 " + f(-2 * r) + " 0"
+    const r = kind === "dot" ? h * 0.3 : h * 0.72;
+    return (
+      "M" +
+      f(x - r) +
+      " " +
+      f(y) +
+      "a" +
+      f(r) +
+      " " +
+      f(r) +
+      " 0 1 0 " +
+      f(2 * r) +
+      " 0a" +
+      f(r) +
+      " " +
+      f(r) +
+      " 0 1 0 " +
+      f(-2 * r) +
+      " 0"
+    );
   }
-  return "M" + f(x - h) + " " + f(y + h) + "L" + f(x + h) + " " + f(y - h) + "M" + f(x - h * 0.2) + " " + f(y - h) + "H" + f(x + h) + "V" + f(y + h * 0.2)
+  return (
+    "M" +
+    f(x - h) +
+    " " +
+    f(y + h) +
+    "L" +
+    f(x + h) +
+    " " +
+    f(y - h) +
+    "M" +
+    f(x - h * 0.2) +
+    " " +
+    f(y - h) +
+    "H" +
+    f(x + h) +
+    "V" +
+    f(y + h * 0.2)
+  );
 }
 
 // A head-and-shoulders bust as a halftone of glyphs, varied by the seed: four
 // paths, faintest to brightest. Each part is an ellipsoid lit from one side,
 // so glyphs swell where the figure catches the light and shrink in its shade.
-function portraitPaths(seed: string, kind: OwsGlyph, cols = 28, rows = 33, cell = 220 / 28): string[] {
-  const r = mulberry32(hashString(seed))
-  const hx = 0.5 + (r() - 0.5) * 0.06
-  const hy = 0.37 + (r() - 0.5) * 0.04
-  const hrx = 0.145 + r() * 0.03
-  const hry = 0.185 + r() * 0.025
-  const style = Math.floor(r() * 3) // 0 cropped, 1 full, 2 long
-  const sw = 0.4 + r() * 0.1
-  const side = r() < 0.5 ? 1 : -1
-  const L = [side * 0.62, -0.5, 0.6]
-  const ln = Math.hypot(L[0], L[1], L[2])
+function portraitPaths(
+  seed: string,
+  kind: OwsGlyph,
+  cols = 28,
+  rows = 33,
+  cell = 220 / 28,
+): string[] {
+  const r = mulberry32(hashString(seed));
+  const hx = 0.5 + (r() - 0.5) * 0.06;
+  const hy = 0.37 + (r() - 0.5) * 0.04;
+  const hrx = 0.145 + r() * 0.03;
+  const hry = 0.185 + r() * 0.025;
+  const style = Math.floor(r() * 3); // 0 cropped, 1 full, 2 long
+  const sw = 0.4 + r() * 0.1;
+  const side = r() < 0.5 ? 1 : -1;
+  const L = [side * 0.62, -0.5, 0.6];
+  const ln = Math.hypot(L[0], L[1], L[2]);
   // an ellipsoid's coverage at (u, v) and how much light it catches there
-  const part = (u: number, v: number, cx: number, cy: number, rx: number, ry: number) => {
-    const dx = (u - cx) / rx
-    const dy = (v - cy) / ry
-    const d = Math.sqrt(dx * dx + dy * dy)
-    const nz = Math.sqrt(Math.max(0, 1 - Math.min(1, d) ** 2))
-    const lam = Math.max(0, (dx * L[0] + dy * L[1] + nz * L[2]) / ln)
-    return { m: 1 - smoothstep(0.9, 1.04, d), lam }
-  }
-  const out = ["", "", "", ""]
+  const part = (
+    u: number,
+    v: number,
+    cx: number,
+    cy: number,
+    rx: number,
+    ry: number,
+  ) => {
+    const dx = (u - cx) / rx;
+    const dy = (v - cy) / ry;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    const nz = Math.sqrt(Math.max(0, 1 - Math.min(1, d) ** 2));
+    const lam = Math.max(0, (dx * L[0] + dy * L[1] + nz * L[2]) / ln);
+    return { m: 1 - smoothstep(0.9, 1.04, d), lam };
+  };
+  const out = ["", "", "", ""];
   for (let j = 0; j < rows; j++) {
     for (let i = 0; i < cols; i++) {
-      const u = (i + 0.5) / cols
-      const v = (j + 0.5) / rows
-      const head = part(u, v, hx, hy, hrx, hry)
+      const u = (i + 0.5) / cols;
+      const v = (j + 0.5) / rows;
+      const head = part(u, v, hx, hy, hrx, hry);
       const hair =
         style === 2
           ? part(u, v, hx, hy + 0.1, hrx * 1.32, 0.33)
-          : part(u, v, hx, hy - hry * (style ? 0.3 : 0.42), hrx * (style ? 1.22 : 1.06), hry * (style ? 0.86 : 0.7))
-      const neck = part(u, v, hx, 0.66, hrx * 0.52, 0.16)
-      const body = part(u, v, 0.5, 1.06, sw, 0.36)
+          : part(
+            u,
+            v,
+            hx,
+            hy - hry * (style ? 0.3 : 0.42),
+            hrx * (style ? 1.22 : 1.06),
+            hry * (style ? 0.86 : 0.7),
+          );
+      const neck = part(u, v, hx, 0.66, hrx * 0.52, 0.16);
+      const body = part(u, v, 0.5, 1.06, sw, 0.36);
       // the face sits in front of the hair; the hair is darker
-      let k = 0
-      let m = 0
+      let k = 0;
+      let m = 0;
       if (head.m > 0.02 && !(v < hy - hry * 0.45)) {
-        m = head.m
-        k = 0.32 + 0.8 * head.lam
+        m = head.m;
+        k = 0.32 + 0.8 * head.lam;
       } else if (hair.m > 0.02) {
-        m = hair.m
-        k = 0.16 + 0.46 * hair.lam
+        m = hair.m;
+        k = 0.16 + 0.46 * hair.lam;
       }
       if (body.m > m) {
-        m = body.m
-        k = 0.26 + 0.78 * body.lam
+        m = body.m;
+        k = 0.26 + 0.78 * body.lam;
       }
       if (neck.m > m && v < 0.8) {
-        m = neck.m
-        k = 0.16 + 0.44 * neck.lam
+        m = neck.m;
+        k = 0.16 + 0.44 * neck.lam;
       }
-      const grain = (r() - 0.5) * 0.1
-      k = m > 0.02 ? clamp(k * (0.35 + 0.65 * m) + grain, 0.06, 1) : clamp(0.03 + 0.08 * (1 - v) + grain * 0.4, 0, 0.14)
-      const b = Math.min(3, Math.floor(k * 4))
-      out[b] += glyphPath(kind, (i + 0.5) * cell, (j + 0.5) * cell, cell * (0.3 + 0.62 * k))
+      const grain = (r() - 0.5) * 0.1;
+      k =
+        m > 0.02
+          ? clamp(k * (0.35 + 0.65 * m) + grain, 0.06, 1)
+          : clamp(0.03 + 0.08 * (1 - v) + grain * 0.4, 0, 0.14);
+      const b = Math.min(3, Math.floor(k * 4));
+      out[b] += glyphPath(
+        kind,
+        (i + 0.5) * cell,
+        (j + 0.5) * cell,
+        cell * (0.3 + 0.62 * k),
+      );
     }
   }
-  return out
+  return out;
 }
 
-function resolvePalette(p: OwsPaletteName | OwsPaletteInput | undefined): OwsPalette {
-  if (typeof p === "string") return PALETTES[p] || PALETTES.cobalt
-  return { ...PALETTES.cobalt, ...(p || {}) }
+function resolvePalette(
+  p: OwsPaletteName | OwsPaletteInput | undefined,
+): OwsPalette {
+  if (typeof p === "string") return PALETTES[p] || PALETTES.cobalt;
+  return { ...PALETTES.cobalt, ...(p || {}) };
 }
 // #endregion logic
 
@@ -567,28 +748,28 @@ function resolvePalette(p: OwsPaletteName | OwsPaletteInput | undefined): OwsPal
 // ---------------------------------------------------------------------------
 
 function useReducedMotion(): boolean {
-  const [reduced, setReduced] = React.useState(false)
+  const [reduced, setReduced] = React.useState(false);
   React.useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const on = () => setReduced(mq.matches)
-    on()
-    mq.addEventListener?.("change", on)
-    return () => mq.removeEventListener?.("change", on)
-  }, [])
-  return reduced
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const on = () => setReduced(mq.matches);
+    on();
+    mq.addEventListener?.("change", on);
+    return () => mq.removeEventListener?.("change", on);
+  }, []);
+  return reduced;
 }
 
 function download(name: string, text: string, type: string) {
-  if (typeof document === "undefined") return
-  const url = URL.createObjectURL(new Blob([text], { type }))
-  const a = document.createElement("a")
-  a.href = url
-  a.download = name
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
+  if (typeof document === "undefined") return;
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ---------------------------------------------------------------------------
@@ -597,28 +778,28 @@ function download(name: string, text: string, type: string) {
 
 function drawGlyph(ctx: CanvasRenderingContext2D, kind: OwsGlyph, s: number) {
   // in a unit box of side s, centred
-  const h = s * 0.31
-  const c = s / 2
-  ctx.beginPath()
+  const h = s * 0.31;
+  const c = s / 2;
+  ctx.beginPath();
   if (kind === "plus") {
-    ctx.moveTo(c - h, c)
-    ctx.lineTo(c + h, c)
-    ctx.moveTo(c, c - h)
-    ctx.lineTo(c, c + h)
-    ctx.stroke()
+    ctx.moveTo(c - h, c);
+    ctx.lineTo(c + h, c);
+    ctx.moveTo(c, c - h);
+    ctx.lineTo(c, c + h);
+    ctx.stroke();
   } else if (kind === "ring") {
-    ctx.arc(c, c, h * 0.78, 0, Math.PI * 2)
-    ctx.stroke()
+    ctx.arc(c, c, h * 0.78, 0, Math.PI * 2);
+    ctx.stroke();
   } else if (kind === "dot") {
-    ctx.arc(c, c, h * 0.42, 0, Math.PI * 2)
-    ctx.fill()
+    ctx.arc(c, c, h * 0.42, 0, Math.PI * 2);
+    ctx.fill();
   } else {
-    ctx.moveTo(c - h, c + h)
-    ctx.lineTo(c + h, c - h)
-    ctx.moveTo(c - h * 0.15, c - h)
-    ctx.lineTo(c + h, c - h)
-    ctx.lineTo(c + h, c + h * 0.15)
-    ctx.stroke()
+    ctx.moveTo(c - h, c + h);
+    ctx.lineTo(c + h, c - h);
+    ctx.moveTo(c - h * 0.15, c - h);
+    ctx.lineTo(c + h, c - h);
+    ctx.lineTo(c + h, c + h * 0.15);
+    ctx.stroke();
   }
 }
 
@@ -630,254 +811,277 @@ function GlyphField({
   reduced,
   cell = 13,
 }: {
-  mode: "hero" | "band"
-  glyph: OwsGlyph
-  light: string
-  dark: string
-  reduced: boolean
-  cell?: number
+  mode: "hero" | "band";
+  glyph: OwsGlyph;
+  light: string;
+  dark: string;
+  reduced: boolean;
+  cell?: number;
 }) {
-  const wrapRef = React.useRef(null as HTMLDivElement | null)
-  const canvasRef = React.useRef(null as HTMLCanvasElement | null)
+  const wrapRef = React.useRef(null as HTMLDivElement | null);
+  const canvasRef = React.useRef(null as HTMLCanvasElement | null);
 
   React.useEffect(() => {
-    const wrap = wrapRef.current
-    const cv = canvasRef.current
-    const host = wrap?.parentElement
-    if (!wrap || !cv || !host) return
-    const ctx = cv.getContext("2d")
-    if (!ctx) return
+    const wrap = wrapRef.current;
+    const cv = canvasRef.current;
+    const host = wrap?.parentElement;
+    if (!wrap || !cv || !host) return;
+    const ctx = cv.getContext("2d");
+    if (!ctx) return;
 
-    let W = 0
-    let H = 0
-    let dpr = 1
-    let n = 0
-    let xs = new Float32Array(0)
-    let ys = new Float32Array(0)
-    let wl = new Float32Array(0)
-    let wd = new Float32Array(0)
-    let grain = new Float32Array(0)
-    let ang = new Float32Array(0)
-    let scl = new Float32Array(0)
-    let spriteL: HTMLCanvasElement | null = null
-    let spriteD: HTMLCanvasElement | null = null
-    const ptr = { x: 0, y: 0, vx: 0, vy: 0, angle: 0, speed: 0, on: false }
-    const ripples: { x: number; y: number; t0: number }[] = []
-    let raf = 0
-    let visible = true
-    const half = cell / 2
+    let W = 0;
+    let H = 0;
+    let dpr = 1;
+    let n = 0;
+    let xs = new Float32Array(0);
+    let ys = new Float32Array(0);
+    let wl = new Float32Array(0);
+    let wd = new Float32Array(0);
+    let grain = new Float32Array(0);
+    let ang = new Float32Array(0);
+    let scl = new Float32Array(0);
+    let spriteL: HTMLCanvasElement | null = null;
+    let spriteD: HTMLCanvasElement | null = null;
+    const ptr = { x: 0, y: 0, vx: 0, vy: 0, angle: 0, speed: 0, on: false };
+    const ripples: { x: number; y: number; t0: number }[] = [];
+    let raf = 0;
+    let visible = true;
+    const half = cell / 2;
 
     const sprite = (color: string) => {
-      const c = document.createElement("canvas")
-      const px = Math.ceil(cell * dpr * 2)
-      c.width = c.height = px
-      const g = c.getContext("2d")
-      if (!g) return c
-      g.scale(px / cell, px / cell)
-      g.strokeStyle = g.fillStyle = color
-      g.lineWidth = Math.max(1.05, cell * 0.105)
-      g.lineCap = "square"
-      g.lineJoin = "miter"
-      drawGlyph(g, glyph, cell)
-      return c
-    }
+      const c = document.createElement("canvas");
+      const px = Math.ceil(cell * dpr * 2);
+      c.width = c.height = px;
+      const g = c.getContext("2d");
+      if (!g) return c;
+      g.scale(px / cell, px / cell);
+      g.strokeStyle = g.fillStyle = color;
+      g.lineWidth = Math.max(1.05, cell * 0.105);
+      g.lineCap = "square";
+      g.lineJoin = "miter";
+      drawGlyph(g, glyph, cell);
+      return c;
+    };
 
     const layout = () => {
-      const r = wrap.getBoundingClientRect()
-      W = Math.max(1, r.width)
-      H = Math.max(1, r.height)
-      dpr = Math.min(2, window.devicePixelRatio || 1)
-      cv.width = Math.round(W * dpr)
-      cv.height = Math.round(H * dpr)
-      cv.style.width = W + "px"
-      cv.style.height = H + "px"
-      const cols = Math.ceil(W / cell) + 1
-      const rows = Math.ceil(H / cell) + 1
-      n = cols * rows
-      xs = new Float32Array(n)
-      ys = new Float32Array(n)
-      wl = new Float32Array(n)
-      wd = new Float32Array(n)
-      grain = new Float32Array(n)
-      ang = new Float32Array(n)
-      scl = new Float32Array(n).fill(1)
-      const ox = (W - (cols - 1) * cell) / 2
-      const oy = (H - (rows - 1) * cell) / 2
-      const rand = mulberry32(cols * 977 + rows)
+      const r = wrap.getBoundingClientRect();
+      W = Math.max(1, r.width);
+      H = Math.max(1, r.height);
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      cv.width = Math.round(W * dpr);
+      cv.height = Math.round(H * dpr);
+      cv.style.width = W + "px";
+      cv.style.height = H + "px";
+      const cols = Math.ceil(W / cell) + 1;
+      const rows = Math.ceil(H / cell) + 1;
+      n = cols * rows;
+      xs = new Float32Array(n);
+      ys = new Float32Array(n);
+      wl = new Float32Array(n);
+      wd = new Float32Array(n);
+      grain = new Float32Array(n);
+      ang = new Float32Array(n);
+      scl = new Float32Array(n).fill(1);
+      const ox = (W - (cols - 1) * cell) / 2;
+      const oy = (H - (rows - 1) * cell) / 2;
+      const rand = mulberry32(cols * 977 + rows);
       for (let j = 0, k = 0; j < rows; j++) {
         for (let i = 0; i < cols; i++, k++) {
-          const x = ox + i * cell
-          const y = oy + j * cell
-          const w = fieldWeights(mode, x / W, y / H, W / H)
-          xs[k] = x
-          ys[k] = y
-          wl[k] = w[0]
-          wd[k] = w[1]
-          grain[k] = 0.5 + 0.5 * rand()
+          const x = ox + i * cell;
+          const y = oy + j * cell;
+          const w = fieldWeights(mode, x / W, y / H, W / H);
+          xs[k] = x;
+          ys[k] = y;
+          wl[k] = w[0];
+          wd[k] = w[1];
+          grain[k] = 0.5 + 0.5 * rand();
         }
       }
-      spriteL = sprite(light)
-      spriteD = sprite(dark)
-    }
+      spriteL = sprite(light);
+      spriteD = sprite(dark);
+    };
 
     const draw = (t: number) => {
-      if (!spriteL || !spriteD) return
-      ctx.setTransform(1, 0, 0, 1, 0, 0)
-      ctx.clearRect(0, 0, cv.width, cv.height)
-      const R = 150
-      const R2 = R * R
-      for (let q = ripples.length - 1; q >= 0; q--) if (t - ripples[q].t0 > 1900) ripples.splice(q, 1)
-      let busy = ripples.length > 0
+      if (!spriteL || !spriteD) return;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      const R = 150;
+      const R2 = R * R;
+      for (let q = ripples.length - 1; q >= 0; q--)
+        if (t - ripples[q].t0 > 1900) ripples.splice(q, 1);
+      let busy = ripples.length > 0;
       for (let i = 0; i < n; i++) {
-        const a0 = wl[i]
-        const b0 = wd[i]
-        if (a0 + b0 < 0.012) continue
-        const x = xs[i]
-        const y = ys[i]
-        let tA = 0
-        let tS = 1
-        let boost = 0
+        const a0 = wl[i];
+        const b0 = wd[i];
+        if (a0 + b0 < 0.012) continue;
+        const x = xs[i];
+        const y = ys[i];
+        let tA = 0;
+        let tS = 1;
+        let boost = 0;
         if (!reduced) {
           if (ptr.on) {
-            const dx = x - ptr.x
-            const dy = y - ptr.y
-            const d2 = dx * dx + dy * dy
+            const dx = x - ptr.x;
+            const dy = y - ptr.y;
+            const d2 = dx * dx + dy * dy;
             if (d2 < R2) {
-              let w = 1 - Math.sqrt(d2) / R
-              w = w * w * (3 - 2 * w)
-              const moveInfluence = ptr.speed > 0.08
-                ? shortestAngle(ptr.angle + Math.PI / 4) * ptr.speed
-                : shortestAngle(Math.atan2(dy, dx) + Math.PI / 4)
-              tA = moveInfluence * w
-              tS = 1 + 0.75 * w
-              boost = 0.55 * w
+              let w = 1 - Math.sqrt(d2) / R;
+              w = w * w * (3 - 2 * w);
+              const moveInfluence =
+                ptr.speed > 0.08
+                  ? shortestAngle(ptr.angle + Math.PI / 4) * ptr.speed
+                  : shortestAngle(Math.atan2(dy, dx) + Math.PI / 4);
+              tA = moveInfluence * w;
+              tS = 1 + 0.75 * w;
+              boost = 0.55 * w;
             }
           }
           for (const rp of ripples) {
-            const age = t - rp.t0
-            const dx = x - rp.x
-            const dy = y - rp.y
-            const dd = Math.abs(Math.sqrt(dx * dx + dy * dy) - age * 0.62)
+            const age = t - rp.t0;
+            const dx = x - rp.x;
+            const dy = y - rp.y;
+            const dd = Math.abs(Math.sqrt(dx * dx + dy * dy) - age * 0.62);
             if (dd < 56) {
-              const k = (1 - dd / 56) * (1 - age / 1900)
-              tS += 0.9 * k
-              boost += 0.7 * k
-              tA += shortestAngle(Math.atan2(dy, dx) + Math.PI / 4) * k * 0.6
+              const k = (1 - dd / 56) * (1 - age / 1900);
+              tS += 0.9 * k;
+              boost += 0.7 * k;
+              tA += shortestAngle(Math.atan2(dy, dx) + Math.PI / 4) * k * 0.6;
             }
           }
-          ang[i] += (tA - ang[i]) * 0.12
-          scl[i] += (tS - scl[i]) * 0.16
-          if (Math.abs(ang[i] - tA) > 0.004 || Math.abs(scl[i] - tS) > 0.004) busy = true
+          ang[i] += (tA - ang[i]) * 0.12;
+          scl[i] += (tS - scl[i]) * 0.16;
+          if (Math.abs(ang[i] - tA) > 0.004 || Math.abs(scl[i] - tS) > 0.004)
+            busy = true;
         }
-        const shimmer = reduced ? 1 : 0.8 + 0.2 * Math.sin((x + y * 0.8) * 0.011 - t * 0.0012)
-        const g = grain[i] * shimmer
-        const tot = a0 + b0
-        const la = clamp(a0 * g + boost * (a0 / tot) * 0.7, 0, 1)
-        const da = clamp(b0 * g + boost * (b0 / tot) * 0.7, 0, 1)
-        const a = ang[i]
-        const s = scl[i]
-        const plain = Math.abs(a) < 0.003 && Math.abs(s - 1) < 0.003
-        if (plain) ctx.setTransform(dpr, 0, 0, dpr, dpr * x, dpr * y)
+        const shimmer = reduced
+          ? 1
+          : 0.8 + 0.2 * Math.sin((x + y * 0.8) * 0.011 - t * 0.0012);
+        const g = grain[i] * shimmer;
+        const tot = a0 + b0;
+        const la = clamp(a0 * g + boost * (a0 / tot) * 0.7, 0, 1);
+        const da = clamp(b0 * g + boost * (b0 / tot) * 0.7, 0, 1);
+        const a = ang[i];
+        const s = scl[i];
+        const plain = Math.abs(a) < 0.003 && Math.abs(s - 1) < 0.003;
+        if (plain) ctx.setTransform(dpr, 0, 0, dpr, dpr * x, dpr * y);
         else {
-          const c = Math.cos(a) * s * dpr
-          const sn = Math.sin(a) * s * dpr
-          ctx.setTransform(c, sn, -sn, c, dpr * x, dpr * y)
+          const c = Math.cos(a) * s * dpr;
+          const sn = Math.sin(a) * s * dpr;
+          ctx.setTransform(c, sn, -sn, c, dpr * x, dpr * y);
         }
         if (la > 0.01) {
-          ctx.globalAlpha = la
-          ctx.drawImage(spriteL, -half, -half, cell, cell)
+          ctx.globalAlpha = la;
+          ctx.drawImage(spriteL, -half, -half, cell, cell);
         }
         if (da > 0.01) {
-          ctx.globalAlpha = da
-          ctx.drawImage(spriteD, -half, -half, cell, cell)
+          ctx.globalAlpha = da;
+          ctx.drawImage(spriteD, -half, -half, cell, cell);
         }
       }
-      ctx.globalAlpha = 1
-      return busy
-    }
+      ctx.globalAlpha = 1;
+      return busy;
+    };
 
     const loop = (t: number) => {
-      raf = 0
-      draw(t)
-      if (visible && !reduced) raf = requestAnimationFrame(loop)
-    }
+      raf = 0;
+      draw(t);
+      if (visible && !reduced) raf = requestAnimationFrame(loop);
+    };
     const start = () => {
-      if (!raf && visible && !reduced) raf = requestAnimationFrame(loop)
-    }
+      if (!raf && visible && !reduced) raf = requestAnimationFrame(loop);
+    };
 
-    layout()
-    draw(performance.now())
+    layout();
+    draw(performance.now());
 
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => {
-      layout()
-      draw(performance.now())
-    }) : null
-    ro?.observe(wrap)
-    const io = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver((es) => {
-      visible = es.some((e) => e.isIntersecting)
-      if (visible) start()
-      else if (raf) {
-        cancelAnimationFrame(raf)
-        raf = 0
-      }
-    }) : null
-    io?.observe(wrap)
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => {
+          layout();
+          draw(performance.now());
+        })
+        : null;
+    ro?.observe(wrap);
+    const io =
+      typeof IntersectionObserver !== "undefined"
+        ? new IntersectionObserver((es) => {
+          visible = es.some((e) => e.isIntersecting);
+          if (visible) start();
+          else if (raf) {
+            cancelAnimationFrame(raf);
+            raf = 0;
+          }
+        })
+        : null;
+    io?.observe(wrap);
 
     const local = (e: PointerEvent) => {
-      const r = wrap.getBoundingClientRect()
-      return { x: e.clientX - r.left, y: e.clientY - r.top }
-    }
+      const r = wrap.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
     const move = (e: PointerEvent) => {
-      if (e.pointerType === "touch") return
-      const p = local(e)
+      if (e.pointerType === "touch") return;
+      const p = local(e);
       if (ptr.on) {
-        const dx = p.x - ptr.x
-        const dy = p.y - ptr.y
-        const dist = Math.sqrt(dx * dx + dy * dy)
+        const dx = p.x - ptr.x;
+        const dy = p.y - ptr.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > 1.5) {
-          ptr.vx = ptr.vx * 0.4 + dx * 0.6
-          ptr.vy = ptr.vy * 0.4 + dy * 0.6
-          ptr.angle = Math.atan2(ptr.vy, ptr.vx)
-          ptr.speed = Math.min(1, dist / 8)
+          ptr.vx = ptr.vx * 0.4 + dx * 0.6;
+          ptr.vy = ptr.vy * 0.4 + dy * 0.6;
+          ptr.angle = Math.atan2(ptr.vy, ptr.vx);
+          ptr.speed = Math.min(1, dist / 8);
         }
       }
-      ptr.x = p.x
-      ptr.y = p.y
-      ptr.on = true
-    }
+      ptr.x = p.x;
+      ptr.y = p.y;
+      ptr.on = true;
+    };
     const leave = () => {
-      ptr.on = false
-    }
+      ptr.on = false;
+    };
     const down = (e: PointerEvent) => {
-      if (reduced) return
-      if ((e.target as HTMLElement | null)?.closest?.("a,button,input,select,textarea,label")) return
-      const p = local(e)
-      ripples.push({ x: p.x, y: p.y, t0: performance.now() })
-      if (ripples.length > 4) ripples.shift()
-    }
-    host.addEventListener("pointermove", move)
-    host.addEventListener("pointerleave", leave)
-    host.addEventListener("pointerdown", down)
+      if (reduced) return;
+      if (
+        (e.target as HTMLElement | null)?.closest?.(
+          "a,button,input,select,textarea,label",
+        )
+      )
+        return;
+      const p = local(e);
+      ripples.push({ x: p.x, y: p.y, t0: performance.now() });
+      if (ripples.length > 4) ripples.shift();
+    };
+    host.addEventListener("pointermove", move);
+    host.addEventListener("pointerleave", leave);
+    host.addEventListener("pointerdown", down);
     // an opening pulse from the centre of the hero
-    const intro = mode === "hero" && !reduced ? setTimeout(() => ripples.push({ x: W / 2, y: H * 0.47, t0: performance.now() }), 350) : 0
-    start()
+    const intro =
+      mode === "hero" && !reduced
+        ? setTimeout(
+          () =>
+            ripples.push({ x: W / 2, y: H * 0.47, t0: performance.now() }),
+          350,
+        )
+        : 0;
+    start();
 
     return () => {
-      cancelAnimationFrame(raf)
-      clearTimeout(intro)
-      ro?.disconnect()
-      io?.disconnect()
-      host.removeEventListener("pointermove", move)
-      host.removeEventListener("pointerleave", leave)
-      host.removeEventListener("pointerdown", down)
-    }
-  }, [mode, glyph, light, dark, reduced, cell])
+      cancelAnimationFrame(raf);
+      clearTimeout(intro);
+      ro?.disconnect();
+      io?.disconnect();
+      host.removeEventListener("pointermove", move);
+      host.removeEventListener("pointerleave", leave);
+      host.removeEventListener("pointerdown", down);
+    };
+  }, [mode, glyph, light, dark, reduced, cell]);
 
   return (
     <div ref={wrapRef} className="ows-field" aria-hidden="true">
       <canvas ref={canvasRef} className="ows-canvas" />
     </div>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -886,17 +1090,45 @@ function GlyphField({
 
 function BrandMark() {
   return (
-    <svg className="ows-svg" width="17" height="14" viewBox="0 0 17 14" aria-hidden="true">
-      <path d="M1 13.2c4.6-.4 8.4-2.6 11-6.4L15.6 1M9.6 1.4h6v6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      className="ows-svg"
+      width="17"
+      height="14"
+      viewBox="0 0 17 14"
+      aria-hidden="true"
+    >
+      <path
+        d="M1 13.2c4.6-.4 8.4-2.6 11-6.4L15.6 1M9.6 1.4h6v6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
-  )
+  );
 }
 
-function FeatureMark({ kind, uid, i }: { kind: "arrow" | "ring" | "plus"; uid: string; i: number }) {
-  const id = uid + "fm" + i
-  const fill = "url(#" + id + ")"
+function FeatureMark({
+  kind,
+  uid,
+  i,
+}: {
+  kind: "arrow" | "ring" | "plus";
+  uid: string;
+  i: number;
+}) {
+  const id = uid + "fm" + i;
+  const fill = "url(#" + id + ")";
   return (
-    <svg className="ows-svg ows-mark" data-kind={kind} width="76" height="76" viewBox="0 0 76 76" aria-hidden="true">
+    <svg
+      className="ows-svg ows-mark"
+      data-kind={kind}
+      width="76"
+      height="76"
+      viewBox="0 0 76 76"
+      aria-hidden="true"
+    >
       <defs>
         <linearGradient id={id} x1="0" y1="1" x2="1" y2="0">
           <stop offset="0" style={{ stopColor: "var(--ows-icon-a)" }} />
@@ -904,58 +1136,146 @@ function FeatureMark({ kind, uid, i }: { kind: "arrow" | "ring" | "plus"; uid: s
         </linearGradient>
       </defs>
       <g className="ows-mark-g">
-        {kind === "arrow" && <path d="M22 6H70V54L57 41V27.5L17.2 67.3L8.7 58.8L48.5 19H35Z" fill={fill} />}
-        {kind === "ring" && <circle cx="38" cy="38" r="25" fill="none" stroke={fill} strokeWidth="15" />}
-        {kind === "plus" && <path d="M31 4H45V31H72V45H45V72H31V45H4V31H31Z" fill={fill} />}
+        {kind === "arrow" && (
+          <path
+            d="M22 6H70V54L57 41V27.5L17.2 67.3L8.7 58.8L48.5 19H35Z"
+            fill={fill}
+          />
+        )}
+        {kind === "ring" && (
+          <circle
+            cx="38"
+            cy="38"
+            r="25"
+            fill="none"
+            stroke={fill}
+            strokeWidth="15"
+          />
+        )}
+        {kind === "plus" && (
+          <path d="M31 4H45V31H72V45H45V72H31V45H4V31H31Z" fill={fill} />
+        )}
       </g>
     </svg>
-  )
+  );
 }
 
 function Chevron({ open }: { open?: boolean }) {
   return (
-    <svg className="ows-svg ows-chev" data-open={open ? "" : undefined} width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-      <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      className="ows-svg ows-chev"
+      data-open={open ? "" : undefined}
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      aria-hidden="true"
+    >
+      <path
+        d="M2.5 4.5 6 8l3.5-3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
-  )
+  );
 }
 
 function ArrowGlyph({ size = 12 }: { size?: number }) {
   return (
-    <svg className="ows-svg" width={size} height={size} viewBox="0 0 12 12" aria-hidden="true">
-      <path d="M2.5 9.5 9.5 2.5M4 2.5h5.5V8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="square" />
+    <svg
+      className="ows-svg"
+      width={size}
+      height={size}
+      viewBox="0 0 12 12"
+      aria-hidden="true"
+    >
+      <path
+        d="M2.5 9.5 9.5 2.5M4 2.5h5.5V8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="square"
+      />
     </svg>
-  )
+  );
 }
 
 function BookmarkGlyph({ on }: { on: boolean }) {
   return (
-    <svg className="ows-svg" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-      <path d="M3.5 1.75h7v10.5L7 9.6l-3.5 2.65Z" fill={on ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+    <svg
+      className="ows-svg"
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      aria-hidden="true"
+    >
+      <path
+        d="M3.5 1.75h7v10.5L7 9.6l-3.5 2.65Z"
+        fill={on ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
     </svg>
-  )
+  );
 }
 
 function CalendarGlyph() {
   return (
-    <svg className="ows-svg" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-      <rect x="1.75" y="2.75" width="10.5" height="9.5" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M1.75 5.75h10.5M4.5 1.25v2.5M9.5 1.25v2.5" stroke="currentColor" strokeWidth="1.4" />
+    <svg
+      className="ows-svg"
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      aria-hidden="true"
+    >
+      <rect
+        x="1.75"
+        y="2.75"
+        width="10.5"
+        height="9.5"
+        rx="1.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
+      <path
+        d="M1.75 5.75h10.5M4.5 1.25v2.5M9.5 1.25v2.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
     </svg>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
 // speaker portraits
 // ---------------------------------------------------------------------------
 
-function GlyphPortrait({ seed, glyph, uid, i }: { seed: string; glyph: OwsGlyph; uid: string; i: number }) {
-  const paths = React.useMemo(() => portraitPaths(seed, glyph), [seed, glyph])
-  const id = uid + "pt" + i
-  const r = mulberry32(hashString(seed + "bg"))
-  const x2 = (0.3 + r() * 0.7).toFixed(2)
+function GlyphPortrait({
+  seed,
+  glyph,
+  uid,
+  i,
+}: {
+  seed: string;
+  glyph: OwsGlyph;
+  uid: string;
+  i: number;
+}) {
+  const paths = React.useMemo(() => portraitPaths(seed, glyph), [seed, glyph]);
+  const id = uid + "pt" + i;
+  const r = mulberry32(hashString(seed + "bg"));
+  const x2 = (0.3 + r() * 0.7).toFixed(2);
   return (
-    <svg className="ows-svg ows-portrait-svg" viewBox="0 0 220 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <svg
+      className="ows-svg ows-portrait-svg"
+      viewBox="0 0 220 260"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+    >
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2={x2} y2="1">
           <stop offset="0" style={{ stopColor: "var(--ows-deep)" }} />
@@ -963,43 +1283,97 @@ function GlyphPortrait({ seed, glyph, uid, i }: { seed: string; glyph: OwsGlyph;
         </linearGradient>
       </defs>
       <rect width="220" height="260" fill={"url(#" + id + ")"} />
-      <g className="ows-portrait-g" fill="none" stroke="var(--ows-glyph-light)" strokeWidth="1.15" strokeLinecap="square">
+      <g
+        className="ows-portrait-g"
+        fill="none"
+        stroke="var(--ows-glyph-light)"
+        strokeWidth="1.15"
+        strokeLinecap="square"
+      >
         {paths.map((d, b) => (
-          <path key={b} d={d} className={"ows-pb" + b} style={{ opacity: [0.16, 0.42, 0.76, 1][b] }} />
+          <path
+            key={b}
+            d={d}
+            className={"ows-pb" + b}
+            style={{ opacity: [0.16, 0.42, 0.76, 1][b] }}
+          />
         ))}
       </g>
     </svg>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
 // venue map
 // ---------------------------------------------------------------------------
 
-function VenueMap({ uid, name, reduced }: { uid: string; name: string; reduced: boolean }) {
-  const boxRef = React.useRef(null as HTMLDivElement | null)
-  const clip = uid + "mc"
-  const streets: React.ReactNode[] = []
+function VenueMap({
+  uid,
+  name,
+  reduced,
+}: {
+  uid: string;
+  name: string;
+  reduced: boolean;
+}) {
+  const boxRef = React.useRef(null as HTMLDivElement | null);
+  const clip = uid + "mc";
+  const streets: React.ReactNode[] = [];
   for (let k = -12; k <= 12; k++) {
-    streets.push(<line key={"s" + k} x1={-400} y1={k * 30} x2={400} y2={k * 30} className="ows-map-st" />)
+    streets.push(
+      <line
+        key={"s" + k}
+        x1={-400}
+        y1={k * 30}
+        x2={400}
+        y2={k * 30}
+        className="ows-map-st"
+      />,
+    );
   }
   for (let k = -6; k <= 6; k++) {
-    streets.push(<line key={"a" + k} x1={k * 78} y1={-400} x2={k * 78} y2={400} className="ows-map-av" />)
+    streets.push(
+      <line
+        key={"a" + k}
+        x1={k * 78}
+        y1={-400}
+        x2={k * 78}
+        y2={400}
+        className="ows-map-av"
+      />,
+    );
   }
   const onMove = (e: PointerEv) => {
-    const el = boxRef.current
-    if (!el || reduced || e.pointerType === "touch") return
-    const r = el.getBoundingClientRect()
-    el.style.setProperty("--ows-mx", (((e.clientX - r.left) / r.width - 0.5) * -14).toFixed(1) + "px")
-    el.style.setProperty("--ows-my", (((e.clientY - r.top) / r.height - 0.5) * -14).toFixed(1) + "px")
-  }
+    const el = boxRef.current;
+    if (!el || reduced || e.pointerType === "touch") return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty(
+      "--ows-mx",
+      (((e.clientX - r.left) / r.width - 0.5) * -14).toFixed(1) + "px",
+    );
+    el.style.setProperty(
+      "--ows-my",
+      (((e.clientY - r.top) / r.height - 0.5) * -14).toFixed(1) + "px",
+    );
+  };
   const onLeave = () => {
-    boxRef.current?.style.setProperty("--ows-mx", "0px")
-    boxRef.current?.style.setProperty("--ows-my", "0px")
-  }
+    boxRef.current?.style.setProperty("--ows-mx", "0px");
+    boxRef.current?.style.setProperty("--ows-my", "0px");
+  };
   return (
-    <div ref={boxRef} className="ows-map" onPointerMove={onMove} onPointerLeave={onLeave}>
-      <svg className="ows-svg ows-map-svg" viewBox="0 0 560 400" preserveAspectRatio="xMidYMid slice" role="img" aria-label={"Map showing " + name}>
+    <div
+      ref={boxRef}
+      className="ows-map"
+      onPointerMove={onMove}
+      onPointerLeave={onLeave}
+    >
+      <svg
+        className="ows-svg ows-map-svg"
+        viewBox="0 0 560 400"
+        preserveAspectRatio="xMidYMid slice"
+        role="img"
+        aria-label={"Map showing " + name}
+      >
         <defs>
           <clipPath id={clip}>
             <rect width="560" height="400" />
@@ -1010,12 +1384,36 @@ function VenueMap({ uid, name, reduced }: { uid: string; name: string; reduced: 
           <g className="ows-map-pan">
             <g transform="translate(300 210) rotate(-29)">
               {streets}
-              <rect x="70" y="-310" width="156" height="210" className="ows-map-park" />
-              <rect x="-170" y="60" width="64" height="48" className="ows-map-park" />
-              <line x1="-400" y1="-260" x2="400" y2="190" className="ows-map-bway" />
+              <rect
+                x="70"
+                y="-310"
+                width="156"
+                height="210"
+                className="ows-map-park"
+              />
+              <rect
+                x="-170"
+                y="60"
+                width="64"
+                height="48"
+                className="ows-map-park"
+              />
+              <line
+                x1="-400"
+                y1="-260"
+                x2="400"
+                y2="190"
+                className="ows-map-bway"
+              />
             </g>
-            <path d="M-20 -20H86C70 60 40 120 58 190C76 260 40 330 70 430H-20Z" className="ows-map-water" />
-            <path d="M600 280C540 300 500 340 470 430H600Z" className="ows-map-water" />
+            <path
+              d="M-20 -20H86C70 60 40 120 58 190C76 260 40 330 70 430H-20Z"
+              className="ows-map-water"
+            />
+            <path
+              d="M600 280C540 300 500 340 470 430H600Z"
+              className="ows-map-water"
+            />
           </g>
         </g>
       </svg>
@@ -1027,14 +1425,14 @@ function VenueMap({ uid, name, reduced }: { uid: string; name: string; reduced: 
       </div>
       <div className="ows-pin-label">{name}</div>
     </div>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
 // registration form
 // ---------------------------------------------------------------------------
 
-type FormState = "idle" | "sending" | "done" | "error"
+type FormState = "idle" | "sending" | "done" | "error";
 
 function RegisterForm({
   roles,
@@ -1047,63 +1445,81 @@ function RegisterForm({
   formId,
   nameRef,
 }: {
-  roles: string[]
-  eventTitle: string
-  date: string
-  city: string
-  onRegister?: (data: OwsRegistration) => unknown
-  onDone: () => void
-  onCalendar: () => void
-  formId: string
-  nameRef: { current: HTMLInputElement | null }
+  roles: string[];
+  eventTitle: string;
+  date: string;
+  city: string;
+  onRegister?: (data: OwsRegistration) => unknown;
+  onDone: () => void;
+  onCalendar: () => void;
+  formId: string;
+  nameRef: { current: HTMLInputElement | null };
 }) {
-  const [form, setForm] = React.useState({ name: "", email: "", company: "", role: roles[0] || "" } as OwsRegistration)
-  const [errors, setErrors] = React.useState({} as FieldErrors)
-  const [state, setState] = React.useState("idle" as FormState)
-  const [ticket, setTicket] = React.useState({ name: "", code: "" })
-  const alive = React.useRef(true)
+  const [form, setForm] = React.useState({
+    name: "",
+    email: "",
+    company: "",
+    role: roles[0] || "",
+  } as OwsRegistration);
+  const [errors, setErrors] = React.useState({} as FieldErrors);
+  const [state, setState] = React.useState("idle" as FormState);
+  const [ticket, setTicket] = React.useState({ name: "", code: "" });
+  const alive = React.useRef(true);
   React.useEffect(() => {
-    alive.current = true
+    alive.current = true;
     return () => {
-      alive.current = false
-    }
-  }, [])
+      alive.current = false;
+    };
+  }, []);
 
   const set = (k: keyof OwsRegistration) => (e: ChangeEv) => {
-    setForm((f) => ({ ...f, [k]: e.target.value }))
-    if (errors[k]) setErrors((x) => ({ ...x, [k]: undefined }))
-  }
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+    if (errors[k]) setErrors((x) => ({ ...x, [k]: undefined }));
+  };
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (state === "sending") return
-    const next: FieldErrors = {}
-    if (form.name.trim().length < 2) next.name = "Tell us your name."
-    if (!isEmail(form.email)) next.email = "Use a work email, like you@company.com."
-    if (!form.company.trim()) next.company = "Which company are you with?"
-    setErrors(next)
+    e.preventDefault();
+    if (state === "sending") return;
+    const next: FieldErrors = {};
+    if (form.name.trim().length < 2) next.name = "Tell us your name.";
+    if (!isEmail(form.email))
+      next.email = "Use a work email, like you@company.com.";
+    if (!form.company.trim()) next.company = "Which company are you with?";
+    setErrors(next);
     if (Object.keys(next).length) {
-      const first = Object.keys(next)[0]
-        ; (document.getElementById(formId + "-" + first) as HTMLElement | null)?.focus()
-      return
+      const first = Object.keys(next)[0];
+      (
+        document.getElementById(formId + "-" + first) as HTMLElement | null
+      )?.focus();
+      return;
     }
-    setState("sending")
-    let ok = true
+    setState("sending");
+    let ok = true;
     try {
-      const res = onRegister ? await onRegister({ ...form, name: form.name.trim(), email: form.email.trim(), company: form.company.trim() }) : await new Promise((r) => setTimeout(r, 900))
-      if (res === false) ok = false
+      const res = onRegister
+        ? await onRegister({
+          ...form,
+          name: form.name.trim(),
+          email: form.email.trim(),
+          company: form.company.trim(),
+        })
+        : await new Promise((r) => setTimeout(r, 900));
+      if (res === false) ok = false;
     } catch {
-      ok = false
+      ok = false;
     }
-    if (!alive.current) return
+    if (!alive.current) return;
     if (!ok) {
-      setState("error")
-      return
+      setState("error");
+      return;
     }
-    setTicket({ name: form.name.trim(), code: ticketCode(eventTitle, form.email) })
-    setState("done")
-    onDone()
-  }
+    setTicket({
+      name: form.name.trim(),
+      code: ticketCode(eventTitle, form.email),
+    });
+    setState("done");
+    onDone();
+  };
 
   if (state === "done") {
     return (
@@ -1122,15 +1538,24 @@ function RegisterForm({
             <span className="ows-ticket-code">{ticket.code}</span>
           </div>
           <div className="ows-ticket-actions">
-            <button type="button" className="ows-btn ows-btn--dark ows-btn--sm" onClick={onCalendar}>
+            <button
+              type="button"
+              className="ows-btn ows-btn--dark ows-btn--sm"
+              onClick={onCalendar}
+            >
               <CalendarGlyph /> Add to calendar
             </button>
             <button
               type="button"
               className="ows-link"
               onClick={() => {
-                setForm({ name: "", email: "", company: "", role: roles[0] || "" })
-                setState("idle")
+                setForm({
+                  name: "",
+                  email: "",
+                  company: "",
+                  role: roles[0] || "",
+                });
+                setState("idle");
               }}
             >
               Register someone else
@@ -1138,10 +1563,15 @@ function RegisterForm({
           </div>
         </div>
       </div>
-    )
+    );
   }
 
-  const field = (k: "name" | "email" | "company", label: string, type: string, auto: string) => (
+  const field = (
+    k: "name" | "email" | "company",
+    label: string,
+    type: string,
+    auto: string,
+  ) => (
     <label className="ows-field-row" htmlFor={formId + "-" + k}>
       <span className="ows-label">{label}</span>
       <input
@@ -1161,7 +1591,7 @@ function RegisterForm({
         </span>
       )}
     </label>
-  )
+  );
 
   return (
     <form className="ows-form" onSubmit={submit} noValidate>
@@ -1171,7 +1601,12 @@ function RegisterForm({
       <label className="ows-field-row" htmlFor={formId + "-role"}>
         <span className="ows-label">Role</span>
         <span className="ows-select">
-          <select id={formId + "-role"} className="ows-input" value={form.role} onChange={set("role")}>
+          <select
+            id={formId + "-role"}
+            className="ows-input"
+            value={form.role}
+            onChange={set("role")}
+          >
             {roles.map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -1187,13 +1622,19 @@ function RegisterForm({
           That didn't go through. Try again in a moment.
         </p>
       )}
-      <button type="submit" className="ows-btn ows-btn--accent ows-btn--wide" disabled={state === "sending"}>
+      <button
+        type="submit"
+        className="ows-btn ows-btn--accent ows-btn--wide"
+        disabled={state === "sending"}
+      >
         {state === "sending" ? "Saving your seat…" : "Request my seat"}
         {state !== "sending" && <ArrowGlyph />}
       </button>
-      <p className="ows-fine">Free to attend. We confirm every seat within two business days.</p>
+      <p className="ows-fine">
+        Free to attend. We confirm every seat within two business days.
+      </p>
     </form>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1220,7 +1661,8 @@ export default function OnwardSummitTemplate({
   agenda = null,
   speakers = {
     title: "Why CampusAxis is built",
-    intro: "College life is overwhelmed by fragmented tools, missing study material, and surprise attendance shortfalls. Here is the daily friction students face—and how CampusAxis solves each one.",
+    intro:
+      "College life is overwhelmed by fragmented tools, missing study material, and surprise attendance shortfalls. Here is the daily friction students face—and how CampusAxis solves each one.",
     people: DEFAULT_SPEAKERS,
   },
   venue = {
@@ -1228,213 +1670,305 @@ export default function OnwardSummitTemplate({
     name: "Hudson Atrium",
     address: "600 West 22nd Street",
     city: "New York, NY 10011",
-    notes: ["Doors open at 8:00 AM", "Business casual", "Two blocks from the High Line", "Step-free access throughout"],
+    notes: [
+      "Doors open at 8:00 AM",
+      "Business casual",
+      "Two blocks from the High Line",
+      "Step-free access throughout",
+    ],
   },
   faq = { title: "Frequently asked questions", items: DEFAULT_FAQ },
-  cta = { kicker: "On the list", title: "Save your seat", subtitle: "Rooms stay small enough to actually talk, so seats are limited.", seats: { total: 400, taken: 287 } },
-  footer = { note: "© 2026 Keel Financial, Inc. Onward is free for confirmed guests." },
+  cta = {
+    kicker: "On the list",
+    title: "Save your seat",
+    subtitle: "Rooms stay small enough to actually talk, so seats are limited.",
+    seats: { total: 400, taken: 287 },
+  },
+  footer = {
+    note: "© 2026 Keel Financial, Inc. Onward is free for confirmed guests.",
+  },
   palette = "cobalt",
   glyph = "arrow",
   onRegister,
   height = "100svh",
   className = "",
 }: OnwardSummitTemplateProps) {
-  const uid = React.useId().replace(/:/g, "")
-  const reduced = useReducedMotion()
-  const pal = resolvePalette(palette)
-  const rootRef = React.useRef(null as HTMLDivElement | null)
-  const heroRef = React.useRef(null as HTMLElement | null)
-  const nameRef = React.useRef(null as HTMLInputElement | null)
+  const uid = React.useId().replace(/:/g, "");
+  const reduced = useReducedMotion();
+  const pal = resolvePalette(palette);
+  const rootRef = React.useRef(null as HTMLDivElement | null);
+  const heroRef = React.useRef(null as HTMLElement | null);
+  const nameRef = React.useRef(null as HTMLInputElement | null);
 
-  const [solid, setSolid] = React.useState(false)
-  const [currentUser, setCurrentUser] = React.useState<{ name: string; role: string; prn?: string; department?: string } | null>(() => {
+  const [solid, setSolid] = React.useState(false);
+  const [currentUser, setCurrentUser] = React.useState<{
+    name: string;
+    role: string;
+    prn?: string;
+    department?: string;
+  } | null>(() => {
     try {
-      const saved = localStorage.getItem('eduvault_profile')
+      const saved = localStorage.getItem("eduvault_profile");
       if (saved) {
-        const parsed = JSON.parse(saved)
-        if (parsed?.name && parsed?.prn) return parsed
+        const parsed = JSON.parse(saved);
+        if (parsed?.name && parsed?.prn) return parsed;
       }
     } catch { }
-    return null
-  })
+    return null;
+  });
 
   React.useEffect(() => {
     const handleAuthChange = () => {
       try {
-        const saved = localStorage.getItem('eduvault_profile')
+        const saved = localStorage.getItem("eduvault_profile");
         if (saved) {
-          const parsed = JSON.parse(saved)
+          const parsed = JSON.parse(saved);
           if (parsed?.name && parsed?.prn) {
-            setCurrentUser(parsed)
-            return
+            setCurrentUser(parsed);
+            return;
           }
         }
       } catch { }
-      setCurrentUser(null)
-    }
+      setCurrentUser(null);
+    };
 
-    window.addEventListener('storage', handleAuthChange)
-    window.addEventListener('eduvault-auth-change', handleAuthChange)
+    window.addEventListener("storage", handleAuthChange);
+    window.addEventListener("eduvault-auth-change", handleAuthChange);
     return () => {
-      window.removeEventListener('storage', handleAuthChange)
-      window.removeEventListener('eduvault-auth-change', handleAuthChange)
-    }
-  }, [])
+      window.removeEventListener("storage", handleAuthChange);
+      window.removeEventListener("eduvault-auth-change", handleAuthChange);
+    };
+  }, []);
 
   const handleNavLogout = (e: React.MouseEvent) => {
-    e.preventDefault()
-    localStorage.clear()
-    sessionStorage.clear()
-    setCurrentUser(null)
-    window.dispatchEvent(new Event('eduvault-auth-change'))
-  }
-  const features = expect?.features && expect.features.length ? expect.features : DEFAULT_FEATURES
-  const audiences = guests?.audiences && guests.audiences.length ? guests.audiences : DEFAULT_AUDIENCES
-  const sessions = agenda?.sessions && agenda.sessions.length ? agenda.sessions : DEFAULT_SESSIONS
-  const people = speakers?.people && speakers.people.length ? speakers.people : DEFAULT_SPEAKERS
-  const faqs = faq?.items && faq.items.length ? faq.items : DEFAULT_FAQ
-  const location = venue ? [venue.name, venue.address, venue.city].filter(Boolean).join(", ") : city
+    e.preventDefault();
+    localStorage.clear();
+    sessionStorage.clear();
+    setCurrentUser(null);
+    window.dispatchEvent(new Event("eduvault-auth-change"));
+  };
+  const features =
+    expect?.features && expect.features.length
+      ? expect.features
+      : DEFAULT_FEATURES;
+  const audiences =
+    guests?.audiences && guests.audiences.length
+      ? guests.audiences
+      : DEFAULT_AUDIENCES;
+  const sessions =
+    agenda?.sessions && agenda.sessions.length
+      ? agenda.sessions
+      : DEFAULT_SESSIONS;
+  const people =
+    speakers?.people && speakers.people.length
+      ? speakers.people
+      : DEFAULT_SPEAKERS;
+  const faqs = faq?.items && faq.items.length ? faq.items : DEFAULT_FAQ;
+  const location = venue
+    ? [venue.name, venue.address, venue.city].filter(Boolean).join(", ")
+    : city;
 
   // ---- guest list -----------------------------------------------------------
-  const [aud, setAud] = React.useState(0)
-  const [audAuto, setAudAuto] = React.useState(true)
-  const [audHold, setAudHold] = React.useState(false)
+  const [aud, setAud] = React.useState(0);
+  const [audAuto, setAudAuto] = React.useState(true);
+  const [audHold, setAudHold] = React.useState(false);
   React.useEffect(() => {
-    if (!audAuto || audHold || reduced || audiences.length < 2) return
-    const t = setTimeout(() => setAud((i) => (i + 1) % audiences.length), 7000)
-    return () => clearTimeout(t)
-  }, [aud, audAuto, audHold, reduced, audiences.length])
-  const audRefs = React.useRef([] as (HTMLButtonElement | null)[])
+    if (!audAuto || audHold || reduced || audiences.length < 2) return;
+    const t = setTimeout(() => setAud((i) => (i + 1) % audiences.length), 7000);
+    return () => clearTimeout(t);
+  }, [aud, audAuto, audHold, reduced, audiences.length]);
+  const audRefs = React.useRef([] as (HTMLButtonElement | null)[]);
   const pickAud = (i: number, focus?: boolean) => {
-    setAud(i)
-    setAudAuto(false)
-    if (focus) audRefs.current[i]?.focus()
-  }
+    setAud(i);
+    setAudAuto(false);
+    if (focus) audRefs.current[i]?.focus();
+  };
 
   // ---- agenda ---------------------------------------------------------------
-  const tracks = React.useMemo(() => tracksOf(sessions), [sessions])
-  const [track, setTrack] = React.useState("All")
-  const [openRow, setOpenRow] = React.useState(-1)
-  const [saved, setSaved] = React.useState([] as number[])
-  const shown = sessions.map((s, i) => ({ s, i })).filter((x) => track === "All" || x.s.track === track)
-  const toggleSave = (i: number) => setSaved((xs) => (xs.includes(i) ? xs.filter((x) => x !== i) : [...xs, i].sort((a, b) => a - b)))
+  const tracks = React.useMemo(() => tracksOf(sessions), [sessions]);
+  const [track, setTrack] = React.useState("All");
+  const [openRow, setOpenRow] = React.useState(-1);
+  const [saved, setSaved] = React.useState([] as number[]);
+  const shown = sessions
+    .map((s, i) => ({ s, i }))
+    .filter((x) => track === "All" || x.s.track === track);
+  const toggleSave = (i: number) =>
+    setSaved((xs) =>
+      xs.includes(i)
+        ? xs.filter((x) => x !== i)
+        : [...xs, i].sort((a, b) => a - b),
+    );
 
   const lastEnd = React.useMemo(() => {
-    const last = sessions[sessions.length - 1]
-    return last ? atVenueTime(startsAt, addMinutes(last.start, last.duration)) : null
-  }, [sessions, startsAt])
+    const last = sessions[sessions.length - 1];
+    return last
+      ? atVenueTime(startsAt, addMinutes(last.start, last.duration))
+      : null;
+  }, [sessions, startsAt]);
   const startDate = React.useMemo(() => {
-    const d = new Date(startsAt)
-    return isNaN(d.getTime()) ? null : d
-  }, [startsAt])
+    const d = new Date(startsAt);
+    return isNaN(d.getTime()) ? null : d;
+  }, [startsAt]);
   const endDate = React.useMemo(() => {
     if (endsAt) {
-      const d = new Date(endsAt)
-      if (!isNaN(d.getTime())) return d
+      const d = new Date(endsAt);
+      if (!isNaN(d.getTime())) return d;
     }
-    return lastEnd || (startDate ? new Date(startDate.getTime() + 9 * 3600000) : null)
-  }, [endsAt, lastEnd, startDate])
+    return (
+      lastEnd ||
+      (startDate ? new Date(startDate.getTime() + 9 * 3600000) : null)
+    );
+  }, [endsAt, lastEnd, startDate]);
 
   const sessionEvent = (s: OwsSession): IcsEvent | null => {
-    const a = atVenueTime(startsAt, s.start)
-    const b = atVenueTime(startsAt, addMinutes(s.start, s.duration))
-    if (!a || !b) return null
-    const who = s.speakers && s.speakers.length ? "With " + s.speakers.join(", ") + ". " : ""
-    return { title: title + ": " + s.title, start: a, end: b, location, description: who + (s.description || "") }
-  }
-  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "event"
+    const a = atVenueTime(startsAt, s.start);
+    const b = atVenueTime(startsAt, addMinutes(s.start, s.duration));
+    if (!a || !b) return null;
+    const who =
+      s.speakers && s.speakers.length
+        ? "With " + s.speakers.join(", ") + ". "
+        : "";
+    return {
+      title: title + ": " + s.title,
+      start: a,
+      end: b,
+      location,
+      description: who + (s.description || ""),
+    };
+  };
+  const slug =
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "event";
   const saveEvent = () => {
-    if (!startDate || !endDate) return
-    download(slug + ".ics", buildIcs([{ title, start: startDate, end: endDate, location, description: tagline.replace(/\n/g, " ") }], new Date()), "text/calendar")
-  }
+    if (!startDate || !endDate) return;
+    download(
+      slug + ".ics",
+      buildIcs(
+        [
+          {
+            title,
+            start: startDate,
+            end: endDate,
+            location,
+            description: tagline.replace(/\n/g, " "),
+          },
+        ],
+        new Date(),
+      ),
+      "text/calendar",
+    );
+  };
   const saveSessions = (idx: number[]) => {
-    const evs = idx.map((i) => sessionEvent(sessions[i])).filter(Boolean) as IcsEvent[]
-    if (evs.length) download(slug + (idx.length === 1 ? "-session" : "-agenda") + ".ics", buildIcs(evs, new Date()), "text/calendar")
-  }
+    const evs = idx
+      .map((i) => sessionEvent(sessions[i]))
+      .filter(Boolean) as IcsEvent[];
+    if (evs.length)
+      download(
+        slug + (idx.length === 1 ? "-session" : "-agenda") + ".ics",
+        buildIcs(evs, new Date()),
+        "text/calendar",
+      );
+  };
 
   // ---- countdown and seats --------------------------------------------------
-  const [now, setNow] = React.useState(null as number | null)
+  const [now, setNow] = React.useState(null as number | null);
   React.useEffect(() => {
-    setNow(Date.now())
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
-  }, [])
-  const left = now !== null && startDate ? countdown(startDate.getTime() - now) : null
-  const live = left?.done && endDate && now !== null && now < endDate.getTime()
-  const [taken, setTaken] = React.useState(cta?.seats?.taken ?? 0)
-  const seats = cta?.seats ? { total: cta.seats.total, taken } : undefined
-  const remaining = seatsLeft(seats)
-  const [authModalOpen, setAuthModalOpen] = React.useState(false)
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const left =
+    now !== null && startDate ? countdown(startDate.getTime() - now) : null;
+  const live = left?.done && endDate && now !== null && now < endDate.getTime();
+  const [taken, setTaken] = React.useState(cta?.seats?.taken ?? 0);
+  const seats = cta?.seats ? { total: cta.seats.total, taken } : undefined;
+  const remaining = seatsLeft(seats);
+  const [authModalOpen, setAuthModalOpen] = React.useState(false);
 
   // ---- FAQ ------------------------------------------------------------------
-  const [openFaqs, setOpenFaqs] = React.useState<Record<number, boolean>>(() => {
-    const initial: Record<number, boolean> = {}
-    for (let i = 0; i < 20; i++) initial[i] = false
-    return initial
-  })
+  const [openFaqs, setOpenFaqs] = React.useState<Record<number, boolean>>(
+    () => {
+      const initial: Record<number, boolean> = {};
+      for (let i = 0; i < 20; i++) initial[i] = false;
+      return initial;
+    },
+  );
 
   // ---- in-page links --------------------------------------------------------
   const goTo = (key: string, e?: AnchorEv) => {
-    const target = rootRef.current?.querySelector('[data-sec="' + key + '"]') || document.getElementById(key)
-    if (!target) return false
-    e?.preventDefault()
-    target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" })
-    return true
-  }
+    const target =
+      rootRef.current?.querySelector('[data-sec="' + key + '"]') ||
+      document.getElementById(key);
+    if (!target) return false;
+    e?.preventDefault();
+    target.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      block: "start",
+    });
+    return true;
+  };
   const onRegisterClick = (e: AnchorEv) => {
-    if (register.href && !register.href.startsWith("#")) return
-    const key = register.href ? register.href.slice(1) : "register"
-    if (goTo(key, e)) setTimeout(() => nameRef.current?.focus({ preventScroll: true }), reduced ? 0 : 650)
-  }
+    if (register.href && !register.href.startsWith("#")) return;
+    const key = register.href ? register.href.slice(1) : "register";
+    if (goTo(key, e))
+      setTimeout(
+        () => nameRef.current?.focus({ preventScroll: true }),
+        reduced ? 0 : 650,
+      );
+  };
   const onLink = (href: string | undefined, e: AnchorEv) => {
-    if (!href || !href.startsWith("#")) return
-    if (!goTo(href.slice(1), e) && href === "#") e.preventDefault()
-  }
+    if (!href || !href.startsWith("#")) return;
+    if (!goTo(href.slice(1), e) && href === "#") e.preventDefault();
+  };
 
   // ---- nav turns solid once the hero is behind it ---------------------------
   React.useEffect(() => {
-    let raf = 0
+    let raf = 0;
     const tick = () => {
-      raf = 0
-      const h = heroRef.current
-      if (h) setSolid(h.getBoundingClientRect().bottom < 72)
-    }
+      raf = 0;
+      const h = heroRef.current;
+      if (h) setSolid(h.getBoundingClientRect().bottom < 72);
+    };
     const on = () => {
-      if (!raf) raf = requestAnimationFrame(tick)
-    }
-    on()
-    window.addEventListener("scroll", on, { passive: true })
-    window.addEventListener("resize", on)
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    window.addEventListener("resize", on);
     return () => {
-      cancelAnimationFrame(raf)
-      window.removeEventListener("scroll", on)
-      window.removeEventListener("resize", on)
-    }
-  }, [])
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", on);
+      window.removeEventListener("resize", on);
+    };
+  }, []);
 
   // ---- reveal on scroll: only what starts below the fold is hidden ----------
   React.useEffect(() => {
-    const root = rootRef.current
-    if (!root || reduced || typeof IntersectionObserver === "undefined") return
-    const vh = window.innerHeight || 800
-    const below = Array.from(root.querySelectorAll(".ows-rise")).filter((n) => n.getBoundingClientRect().top > vh)
-    below.forEach((n) => n.classList.add("ows-pre"))
+    const root = rootRef.current;
+    if (!root || reduced || typeof IntersectionObserver === "undefined") return;
+    const vh = window.innerHeight || 800;
+    const below = Array.from(root.querySelectorAll(".ows-rise")).filter(
+      (n) => n.getBoundingClientRect().top > vh,
+    );
+    below.forEach((n) => n.classList.add("ows-pre"));
     const io = new IntersectionObserver(
       (es) =>
         es.forEach((x) => {
           if (x.isIntersecting) {
-            x.target.classList.remove("ows-pre")
-            io.unobserve(x.target)
+            x.target.classList.remove("ows-pre");
+            io.unobserve(x.target);
           }
         }),
       { threshold: 0.12, rootMargin: "0px 0px -40px 0px" },
-    )
-    below.forEach((n) => io.observe(n))
+    );
+    below.forEach((n) => io.observe(n));
     return () => {
-      io.disconnect()
-      below.forEach((n) => n.classList.remove("ows-pre"))
-    }
-  }, [reduced])
+      io.disconnect();
+      below.forEach((n) => n.classList.remove("ows-pre"));
+    };
+  }, [reduced]);
 
   const vars = {
     "--ows-deep": pal.deep,
@@ -1451,17 +1985,19 @@ export default function OnwardSummitTemplate({
     "--ows-icon-a": pal.icon[0],
     "--ows-icon-b": pal.icon[1],
     "--ows-hero-h": height,
-  } as React.CSSProperties
+  } as React.CSSProperties;
 
-  const tagLines = tagline.split("\n")
-  const pitchWords = audiences[aud]?.pitch.split(/\s+/) ?? []
-  const footLinks = footer?.links ?? [
-    agenda && { label: "Agenda", href: "#agenda" },
-    speakers && { label: "Features", href: "#speakers" },
-    { label: "Testimonials", href: "#testimonials" },
-    faq && { label: "FAQ", href: "#faq" },
-    cta && { label: "Register", href: "#register" },
-  ].filter(Boolean) as OwsLink[]
+  const tagLines = tagline.split("\n");
+  const pitchWords = audiences[aud]?.pitch.split(/\s+/) ?? [];
+  const footLinks =
+    footer?.links ??
+    ([
+      agenda && { label: "Agenda", href: "#agenda" },
+      speakers && { label: "Features", href: "#speakers" },
+      { label: "Testimonials", href: "#testimonials" },
+      faq && { label: "FAQ", href: "#faq" },
+      cta && { label: "Register", href: "#register" },
+    ].filter(Boolean) as OwsLink[]);
 
   return (
     <div ref={rootRef} className={"ows-root " + className} style={vars}>
@@ -1469,14 +2005,26 @@ export default function OnwardSummitTemplate({
 
       {/* ---------------- nav ---------------- */}
       <header className="ows-nav" data-solid={solid ? "" : undefined}>
-        <a href="#" className="ows-brand" onClick={(e) => {
-          e.preventDefault()
-          rootRef.current?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" })
-        }}>
+        <a
+          href="#"
+          className="ows-brand"
+          onClick={(e) => {
+            e.preventDefault();
+            rootRef.current?.scrollIntoView({
+              behavior: reduced ? "auto" : "smooth",
+              block: "start",
+            });
+          }}
+        >
           <span className="ows-brand-word">{brand}</span>
           {logo ?? <BrandMark />}
         </a>
-        <button type="button" className="ows-when" onClick={saveEvent} title="Add to calendar">
+        <button
+          type="button"
+          className="ows-when"
+          onClick={saveEvent}
+          title="Add to calendar"
+        >
           <span>{date}</span>
           <span className="ows-when-bar" aria-hidden="true" />
           <span>{city}</span>
@@ -1488,12 +2036,12 @@ export default function OnwardSummitTemplate({
           type="button"
           className="ows-btn ows-btn--accent ows-btn--nav"
           onClick={(e) => {
-            e.preventDefault()
-            const cached = localStorage.getItem('eduvault_profile')
+            e.preventDefault();
+            const cached = localStorage.getItem("eduvault_profile");
             if (cached) {
-              window.location.href = '/dashboard'
+              window.location.href = "/dashboard";
             } else {
-              setAuthModalOpen(true)
+              setAuthModalOpen(true);
             }
           }}
         >
@@ -1507,18 +2055,33 @@ export default function OnwardSummitTemplate({
       {/* ---------------- hero ---------------- */}
       <section ref={heroRef} className="ows-hero" aria-label={title}>
         <div className="ows-hero-bg" aria-hidden="true" />
-        <GlyphField mode="hero" glyph={glyph} light={pal.glyphLight} dark={pal.glyphDark} reduced={reduced} />
+        <GlyphField
+          mode="hero"
+          glyph={glyph}
+          light={pal.glyphLight}
+          dark={pal.glyphDark}
+          reduced={reduced}
+        />
         <div className="ows-hero-copy">
           <h1 className="ows-title" aria-label={title}>
             {Array.from(title).map((ch, i) => (
-              <span key={i} className="ows-title-ch" style={{ "--i": i } as React.CSSProperties} aria-hidden="true">
+              <span
+                key={i}
+                className="ows-title-ch"
+                style={{ "--i": i } as React.CSSProperties}
+                aria-hidden="true"
+              >
                 {ch === " " ? "\u00a0" : ch}
               </span>
             ))}
           </h1>
           <p className="ows-tagline">
             {tagLines.map((l, i) => (
-              <span key={i} className="ows-tag-line" style={{ "--i": i } as React.CSSProperties}>
+              <span
+                key={i}
+                className="ows-tag-line"
+                style={{ "--i": i } as React.CSSProperties}
+              >
                 {l}
               </span>
             ))}
@@ -1530,14 +2093,32 @@ export default function OnwardSummitTemplate({
         {/* ---------------- expect ---------------- */}
         {expect && (
           <section className="ows-sec ows-wrap" data-sec="expect">
-            <h2 className="ows-h2 ows-rise">{expect.title ?? "Why CampusAxis?"}</h2>
-            {expect.intro && <p className="ows-intro ows-rise">{expect.intro}</p>}
+            <h2 className="ows-h2 ows-rise">
+              {expect.title ?? "Why CampusAxis?"}
+            </h2>
+            {expect.intro && (
+              <p className="ows-intro ows-rise">{expect.intro}</p>
+            )}
             <div className="ows-features">
               {features.map((f, i) => (
-                <article key={i} className="ows-feature ows-rise" style={{ "--d": i * 90 + "ms" } as React.CSSProperties}>
+                <article
+                  key={i}
+                  className="ows-feature ows-rise"
+                  style={{ "--d": i * 90 + "ms" } as React.CSSProperties}
+                >
                   <div className="ows-feature-mark">
-                    {f.icon === "arrow" || f.icon === "ring" || f.icon === "plus" || f.icon === undefined ? (
-                      <FeatureMark kind={(f.icon as "arrow" | "ring" | "plus" | undefined) ?? (["arrow", "ring", "plus"] as const)[i % 3]} uid={uid} i={i} />
+                    {f.icon === "arrow" ||
+                      f.icon === "ring" ||
+                      f.icon === "plus" ||
+                      f.icon === undefined ? (
+                      <FeatureMark
+                        kind={
+                          (f.icon as "arrow" | "ring" | "plus" | undefined) ??
+                          (["arrow", "ring", "plus"] as const)[i % 3]
+                        }
+                        uid={uid}
+                        i={i}
+                      />
                     ) : (
                       f.icon
                     )}
@@ -1562,13 +2143,19 @@ export default function OnwardSummitTemplate({
           >
             <div className="ows-how-grid">
               <div className="ows-how-copy">
-                <h2 className="ows-h2 ows-rise">{guests.title ?? "How it works"}</h2>
-                <div className="ows-chips ows-rise" role="tablist" aria-label="Step by step system">
+                <h2 className="ows-h2 ows-rise">
+                  {guests.title ?? "How it works"}
+                </h2>
+                <div
+                  className="ows-chips ows-rise"
+                  role="tablist"
+                  aria-label="Step by step system"
+                >
                   {audiences.map((a, i) => (
                     <button
                       key={a.role}
                       ref={(el) => {
-                        audRefs.current[i] = el
+                        audRefs.current[i] = el;
                       }}
                       type="button"
                       role="tab"
@@ -1577,25 +2164,43 @@ export default function OnwardSummitTemplate({
                       aria-controls={uid + "-pitch"}
                       tabIndex={i === aud ? 0 : -1}
                       className="ows-chip"
-                      data-auto={i === aud && audAuto && !audHold && !reduced ? "" : undefined}
+                      data-auto={
+                        i === aud && audAuto && !audHold && !reduced
+                          ? ""
+                          : undefined
+                      }
                       onClick={() => pickAud(i)}
                       onKeyDown={(e) => {
-                        const j = nextIndex(aud, e.key, audiences.length)
+                        const j = nextIndex(aud, e.key, audiences.length);
                         if (j !== aud) {
-                          e.preventDefault()
-                          pickAud(j, true)
+                          e.preventDefault();
+                          pickAud(j, true);
                         }
                       }}
                     >
                       {a.role}
-                      <span className="ows-chip-bar" key={aud + "-" + String(audAuto)} aria-hidden="true" />
+                      <span
+                        className="ows-chip-bar"
+                        key={aud + "-" + String(audAuto)}
+                        aria-hidden="true"
+                      />
                     </button>
                   ))}
                 </div>
-                <p id={uid + "-pitch"} role="tabpanel" aria-labelledby={uid + "-aud-" + aud} className="ows-pitch ows-rise" aria-live="polite">
+                <p
+                  id={uid + "-pitch"}
+                  role="tabpanel"
+                  aria-labelledby={uid + "-aud-" + aud}
+                  className="ows-pitch ows-rise"
+                  aria-live="polite"
+                >
                   <span key={aud} className="ows-pitch-in">
                     {pitchWords.map((w, i) => (
-                      <span key={i} className="ows-word" style={{ "--i": i } as React.CSSProperties}>
+                      <span
+                        key={i}
+                        className="ows-word"
+                        style={{ "--i": i } as React.CSSProperties}
+                      >
                         {w}{" "}
                       </span>
                     ))}
@@ -1614,31 +2219,65 @@ export default function OnwardSummitTemplate({
           <section className="ows-sec ows-wrap" data-sec="agenda">
             <div className="ows-sec-head">
               <div>
-                <h2 className="ows-h2 ows-rise">{agenda.title ?? "On the agenda"}</h2>
-                {agenda.intro && <p className="ows-intro ows-rise">{agenda.intro}</p>}
+                <h2 className="ows-h2 ows-rise">
+                  {agenda.title ?? "On the agenda"}
+                </h2>
+                {agenda.intro && (
+                  <p className="ows-intro ows-rise">{agenda.intro}</p>
+                )}
               </div>
-              <div className="ows-saved ows-rise" data-on={saved.length ? "" : undefined} aria-live="polite">
+              <div
+                className="ows-saved ows-rise"
+                data-on={saved.length ? "" : undefined}
+                aria-live="polite"
+              >
                 <span className="ows-saved-n">{saved.length}</span>
-                <span className="ows-saved-t">{saved.length === 1 ? "session saved" : "sessions saved"}</span>
-                <button type="button" className="ows-btn ows-btn--dark ows-btn--sm" disabled={!saved.length} onClick={() => saveSessions(saved)}>
+                <span className="ows-saved-t">
+                  {saved.length === 1 ? "session saved" : "sessions saved"}
+                </span>
+                <button
+                  type="button"
+                  className="ows-btn ows-btn--dark ows-btn--sm"
+                  disabled={!saved.length}
+                  onClick={() => saveSessions(saved)}
+                >
                   <CalendarGlyph /> Download .ics
                 </button>
               </div>
             </div>
-            <div className="ows-chips ows-chips--filter ows-rise" role="group" aria-label="Filter by track">
+            <div
+              className="ows-chips ows-chips--filter ows-rise"
+              role="group"
+              aria-label="Filter by track"
+            >
               {tracks.map((t) => (
-                <button key={t} type="button" className="ows-chip" aria-pressed={t === track} onClick={() => setTrack(t)}>
+                <button
+                  key={t}
+                  type="button"
+                  className="ows-chip"
+                  aria-pressed={t === track}
+                  onClick={() => setTrack(t)}
+                >
                   {t}
-                  <span className="ows-chip-n">{t === "All" ? sessions.length : sessions.filter((s) => s.track === t).length}</span>
+                  <span className="ows-chip-n">
+                    {t === "All"
+                      ? sessions.length
+                      : sessions.filter((s) => s.track === t).length}
+                  </span>
                 </button>
               ))}
             </div>
             <ol className="ows-agenda ows-rise" key={track}>
               {shown.map(({ s, i }, k) => {
-                const open = openRow === i
-                const isSaved = saved.includes(i)
+                const open = openRow === i;
+                const isSaved = saved.includes(i);
                 return (
-                  <li key={i} className="ows-row" data-open={open ? "" : undefined} style={{ "--k": k } as React.CSSProperties}>
+                  <li
+                    key={i}
+                    className="ows-row"
+                    data-open={open ? "" : undefined}
+                    style={{ "--k": k } as React.CSSProperties}
+                  >
                     <div className="ows-row-main">
                       <button
                         type="button"
@@ -1649,11 +2288,17 @@ export default function OnwardSummitTemplate({
                       >
                         <span className="ows-row-time">
                           {formatClock(s.start)}
-                          <span className="ows-row-end">{formatClock(addMinutes(s.start, s.duration))}</span>
+                          <span className="ows-row-end">
+                            {formatClock(addMinutes(s.start, s.duration))}
+                          </span>
                         </span>
                         <span className="ows-row-body">
                           <span className="ows-row-title">{s.title}</span>
-                          {s.speakers && s.speakers.length > 0 && <span className="ows-row-who">{s.speakers.join(" · ")}</span>}
+                          {s.speakers && s.speakers.length > 0 && (
+                            <span className="ows-row-who">
+                              {s.speakers.join(" · ")}
+                            </span>
+                          )}
                         </span>
                         {s.track && <span className="ows-tag">{s.track}</span>}
                         <Chevron open={open} />
@@ -1669,16 +2314,27 @@ export default function OnwardSummitTemplate({
                         <BookmarkGlyph on={isSaved} />
                       </button>
                     </div>
-                    <div id={uid + "-row-" + i} className="ows-row-more" role="region" aria-label={s.title} hidden={!open && reduced ? true : undefined}>
+                    <div
+                      id={uid + "-row-" + i}
+                      className="ows-row-more"
+                      role="region"
+                      aria-label={s.title}
+                      hidden={!open && reduced ? true : undefined}
+                    >
                       <div className="ows-row-inner">
                         {s.description && <p>{s.description}</p>}
-                        <button type="button" className="ows-link" tabIndex={open ? 0 : -1} onClick={() => saveSessions([i])}>
+                        <button
+                          type="button"
+                          className="ows-link"
+                          tabIndex={open ? 0 : -1}
+                          onClick={() => saveSessions([i])}
+                        >
                           <CalendarGlyph /> Add this session to my calendar
                         </button>
                       </div>
                     </div>
                   </li>
-                )
+                );
               })}
             </ol>
           </section>
@@ -1688,18 +2344,38 @@ export default function OnwardSummitTemplate({
         {speakers && (
           <section className="ows-sec ows-wrap" data-sec="speakers">
             <h2 className="ows-h2 ows-rise">{speakers.title ?? "On stage"}</h2>
-            {speakers.intro && <p className="ows-intro ows-rise">{speakers.intro}</p>}
+            {speakers.intro && (
+              <p className="ows-intro ows-rise">{speakers.intro}</p>
+            )}
             <ul className="ows-speakers">
               {people.map((p, i) => (
-                <li key={p.name} className="ows-speaker ows-rise" style={{ "--d": (i % 4) * 70 + "ms" } as React.CSSProperties} tabIndex={0}>
+                <li
+                  key={p.name}
+                  className="ows-speaker ows-rise"
+                  style={{ "--d": (i % 4) * 70 + "ms" } as React.CSSProperties}
+                  tabIndex={0}
+                >
                   <div className="ows-portrait">
                     {p.photo ? (
                       <>
-                        <img className="ows-photo" src={p.photo} alt="" width={440} height={520} loading="lazy" decoding="async" />
+                        <img
+                          className="ows-photo"
+                          src={p.photo}
+                          alt=""
+                          width={440}
+                          height={520}
+                          loading="lazy"
+                          decoding="async"
+                        />
                         <span className="ows-photo-tint" aria-hidden="true" />
                       </>
                     ) : (
-                      <GlyphPortrait seed={p.name} glyph={glyph} uid={uid} i={i} />
+                      <GlyphPortrait
+                        seed={p.name}
+                        glyph={glyph}
+                        uid={uid}
+                        i={i}
+                      />
                     )}
                     {p.bio && <p className="ows-bio">{p.bio}</p>}
                   </div>
@@ -1714,28 +2390,22 @@ export default function OnwardSummitTemplate({
           </section>
         )}
 
-        {/* ---------------- testimonials ---------------- *
-        <section className="ows-sec ows-wrap" data-sec="testimonials" style={{ paddingTop: "clamp(56px, 8vw, 96px)", paddingBottom: "clamp(24px, 4vw, 48px)" }}>
-          <div className="ows-sec-head">
-            <div>
-              <h2 className="ows-h2 ows-rise">Student voices</h2>
-              <p className="ows-intro ows-rise">What engineering students and semester toppers are saying about CampusAxis.</p>
-            </div>
-          </div>
-          <div className="ows-rise">
-            <TestimonialsEditorial />
-          </div>
-        </section>/}
-
         {/* ---------------- FAQ ---------------- */}
         {faq && (
-          <section className="ows-sec ows-wrap" data-sec="faq" style={{ paddingTop: "clamp(56px, 8vw, 96px)", paddingBottom: "clamp(56px, 8vw, 96px)" }}>
+          <section
+            className="ows-sec ows-wrap"
+            data-sec="faq"
+          >
             <h2 className="ows-h2 ows-rise">{faq.title ?? "On your mind"}</h2>
             <div className="ows-faq ows-rise">
               {faqs.map((f, i) => {
-                const open = openFaqs[i] ?? true
+                const open = openFaqs[i] ?? true;
                 return (
-                  <div key={i} className="ows-faq-item" data-open={open ? "" : undefined}>
+                  <div
+                    key={i}
+                    className="ows-faq-item"
+                    data-open={open ? "" : undefined}
+                  >
                     <h3 className="ows-faq-h">
                       <button
                         type="button"
@@ -1743,19 +2413,26 @@ export default function OnwardSummitTemplate({
                         aria-expanded={open}
                         aria-controls={uid + "-faq-" + i}
                         id={uid + "-faqq-" + i}
-                        onClick={() => setOpenFaqs((prev) => ({ ...prev, [i]: !open }))}
+                        onClick={() =>
+                          setOpenFaqs((prev) => ({ ...prev, [i]: !open }))
+                        }
                       >
                         <span>{f.q}</span>
                         <span className="ows-faq-icon" aria-hidden="true" />
                       </button>
                     </h3>
-                    <div id={uid + "-faq-" + i} role="region" aria-labelledby={uid + "-faqq-" + i} className="ows-faq-a">
+                    <div
+                      id={uid + "-faq-" + i}
+                      role="region"
+                      aria-labelledby={uid + "-faqq-" + i}
+                      className="ows-faq-a"
+                    >
                       <div className="ows-row-inner">
                         <p>{f.a}</p>
                       </div>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           </section>
@@ -1763,16 +2440,49 @@ export default function OnwardSummitTemplate({
       </main>
 
       {/* ---------------- CTA / Login ---------------- */}
-      {cta && (
-        <section className="ows-band" data-sec="register" id="login" style={{ padding: "clamp(100px, 14vw, 170px) 0" }}>
-          <GlyphField mode="band" glyph={glyph} light={pal.glyphLight} dark={pal.glyphDark} reduced={reduced} cell={15} />
-          <div className="ows-wrap ows-band-grid" style={{ alignItems: "center", gap: "clamp(40px, 6vw, 96px)" }}>
+      {cta && !currentUser && (
+        <section
+          className="ows-band"
+          data-sec="register"
+          id="login"
+        >
+          <GlyphField
+            mode="band"
+            glyph={glyph}
+            light={pal.glyphLight}
+            dark={pal.glyphDark}
+            reduced={reduced}
+            cell={15}
+          />
+          <div
+            className="ows-wrap ows-band-grid"
+            style={{ alignItems: "center", gap: "clamp(40px, 6vw, 96px)" }}
+          >
             <div className="ows-band-copy">
-              {cta.kicker && <span className="ows-kicker ows-kicker--light">{cta.kicker}</span>}
-              <h2 className="ows-band-title">{cta.title ?? "Access CampusAxis"}</h2>
-              {cta.subtitle && <p className="ows-band-sub" style={{ maxWidth: "540px", fontSize: "17.5px", lineHeight: "1.6" }}>{cta.subtitle}</p>}
+              {cta.kicker && (
+                <span className="ows-kicker ows-kicker--light">
+                  {cta.kicker}
+                </span>
+              )}
+              <h2 className="ows-band-title">
+                {cta.title ?? "Access CampusAxis"}
+              </h2>
+              {cta.subtitle && (
+                <p
+                  className="ows-band-sub"
+                  style={{
+                    maxWidth: "540px",
+                    fontSize: "17.5px",
+                    lineHeight: "1.6",
+                  }}
+                >
+                  {cta.subtitle}
+                </p>
+              )}
             </div>
-            <div style={{ maxWidth: "460px", width: "100%", justifySelf: "end" }}>
+            <div
+              style={{ maxWidth: "460px", width: "100%", justifySelf: "end" }}
+            >
               <SwapForm />
             </div>
           </div>
@@ -1789,7 +2499,11 @@ export default function OnwardSummitTemplate({
             </div>
             <nav className="ows-foot-links" aria-label="Footer">
               {footLinks.map((l) => (
-                <a key={l.label} href={l.href || "#"} onClick={(e) => onLink(l.href, e)}>
+                <a
+                  key={l.label}
+                  href={l.href || "#"}
+                  onClick={(e) => onLink(l.href, e)}
+                >
                   {l.label}
                 </a>
               ))}
@@ -1812,12 +2526,15 @@ export default function OnwardSummitTemplate({
             className="relative w-full max-w-[420px]"
             onClick={(e) => e.stopPropagation()}
           >
-            <SwapForm onSuccess={() => setAuthModalOpen(false)} onClose={() => setAuthModalOpen(false)} />
+            <SwapForm
+              onSuccess={() => setAuthModalOpen(false)}
+              onClose={() => setAuthModalOpen(false)}
+            />
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1828,7 +2545,7 @@ const OWS_CSS = `
 html:has(.ows-root),body:has(.ows-root),.ows-root{scrollbar-width:none!important;-ms-overflow-style:none!important}
 html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.ows-root::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
 .ows-root{position:relative;background:var(--ows-paper);color:var(--ows-ink);overflow-x:clip;font-family:"Inter Tight","Inter","Geist","Helvetica Neue",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;line-height:1.4;letter-spacing:-.006em}
-.ows-root :where(button:not([class*="!"]):not([class*="bg-"]):not([type="submit"])){font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit}
+.ows-root :where(.ows-nav button, .ows-when, .ows-chip, .ows-faq-q, .ows-row-btn, .ows-ticket-actions button){font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit}
 .ows-root :where(a){color:inherit;text-decoration:none}
 .ows-root :where(p,h1,h2,h3,ul,ol){margin:0;padding:0}
 .ows-root :where(ul,ol){list-style:none}
@@ -1888,8 +2605,9 @@ html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.o
 
 /* ---- sections ---- */
 .ows-main{position:relative}
-.ows-sec{padding-top:clamp(72px,10vw,120px)}
-.ows-sec:last-child{padding-bottom:clamp(88px,11vw,140px)}
+.ows-sec{padding-top:clamp(56px,7.5vw,96px);padding-bottom:clamp(56px,7.5vw,96px)}
+.ows-sec:first-of-type{padding-top:clamp(80px,9vw,120px)}
+.ows-sec:last-child{padding-bottom:clamp(56px,7.5vw,96px)}
 .ows-h2{font-size:clamp(32px,3.9vw,45px);font-weight:450;letter-spacing:-.035em;line-height:1.05}
 .ows-intro{margin-top:18px;max-width:460px;font-size:15px;line-height:1.45;color:var(--ows-muted)}
 .ows-sec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
@@ -2011,7 +2729,7 @@ html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.o
 .ows-faq-a p{padding:0 2px 22px;max-width:680px;font-size:15px;line-height:1.55;color:var(--ows-muted)}
 
 /* ---- register band ---- */
-.ows-band{position:relative;overflow:hidden;isolation:isolate;color:#fff;padding:clamp(72px,9vw,112px) 0;background:radial-gradient(ellipse 50% 70% at 85% 50%,color-mix(in srgb,var(--ows-mid) 70%,var(--ows-light)) 0%,transparent 100%),linear-gradient(160deg,var(--ows-deep) 0%,var(--ows-mid) 100%)}
+.ows-band{position:relative;overflow:hidden;isolation:isolate;color:#fff;padding:clamp(56px,7.5vw,96px) 0;background:radial-gradient(ellipse 50% 70% at 85% 50%,color-mix(in srgb,var(--ows-mid) 70%,var(--ows-light)) 0%,transparent 100%),linear-gradient(160deg,var(--ows-deep) 0%,var(--ows-mid) 100%)}
 .ows-band :where(input, select, textarea) { color: #0f172a !important; }
 .ows-band :where(label) { color: #1e293b !important; }
 .ows-band-grid{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:clamp(32px,5vw,72px);align-items:center}
@@ -2065,14 +2783,14 @@ html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.o
 .ows-ticket-actions{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
 
 /* ---- footer ---- */
-.ows-foot{position:relative;overflow:hidden;padding-top:44px;background:var(--ows-paper)}
+.ows-foot{position:relative;overflow:hidden;padding-top:clamp(56px,7.5vw,96px);background:var(--ows-paper)}
 .ows-foot-grid{display:grid;grid-template-columns:auto 1fr;gap:18px 32px;align-items:center}
 .ows-brand--foot{font-size:20px}
 .ows-foot-links{display:flex;flex-wrap:wrap;gap:6px 22px;justify-content:flex-end;font-size:14px}
 .ows-foot-links a{color:var(--ows-muted);transition:color .2s}
 .ows-foot-links a:hover{color:var(--ows-ink)}
 .ows-foot-note{grid-column:1 / -1;font-size:12.5px;color:var(--ows-muted)}
-.ows-foot-word{margin-top:20px;text-align:center;font-size:clamp(90px,23vw,330px);font-weight:600;letter-spacing:-.065em;line-height:.74;color:transparent;background:linear-gradient(180deg,var(--ows-mid) 0%,var(--ows-light) 70%,var(--ows-paper) 100%);-webkit-background-clip:text;background-clip:text;user-select:none;padding-bottom:.02em}
+.ows-foot-word{margin-top:20px;text-align:center;font-size:clamp(44px,13.5vw,210px);font-weight:600;letter-spacing:-.05em;line-height:.74;white-space:nowrap;width:100%;color:transparent;background:linear-gradient(180deg,var(--ows-mid) 0%,var(--ows-light) 70%,var(--ows-paper) 100%);-webkit-background-clip:text;background-clip:text;user-select:none;padding-bottom:.02em}
 
 /* ---- reveal ---- */
 .ows-rise{transition:opacity .8s cubic-bezier(.2,.8,.2,1),transform .8s cubic-bezier(.2,.8,.2,1);transition-delay:var(--d,0ms)}
@@ -2119,12 +2837,12 @@ html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.o
 .ows-rise.ows-pre{opacity:1;transform:none}
 .ows-hero{cursor:auto}
 }
-`
+`;
 
 // Generic types live down here, after the JSX: the 21st CLI's tokenizer reads
 // a `<` before the first tag as the start of one.
-export type OwsPaletteInput = Partial<OwsPalette>
-type FieldErrors = Partial<Record<keyof OwsRegistration, string>>
-type PointerEv = React.PointerEvent<HTMLElement>
-type AnchorEv = React.MouseEvent<HTMLElement>
-type ChangeEv = React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+export type OwsPaletteInput = Partial<OwsPalette>;
+type FieldErrors = Partial<Record<keyof OwsRegistration, string>>;
+type PointerEv = React.PointerEvent<HTMLElement>;
+type AnchorEv = React.MouseEvent<HTMLElement>;
+type ChangeEv = React.ChangeEvent<HTMLInputElement | HTMLSelectElement>;

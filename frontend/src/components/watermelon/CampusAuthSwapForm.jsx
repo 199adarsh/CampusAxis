@@ -430,17 +430,17 @@ export default function CampusAuthSwapForm({ onAuthSuccess, className = '' }) {
   // If already logged in, show the active session card
   if (activeSession) {
     return (
-      <div className={`w-full max-w-md bg-[#F6F5FA] dark:bg-zinc-900 shadow-2xl rounded-[32px] overflow-hidden border border-[#E6E6EF] dark:border-zinc-800 ${className}`}>
-        <div className="p-6 sm:p-8 bg-white dark:bg-zinc-950 rounded-[28px] border-b border-[#E6E6EF] dark:border-zinc-800">
+      <div className={`w-full max-w-md bg-[#F6F5FA] dark:bg-zinc-900 shadow-xl rounded-xl overflow-hidden border border-[#E6E6EF] dark:border-zinc-800 ${className}`}>
+        <div className="p-6 sm:p-7 bg-white dark:bg-zinc-950 rounded-xl border-b border-[#E6E6EF] dark:border-zinc-800">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+            <div className="w-11 h-11 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-sm">
               {activeSession.name?.charAt(0) || 'U'}
             </div>
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-md">
                 {activeSession.role === 'teacher' ? 'Faculty Active' : 'Student Active'}
               </span>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100">{activeSession.name}</h3>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">{activeSession.name}</h3>
               <p className="text-xs text-slate-500 font-mono">{activeSession.prn} · {activeSession.department || 'CampusAxis'}</p>
             </div>
           </div>
@@ -452,9 +452,10 @@ export default function CampusAuthSwapForm({ onAuthSuccess, className = '' }) {
           <button
             type="button"
             onClick={() => navigate('/dashboard')}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-md text-sm cursor-pointer"
+            style={{ backgroundColor: '#285BE8', color: '#ffffff' }}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold text-white !text-white bg-[#285BE8] !bg-[#285BE8] hover:bg-[#234FCB] transition-colors shadow-md text-sm cursor-pointer"
           >
-            <span>Open Dashboard</span>
+            <span style={{ color: '#ffffff' }}>Open Dashboard</span>
             <ArrowRight01Icon size={16} />
           </button>
         </div>
