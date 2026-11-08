@@ -605,7 +605,7 @@ const SovereignLayout = () => {
 
 
     const navTabs = [
-        { name: 'Home', path: '/', icon: Home01Icon },
+        { name: 'Home', path: '/dashboard', icon: Home01Icon },
         { name: 'Notes', path: '/notes', icon: Book02Icon },
         { name: 'AI Tutor', path: '/ai-assistant', icon: SparklesIcon },
         { name: 'Notices', path: '/announcements', icon: Notification01Icon },
@@ -824,9 +824,9 @@ const SovereignLayout = () => {
 
                         </div>
 
-                    ) : (!profile || !profile.prn || !profile.dob) && location.pathname !== '/' && location.pathname !== '/settings' ? (
+                    ) : (!profile || !profile.prn || !profile.dob) && location.pathname !== '/dashboard' && location.pathname !== '/settings' ? (
 
-                        <Navigate to="/" replace />
+                        <Navigate to="/dashboard" replace />
 
                     ) : (
 
