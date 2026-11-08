@@ -17,6 +17,7 @@ export default function LandingPage() {
         brand="CampusAxis"
         title="CampusAxis"
         tagline={"Connecting every part of campus!"}
+        agenda={null}
         register={{ label: "Go to Dashboard", href: "/dashboard" }}
         footer={{ note: "© 2026 CampusAxis · EduVault. All rights reserved." }}
       />

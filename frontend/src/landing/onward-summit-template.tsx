@@ -1,17 +1,9 @@
 "use client"
 
-// Onward Summit Template — a complete one-day event page in one file.
-// A navy-to-white hero is a living field of tiny arrows: they lean away from
-// the pointer, ripple out from a click and shimmer on their own, parting
-// around the event's name. Below, on white: what to expect, with three
-// gradient marks; a guest list whose pitch rewrites itself per role; an agenda
-// you can filter, expand and save to your calendar; speakers drawn as arrow
-// halftones; a drawn venue map; questions; and a registration band with a live
-// countdown, a seat meter and a form that hands back a ticket.
-//
-// Everything is drawn here: the field is a canvas, the marks, portraits and map
-// are SVG, the type is the system stack; nothing loads at runtime.
+
 import * as React from "react"
+import WebhookRelay from "../components/ui/webhook-relay"
+import TestimonialsEditorial from "../components/ui/editorial-testimonial"
 
 export type OwsLink = { label: string; href?: string }
 
@@ -181,31 +173,26 @@ const PALETTES = {
 }
 
 const DEFAULT_FEATURES: OwsFeature[] = [
-  { icon: "arrow", title: "Sharper finance", text: "Field-tested playbooks from the CFOs who are setting the pace." },
-  { icon: "ring", title: "Calmer workflows", text: "Retire the manual close and let operations run themselves." },
-  { icon: "plus", title: "Systems that scale", text: "Prompts, processes and controls that grow with your team." },
+  { icon: "arrow", title: "Structured Roadmaps", text: "Step-by-step Career Roadmaps that pinpoint what to learn and when." },
+  { icon: "ring", title: "Intelligence Over Notes", text: "RAG-based retrieval across all study materials to find relevant answers for exam preparation" },
+  { icon: "plus", title: "Smart Attendance Tracking", text: "Continuous sync with your college ERP to keep your 75% target safe." },
 ]
 
 const DEFAULT_AUDIENCES: OwsAudience[] = [
   {
-    role: "CFO",
+    role: "1. Roadmaps",
     pitch:
-      "You're steering where the business goes next and watching which bets your peers are quietly placing. See how the best finance teams are modernizing and staying a step ahead.",
+      "Interactive curriculum skill trees and milestone roadmaps keep your semester prep and career goals perfectly aligned.",
   },
   {
-    role: "Controller",
+    role: "2. Notes & PYQs",
     pitch:
-      "You own the close, the controls and the questions nobody else can answer. Trade notes with controllers who halved their close without cutting a single corner.",
+      "Instant neural search across lecture notes and past papers gives you verified, grounded answers for every exam question.",
   },
   {
-    role: "Head of procurement",
+    role: "3. Attendance",
     pitch:
-      "Every contract is a decision about cash. Learn how leading teams turn spend approval into strategy instead of paperwork, and get vendors to say yes faster.",
-  },
-  {
-    role: "Accountants",
-    pitch:
-      "You're the reason the numbers hold up. Leave with the automations, prompts and shortcuts that hand your evenings back without loosening a single control.",
+      "Direct college portal sync tracks your lectures automatically, projecting exactly what you need to keep your 75% safe.",
   },
 ]
 
@@ -264,25 +251,57 @@ const DEFAULT_SESSIONS: OwsSession[] = [
 ]
 
 const DEFAULT_SPEAKERS: OwsSpeaker[] = [
-  { name: "Maya Okafor", role: "CFO", company: "Northwind Labs", bio: "Took Northwind from Series A to public markets with a finance team of eleven." },
-  { name: "Daniel Reyes", role: "Corporate Controller", company: "Fieldstone", bio: "Runs a five-day close across nine entities and three currencies." },
-  { name: "Priya Natarajan", role: "VP Finance", company: "Arcwell", bio: "Rebuilt Arcwell's reporting stack twice and wrote the playbook both times." },
-  { name: "Lena Fischer", role: "Head of Accounting Ops", company: "Lumen & Co", bio: "Ships automations to the ledger the way engineers ship code." },
-  { name: "Sam Whitaker", role: "Head of Procurement", company: "Tidewater Supply", bio: "Turned a 40-day approval queue into a four-day one." },
-  { name: "Aiko Tanaka", role: "FP&A Lead", company: "Kiteline", bio: "Builds forecasts that leadership actually opens on Monday mornings." },
-  { name: "Jordan Blake", role: "General Partner", company: "Meridian Hill", bio: "Has sat across the table from more than two hundred CFOs." },
-  { name: "Elena Varga", role: "Chief Accounting Officer", company: "Brightpath", bio: "Led three audits through migrations without a single restatement." },
+  {
+    name: "Unclear Career Direction",
+    role: "Problem: Scattered tutorials & no structured plan",
+    company: "CampusAxis: Skill Trees & Roadmaps",
+    bio: "Students waste months jumping between random courses. CampusAxis organizes proven tech milestones mapped to each semester.",
+    photo: "/landing/feature-roadmaps.jpg",
+  },
+  {
+    name: "Scattered Exam Resources",
+    role: "Problem: Missing PYQs & dead Google Drive links",
+    company: "CampusAxis: Neural Retrieval Hub",
+    bio: "Pre-exam panic across messy WhatsApp chats. Ask questions and get answers grounded in verified college notes and past papers.",
+    photo: "/landing/feature-notes.jpg",
+  },
+  {
+    name: "75% Attendance Anxiety",
+    role: "Problem: Manual guesswork & fear of debarment",
+    company: "CampusAxis: Real-Time Bunk Planner",
+    bio: "One missed lecture shouldn't cost you an exam. CampusAxis continuously syncs your portal and computes exact safe cuts.",
+    photo: "/landing/feature-attendance.jpg",
+  },
+  {
+    name: "Missed Contests & Deadlines",
+    role: "Problem: Buried college circulars & lost deadlines",
+    company: "CampusAxis: Central Event Radar",
+    bio: "Hackathons, tech contests, and submission deadlines slip through group chats. CampusAxis keeps every opportunity front and center.",
+    photo: "/landing/feature-events.jpg",
+  },
 ]
 
 const DEFAULT_FAQ: OwsFaq[] = [
   {
-    q: "Who is Onward for?",
-    a: "Finance leaders and the people who run finance with them: CFOs, controllers, procurement leads and accountants at growing companies. Register and we confirm every seat within two business days.",
+    q: "How does CampusAxis calculate bunkable and required attendance?",
+    a: "CampusAxis automatically computes the exact formula based on your university's 75% or 80% criteria. It tells you exactly how many upcoming lectures you can safely skip or need to attend consecutively to get back on track.",
   },
-  { q: "What does it cost?", a: "Nothing. Onward is free for confirmed guests, including meals and the evening reception." },
-  { q: "Will sessions be recorded?", a: "Keynotes are recorded and shared with every registered guest a week later. Workshops and roundtables stay in the room." },
-  { q: "Can I bring a colleague?", a: "Yes. Ask them to register on their own so they get their own ticket; we seat teams together when we can." },
-  { q: "Is there help with travel?", a: "We hold a room block at two hotels nearby at a reduced rate. The booking link arrives with your confirmation." },
+  {
+    q: "Does ERP sync support my college portal?",
+    a: "Yes. Our webhook connector integrates directly with college portals and timetable APIs. When your faculty updates attendance or publishes a timetable shift, your records sync instantaneously.",
+  },
+  {
+    q: "How does the Neural Search over lecture notes work?",
+    a: "Our search engine vectorizes professor lecture slides, handwritten notes, and past 10-year question papers, giving you instant grounded answers and citation timestamps without flipping through hundreds of pages.",
+  },
+  {
+    q: "Are the engineering career roadmaps personalized?",
+    a: "Every roadmap adapts to your semester, target role (Frontend, Backend, DevOps, AI/ML), and current skillset with verified open-source milestones and project checklists.",
+  },
+  {
+    q: "Is CampusAxis free for students?",
+    a: "Yes! Core academic tracking, bunk calculator, study roadmaps, and community note sharing are completely free for all verified students.",
+  },
 ]
 // #endregion content
 
@@ -641,7 +660,7 @@ function GlyphField({
     let scl = new Float32Array(0)
     let spriteL: HTMLCanvasElement | null = null
     let spriteD: HTMLCanvasElement | null = null
-    const ptr = { x: 0, y: 0, on: false }
+    const ptr = { x: 0, y: 0, vx: 0, vy: 0, angle: 0, speed: 0, on: false }
     const ripples: { x: number; y: number; t0: number }[] = []
     let raf = 0
     let visible = true
@@ -725,7 +744,10 @@ function GlyphField({
             if (d2 < R2) {
               let w = 1 - Math.sqrt(d2) / R
               w = w * w * (3 - 2 * w)
-              tA = shortestAngle(Math.atan2(dy, dx) + Math.PI / 4) * w
+              const moveInfluence = ptr.speed > 0.08
+                ? shortestAngle(ptr.angle + Math.PI / 4) * ptr.speed
+                : shortestAngle(Math.atan2(dy, dx) + Math.PI / 4)
+              tA = moveInfluence * w
               tS = 1 + 0.75 * w
               boost = 0.55 * w
             }
@@ -807,6 +829,17 @@ function GlyphField({
     const move = (e: PointerEvent) => {
       if (e.pointerType === "touch") return
       const p = local(e)
+      if (ptr.on) {
+        const dx = p.x - ptr.x
+        const dy = p.y - ptr.y
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist > 1.5) {
+          ptr.vx = ptr.vx * 0.4 + dx * 0.6
+          ptr.vy = ptr.vy * 0.4 + dy * 0.6
+          ptr.angle = Math.atan2(ptr.vy, ptr.vx)
+          ptr.speed = Math.min(1, dist / 8)
+        }
+      }
       ptr.x = p.x
       ptr.y = p.y
       ptr.on = true
@@ -1050,7 +1083,7 @@ function RegisterForm({
     setErrors(next)
     if (Object.keys(next).length) {
       const first = Object.keys(next)[0]
-      ;(document.getElementById(formId + "-" + first) as HTMLElement | null)?.focus()
+        ; (document.getElementById(formId + "-" + first) as HTMLElement | null)?.focus()
       return
     }
     setState("sending")
@@ -1177,14 +1210,18 @@ export default function OnwardSummitTemplate({
   endsAt,
   register = { label: "Register now" },
   expect = {
-    title: "On what to expect",
+    title: "Why CampusAxis?",
     intro:
-      "Our first summit is a day of candid conversations with rising finance leaders, tactical sessions you can use on Monday and fresh takes on where the industry goes next. You'll leave ready to turn insight into action.",
+      "Because college life shouldn't mean juggling multiple platforms, scattered resources, and endless manual work. CampusAxis brings career guidance, study resources, and academic tracking together in one place, making campus life easier to navigate.",
     features: DEFAULT_FEATURES,
   },
-  guests = { title: "On the guest list", audiences: DEFAULT_AUDIENCES },
-  agenda = { title: "On the agenda", intro: "One room in the morning, three tracks after lunch. Save the sessions you want and take them with you.", sessions: DEFAULT_SESSIONS },
-  speakers = { title: "On stage", intro: "Operators, not keynote tourists. Everyone here has run the playbook they're sharing.", people: DEFAULT_SPEAKERS },
+  guests = { title: "How it works", audiences: DEFAULT_AUDIENCES },
+  agenda = null,
+  speakers = {
+    title: "Why CampusAxis is built",
+    intro: "College life is overwhelmed by fragmented tools, missing study material, and surprise attendance shortfalls. Here is the daily friction students face—and how CampusAxis solves each one.",
+    people: DEFAULT_SPEAKERS,
+  },
   venue = {
     title: "On location",
     name: "Hudson Atrium",
@@ -1192,7 +1229,7 @@ export default function OnwardSummitTemplate({
     city: "New York, NY 10011",
     notes: ["Doors open at 8:00 AM", "Business casual", "Two blocks from the High Line", "Step-free access throughout"],
   },
-  faq = { title: "On your mind", items: DEFAULT_FAQ },
+  faq = { title: "Frequently asked questions", items: DEFAULT_FAQ },
   cta = { kicker: "On the list", title: "Save your seat", subtitle: "Rooms stay small enough to actually talk, so seats are limited.", seats: { total: 400, taken: 287 } },
   footer = { note: "© 2026 Keel Financial, Inc. Onward is free for confirmed guests." },
   palette = "cobalt",
@@ -1373,8 +1410,8 @@ export default function OnwardSummitTemplate({
   const pitchWords = audiences[aud]?.pitch.split(/\s+/) ?? []
   const footLinks = footer?.links ?? [
     agenda && { label: "Agenda", href: "#agenda" },
-    speakers && { label: "Speakers", href: "#speakers" },
-    venue && { label: "Venue", href: "#venue" },
+    speakers && { label: "Features", href: "#speakers" },
+    { label: "Testimonials", href: "#testimonials" },
     faq && { label: "FAQ", href: "#faq" },
     cta && { label: "Register", href: "#register" },
   ].filter(Boolean) as OwsLink[]
@@ -1434,7 +1471,7 @@ export default function OnwardSummitTemplate({
         {/* ---------------- expect ---------------- */}
         {expect && (
           <section className="ows-sec ows-wrap" data-sec="expect">
-            <h2 className="ows-h2 ows-rise">{expect.title ?? "On what to expect"}</h2>
+            <h2 className="ows-h2 ows-rise">{expect.title ?? "Why CampusAxis?"}</h2>
             {expect.intro && <p className="ows-intro ows-rise">{expect.intro}</p>}
             <div className="ows-features">
               {features.map((f, i) => (
@@ -1454,7 +1491,7 @@ export default function OnwardSummitTemplate({
           </section>
         )}
 
-        {/* ---------------- guest list ---------------- */}
+        {/* ---------------- how it works ---------------- */}
         {guests && (
           <section
             className="ows-sec ows-wrap"
@@ -1464,45 +1501,52 @@ export default function OnwardSummitTemplate({
             onFocus={() => setAudHold(true)}
             onBlur={() => setAudHold(false)}
           >
-            <h2 className="ows-h2 ows-rise">{guests.title ?? "On the guest list"}</h2>
-            <div className="ows-chips ows-rise" role="tablist" aria-label="Who it's for">
-              {audiences.map((a, i) => (
-                <button
-                  key={a.role}
-                  ref={(el) => {
-                    audRefs.current[i] = el
-                  }}
-                  type="button"
-                  role="tab"
-                  id={uid + "-aud-" + i}
-                  aria-selected={i === aud}
-                  aria-controls={uid + "-pitch"}
-                  tabIndex={i === aud ? 0 : -1}
-                  className="ows-chip"
-                  data-auto={i === aud && audAuto && !audHold && !reduced ? "" : undefined}
-                  onClick={() => pickAud(i)}
-                  onKeyDown={(e) => {
-                    const j = nextIndex(aud, e.key, audiences.length)
-                    if (j !== aud) {
-                      e.preventDefault()
-                      pickAud(j, true)
-                    }
-                  }}
-                >
-                  {a.role}
-                  <span className="ows-chip-bar" key={aud + "-" + String(audAuto)} aria-hidden="true" />
-                </button>
-              ))}
-            </div>
-            <p id={uid + "-pitch"} role="tabpanel" aria-labelledby={uid + "-aud-" + aud} className="ows-pitch ows-rise" aria-live="polite">
-              <span key={aud} className="ows-pitch-in">
-                {pitchWords.map((w, i) => (
-                  <span key={i} className="ows-word" style={{ "--i": i } as React.CSSProperties}>
-                    {w}{" "}
+            <div className="ows-how-grid">
+              <div className="ows-how-copy">
+                <h2 className="ows-h2 ows-rise">{guests.title ?? "How it works"}</h2>
+                <div className="ows-chips ows-rise" role="tablist" aria-label="Step by step system">
+                  {audiences.map((a, i) => (
+                    <button
+                      key={a.role}
+                      ref={(el) => {
+                        audRefs.current[i] = el
+                      }}
+                      type="button"
+                      role="tab"
+                      id={uid + "-aud-" + i}
+                      aria-selected={i === aud}
+                      aria-controls={uid + "-pitch"}
+                      tabIndex={i === aud ? 0 : -1}
+                      className="ows-chip"
+                      data-auto={i === aud && audAuto && !audHold && !reduced ? "" : undefined}
+                      onClick={() => pickAud(i)}
+                      onKeyDown={(e) => {
+                        const j = nextIndex(aud, e.key, audiences.length)
+                        if (j !== aud) {
+                          e.preventDefault()
+                          pickAud(j, true)
+                        }
+                      }}
+                    >
+                      {a.role}
+                      <span className="ows-chip-bar" key={aud + "-" + String(audAuto)} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+                <p id={uid + "-pitch"} role="tabpanel" aria-labelledby={uid + "-aud-" + aud} className="ows-pitch ows-rise" aria-live="polite">
+                  <span key={aud} className="ows-pitch-in">
+                    {pitchWords.map((w, i) => (
+                      <span key={i} className="ows-word" style={{ "--i": i } as React.CSSProperties}>
+                        {w}{" "}
+                      </span>
+                    ))}
                   </span>
-                ))}
-              </span>
-            </p>
+                </p>
+              </div>
+              <div className="ows-how-interactive ows-rise">
+                <WebhookRelay />
+              </div>
+            </div>
           </section>
         )}
 
@@ -1611,50 +1655,18 @@ export default function OnwardSummitTemplate({
           </section>
         )}
 
-        {/* ---------------- venue ---------------- */}
-        {venue && (
-          <section className="ows-sec ows-wrap" data-sec="venue">
-            <h2 className="ows-h2 ows-rise">{venue.title ?? "On location"}</h2>
-            <div className="ows-venue ows-rise">
-              <div className="ows-venue-info">
-                <p className="ows-venue-name">{venue.name}</p>
-                <p className="ows-venue-addr">
-                  {venue.address}
-                  {venue.city && (
-                    <>
-                      <br />
-                      {venue.city}
-                    </>
-                  )}
-                </p>
-                {venue.notes && venue.notes.length > 0 && (
-                  <ul className="ows-notes">
-                    {venue.notes.map((n) => (
-                      <li key={n}>
-                        <ArrowGlyph size={10} />
-                        {n}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="ows-venue-actions">
-                  <a
-                    className="ows-btn ows-btn--dark ows-btn--sm"
-                    href={venue.mapHref || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(location)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Get directions <ArrowGlyph size={10} />
-                  </a>
-                  <button type="button" className="ows-link" onClick={saveEvent}>
-                    <CalendarGlyph /> Add the day to my calendar
-                  </button>
-                </div>
-              </div>
-              <VenueMap uid={uid} name={venue.name} reduced={reduced} />
+        {/* ---------------- testimonials ---------------- */}
+        <section className="ows-sec ows-wrap" data-sec="testimonials">
+          <div className="ows-sec-head">
+            <div>
+              <h2 className="ows-h2 ows-rise">Student voices</h2>
+              <p className="ows-intro ows-rise">What engineering students and semester toppers are saying about CampusAxis.</p>
             </div>
-          </section>
-        )}
+          </div>
+          <div className="ows-rise">
+            <TestimonialsEditorial />
+          </div>
+        </section>
 
         {/* ---------------- FAQ ---------------- */}
         {faq && (
@@ -1684,76 +1696,68 @@ export default function OnwardSummitTemplate({
         )}
       </main>
 
-      {/* ---------------- register ---------------- */}
+      {/* ---------------- CTA / Login ---------------- */}
       {cta && (
         <section className="ows-band" data-sec="register">
           <GlyphField mode="band" glyph={glyph} light={pal.glyphLight} dark={pal.glyphDark} reduced={reduced} cell={15} />
-          <div className="ows-wrap ows-band-grid">
+          <div className="ows-wrap ows-band-grid" style={{ alignItems: "center" }}>
             <div className="ows-band-copy">
               {cta.kicker && <span className="ows-kicker ows-kicker--light">{cta.kicker}</span>}
               <h2 className="ows-band-title">{cta.title ?? "Save your seat"}</h2>
               {cta.subtitle && <p className="ows-band-sub">{cta.subtitle}</p>}
-              <div className="ows-count" aria-live="off">
-                {live ? (
-                  <p className="ows-count-live">
-                    <span className="ows-live-dot" /> Happening now in {city}
-                  </p>
-                ) : left && left.done ? (
-                  <p className="ows-count-live">That's a wrap. See you at the next one.</p>
-                ) : (
-                  <>
-                    <span className="ows-count-label">Doors open in</span>
-                    <div className="ows-count-cells">
-                      {(
-                        [
-                          ["days", left?.days],
-                          ["hrs", left?.hours],
-                          ["min", left?.minutes],
-                          ["sec", left?.seconds],
-                        ] as [string, number | undefined][]
-                      ).map(([k, v]) => (
-                        <span key={k} className="ows-count-cell">
-                          <span className="ows-count-v">{v === undefined ? "--" : k === "days" ? v : pad2(v)}</span>
-                          <span className="ows-count-k">{k}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-              {seats && (
-                <div className="ows-seats">
-                  <div className="ows-seats-top">
-                    <span>
-                      <strong>{remaining}</strong> of {seats.total} seats left
-                    </span>
-                    <span>{Math.round((seats.taken / Math.max(1, seats.total)) * 100)}% claimed</span>
-                  </div>
-                  <div
-                    className="ows-meter"
-                    role="meter"
-                    aria-label="Seats claimed"
-                    aria-valuemin={0}
-                    aria-valuemax={seats.total}
-                    aria-valuenow={Math.min(seats.total, seats.taken)}
-                  >
-                    <i style={{ width: clamp((seats.taken / Math.max(1, seats.total)) * 100, 0, 100) + "%" }} />
-                  </div>
-                </div>
-              )}
             </div>
-            <div className="ows-card">
-              <RegisterForm
-                roles={audiences.map((a) => a.role)}
-                eventTitle={title}
-                date={date}
-                city={city}
-                onRegister={onRegister}
-                onDone={() => setTaken((t) => t + 1)}
-                onCalendar={saveEvent}
-                formId={uid + "-reg"}
-                nameRef={nameRef}
-              />
+            <div className="ows-card" style={{ maxWidth: "400px", width: "100%", justifySelf: "end" }}>
+              <form
+                className="ows-form"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  window.location.href = "/dashboard"
+                }}
+              >
+                <label className="ows-field-row" htmlFor="student-id">
+                  <span className="ows-label">Student ID / Roll number</span>
+                  <input
+                    id="student-id"
+                    className="ows-input"
+                    type="text"
+                    required
+                    placeholder="e.g. 24uad019 or email"
+                  />
+                </label>
+
+                <label className="ows-field-row" htmlFor="student-pass">
+                  <span className="ows-label">Password / ERP PIN</span>
+                  <input
+                    id="student-pass"
+                    className="ows-input"
+                    type="password"
+                    required
+                    placeholder="••••••••••••"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  className="ows-btn ows-btn--accent"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    width: "100%",
+                    height: "44px",
+                    marginTop: "6px",
+                    fontSize: "14.5px",
+                    fontWeight: "600",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    border: "none",
+                  }}
+                >
+                  <span>Sign in to Dashboard</span>
+                  <ArrowGlyph size={12} />
+                </button>
+              </form>
             </div>
           </div>
         </section>
@@ -1877,7 +1881,7 @@ html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.o
 .ows-chips--filter{margin-top:28px}
 
 /* ---- guest pitch ---- */
-.ows-pitch{margin-top:18px;max-width:790px;min-height:4.4em;font-size:clamp(25px,3.15vw,38px);font-weight:450;line-height:1.12;letter-spacing:-.028em;color:color-mix(in srgb,var(--ows-ink) 58%,var(--ows-paper))}
+.ows-pitch{margin-top:18px;max-width:790px;min-height:3.6em;font-size:clamp(17px,2vw,23px);font-weight:450;line-height:1.38;letter-spacing:-.015em;color:color-mix(in srgb,var(--ows-ink) 58%,var(--ows-paper))}
 .ows-pitch-in{display:block}
 .ows-word{display:inline-block;white-space:pre;animation:ows-word .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 18ms)}
 @keyframes ows-word{from{opacity:0;transform:translateY(.3em);filter:blur(5px)}to{opacity:1;transform:none;filter:none}}
@@ -1922,10 +1926,12 @@ html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.o
 .ows-portrait-g .ows-pb3{transition:stroke .5s}
 .ows-speaker:hover .ows-portrait-g,.ows-speaker:focus-visible .ows-portrait-g{transform:scale(1.06) translateY(-4px)}
 .ows-speaker:hover .ows-pb3,.ows-speaker:focus-visible .ows-pb3{stroke:var(--ows-accent)}
-.ows-photo{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;filter:grayscale(1) contrast(1.05);transition:filter .6s,transform .9s cubic-bezier(.2,.8,.2,1)}
-.ows-photo-tint{position:absolute;inset:0;background:linear-gradient(180deg,var(--ows-deep),var(--ows-mid));mix-blend-mode:screen;opacity:.75;transition:opacity .6s}
-.ows-speaker:hover .ows-photo,.ows-speaker:focus-visible .ows-photo{filter:none;transform:scale(1.04)}
-.ows-speaker:hover .ows-photo-tint,.ows-speaker:focus-visible .ows-photo-tint{opacity:0}
+.ows-photo{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;filter:none;transition:filter .5s,transform .7s cubic-bezier(.2,.8,.2,1),opacity .5s}
+.ows-photo-tint{position:absolute;inset:0;background:linear-gradient(180deg,var(--ows-deep),var(--ows-mid));mix-blend-mode:multiply;opacity:0;transition:opacity .5s}
+.ows-photo-glass{position:absolute;inset:0;pointer-events:none;background:transparent;border-radius:10px;border:1.5px solid rgba(255,255,255,.4);box-shadow:inset 0 0 10px rgba(255,255,255,.3),0 0 8px rgba(255,255,255,.15);transition:all .5s cubic-bezier(.2,.8,.2,1)}
+.ows-speaker:hover .ows-photo,.ows-speaker:focus-visible .ows-photo{filter:saturate(.55) contrast(.95) brightness(.85);transform:scale(1.03)}
+.ows-speaker:hover .ows-photo-tint,.ows-speaker:focus-visible .ows-photo-tint{opacity:.35}
+.ows-speaker:hover .ows-photo-glass{border-color:rgba(255,255,255,.7);box-shadow:inset 0 0 14px rgba(255,255,255,.5),0 0 12px rgba(255,255,255,.25)}
 .ows-bio{position:absolute;left:10px;right:10px;bottom:10px;padding:10px 12px;border-radius:7px;font-size:12.5px;line-height:1.4;color:var(--ows-ink);background:color-mix(in srgb,var(--ows-paper) 90%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);opacity:0;transform:translateY(10px);transition:opacity .35s,transform .45s cubic-bezier(.2,.8,.2,1)}
 .ows-speaker:hover .ows-bio,.ows-speaker:focus-visible .ows-bio{opacity:1;transform:none}
 .ows-speaker:focus-visible .ows-portrait{outline:2px solid var(--ows-mid);outline-offset:3px}
@@ -2032,6 +2038,16 @@ html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.o
 .ows-rise{transition:opacity .8s cubic-bezier(.2,.8,.2,1),transform .8s cubic-bezier(.2,.8,.2,1);transition-delay:var(--d,0ms)}
 .ows-rise.ows-pre{opacity:0;transform:translateY(22px)}
 
+/* ---- how it works layout ---- */
+.ows-how-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(32px,5vw,72px);align-items:center;margin-top:clamp(24px,3vw,36px)}
+.ows-how-copy{display:flex;flex-direction:column}
+.ows-how-interactive{display:flex;align-items:center;justify-content:center;width:100%;margin-top:clamp(28px,4vw,48px)}
+.ows-how-interactive .fig-webhook-relay{width:100%!important;max-width:410px!important;background:transparent!important;border:none!important;box-shadow:none!important}
+.ows-how-interactive .fig-webhook-relay .ik-plate-base,
+.ows-how-interactive .fig-webhook-relay svg{background:transparent!important}
+.ows-how-interactive .ik-credit,
+.ows-how-interactive a[href*="pushary.com"]{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+
 /* ---- small screens ---- */
 @media (max-width:900px){
 .ows-features{grid-template-columns:1fr;gap:34px}
@@ -2040,6 +2056,7 @@ html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.o
 .ows-feature-mark .ows-mark{width:64px;height:64px}
 .ows-speakers{grid-template-columns:repeat(2,minmax(0,1fr))}
 .ows-venue{grid-template-columns:1fr}
+.ows-how-grid{grid-template-columns:1fr;gap:40px}
 .ows-band-grid{grid-template-columns:1fr}
 .ows-row-more .ows-row-inner{padding-left:4px}
 }

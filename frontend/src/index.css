@@ -4,6 +4,84 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@keyframes whr-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+@keyframes whr-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes whr-flash {
+  0% {
+    fill: var(--ik-well);
+    stroke: var(--ik-detail);
+  }
+
+  1%,
+  45% {
+    fill: var(--ik-live);
+    stroke: var(--ik-live);
+  }
+
+  100% {
+    fill: var(--ik-line);
+    stroke: var(--ik-line);
+  }
+}
+
+@keyframes whr-fail {
+  0% {
+    fill: var(--ik-well);
+    stroke: var(--ik-detail);
+  }
+
+  1%,
+  55% {
+    fill: var(--ik-live);
+    stroke: var(--ik-live);
+  }
+
+  100% {
+    fill: var(--ik-well);
+    stroke: var(--ik-detail);
+  }
+}
+
+@keyframes whr-ack {
+  from {
+    fill: var(--ik-well);
+    stroke: var(--ik-detail);
+  }
+
+  to {
+    fill: var(--ik-live);
+    stroke: var(--ik-live);
+  }
+}
+
+@keyframes whr-arm {
+  from {
+    transform: rotate(18deg);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@keyframes whr-refill {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 
@@ -1069,14 +1147,17 @@ body.hide-scrollbar *::-webkit-scrollbar {
   margin-bottom: 0.75rem;
 }
 
-.docx-content h1, .docx-content h2, .docx-content h3 {
+.docx-content h1,
+.docx-content h2,
+.docx-content h3 {
   color: #0F172A;
   font-weight: 700;
   margin-top: 1.5rem;
   margin-bottom: 0.75rem;
 }
 
-.docx-content ul, .docx-content ol {
+.docx-content ul,
+.docx-content ol {
   padding-left: 1.5rem;
   margin: 0.75rem 0;
 }
