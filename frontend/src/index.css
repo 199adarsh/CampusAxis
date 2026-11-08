@@ -339,8 +339,10 @@
    BASE DOCUMENT
 ========================================================= */
 
-html {
-  scroll-behavior: smooth;
+html,
+html.lenis,
+.lenis {
+  scroll-behavior: auto !important;
 }
 
 body {
