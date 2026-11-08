@@ -79,3 +79,5 @@ backend/data/*.py
 
 # Runtime data
 data/
+backend/data/profile.json
+backend/data/faculty_accounts.json
