@@ -4,6 +4,7 @@
 import * as React from "react"
 import WebhookRelay from "../components/ui/webhook-relay"
 import TestimonialsEditorial from "../components/ui/editorial-testimonial"
+import SwapForm from "../components/ui/swap-form"
 
 export type OwsLink = { label: string; href?: string }
 
@@ -1246,6 +1247,47 @@ export default function OnwardSummitTemplate({
   const nameRef = React.useRef(null as HTMLInputElement | null)
 
   const [solid, setSolid] = React.useState(false)
+  const [currentUser, setCurrentUser] = React.useState<{ name: string; role: string; prn?: string; department?: string } | null>(() => {
+    try {
+      const saved = localStorage.getItem('eduvault_profile')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed?.name && parsed?.prn) return parsed
+      }
+    } catch {}
+    return null
+  })
+
+  React.useEffect(() => {
+    const handleAuthChange = () => {
+      try {
+        const saved = localStorage.getItem('eduvault_profile')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (parsed?.name && parsed?.prn) {
+            setCurrentUser(parsed)
+            return
+          }
+        }
+      } catch {}
+      setCurrentUser(null)
+    }
+
+    window.addEventListener('storage', handleAuthChange)
+    window.addEventListener('eduvault-auth-change', handleAuthChange)
+    return () => {
+      window.removeEventListener('storage', handleAuthChange)
+      window.removeEventListener('eduvault-auth-change', handleAuthChange)
+    }
+  }, [])
+
+  const handleNavLogout = (e: React.MouseEvent) => {
+    e.preventDefault()
+    localStorage.clear()
+    sessionStorage.clear()
+    setCurrentUser(null)
+    window.dispatchEvent(new Event('eduvault-auth-change'))
+  }
   const features = expect?.features && expect.features.length ? expect.features : DEFAULT_FEATURES
   const audiences = guests?.audiences && guests.audiences.length ? guests.audiences : DEFAULT_AUDIENCES
   const sessions = agenda?.sessions && agenda.sessions.length ? agenda.sessions : DEFAULT_SESSIONS
@@ -1328,7 +1370,7 @@ export default function OnwardSummitTemplate({
 
   // ---- in-page links --------------------------------------------------------
   const goTo = (key: string, e?: AnchorEv) => {
-    const target = rootRef.current?.querySelector('[data-sec="' + key + '"]')
+    const target = rootRef.current?.querySelector('[data-sec="' + key + '"]') || document.getElementById(key)
     if (!target) return false
     e?.preventDefault()
     target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" })
@@ -1437,12 +1479,50 @@ export default function OnwardSummitTemplate({
             <CalendarGlyph />
           </span>
         </button>
-        <a href={register.href || "#register"} className="ows-btn ows-btn--accent ows-btn--nav" onClick={onRegisterClick}>
-          <span>{register.label}</span>
-          <span className="ows-btn-arrow">
-            <ArrowGlyph size={10} />
-          </span>
-        </a>
+        {currentUser ? (
+          <div className="ows-nav-user-cluster">
+            <div className="ows-nav-profile-pill" title={`${currentUser.name} (${currentUser.prn})`}>
+              <span className="ows-nav-avatar">
+                {currentUser.name?.charAt(0) || 'U'}
+              </span>
+              <span className="ows-nav-name">
+                {currentUser.name}
+              </span>
+              <span className="ows-nav-role">
+                {currentUser.role === 'teacher' ? 'Faculty' : 'Student'}
+              </span>
+            </div>
+            <a href="/dashboard" className="ows-btn ows-btn--accent ows-btn--nav">
+              <span>Dashboard</span>
+              <span className="ows-btn-arrow">
+                <ArrowGlyph size={10} />
+              </span>
+            </a>
+            <button
+              type="button"
+              onClick={handleNavLogout}
+              className="ows-btn ows-btn--nav ows-btn--nav-logout"
+              title="Sign Out"
+            >
+              <span>Log Out</span>
+            </button>
+          </div>
+        ) : (
+          <a
+            href="#register"
+            className="ows-btn ows-btn--accent ows-btn--nav"
+            onClick={(e) => {
+              e.preventDefault()
+              const el = document.getElementById("register") || document.querySelector('[data-sec="register"]')
+              el?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" })
+            }}
+          >
+            <span>Sign In</span>
+            <span className="ows-btn-arrow">
+              <ArrowGlyph size={10} />
+            </span>
+          </a>
+        )}
       </header>
 
       {/* ---------------- hero ---------------- */}
@@ -1698,66 +1778,16 @@ export default function OnwardSummitTemplate({
 
       {/* ---------------- CTA / Login ---------------- */}
       {cta && (
-        <section className="ows-band" data-sec="register">
+        <section className="ows-band" data-sec="register" id="login">
           <GlyphField mode="band" glyph={glyph} light={pal.glyphLight} dark={pal.glyphDark} reduced={reduced} cell={15} />
           <div className="ows-wrap ows-band-grid" style={{ alignItems: "center" }}>
             <div className="ows-band-copy">
               {cta.kicker && <span className="ows-kicker ows-kicker--light">{cta.kicker}</span>}
-              <h2 className="ows-band-title">{cta.title ?? "Save your seat"}</h2>
+              <h2 className="ows-band-title">{cta.title ?? "Access CampusAxis"}</h2>
               {cta.subtitle && <p className="ows-band-sub">{cta.subtitle}</p>}
             </div>
-            <div className="ows-card" style={{ maxWidth: "400px", width: "100%", justifySelf: "end" }}>
-              <form
-                className="ows-form"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  window.location.href = "/dashboard"
-                }}
-              >
-                <label className="ows-field-row" htmlFor="student-id">
-                  <span className="ows-label">Student ID / Roll number</span>
-                  <input
-                    id="student-id"
-                    className="ows-input"
-                    type="text"
-                    required
-                    placeholder="e.g. 24uad019 or email"
-                  />
-                </label>
-
-                <label className="ows-field-row" htmlFor="student-pass">
-                  <span className="ows-label">Password / ERP PIN</span>
-                  <input
-                    id="student-pass"
-                    className="ows-input"
-                    type="password"
-                    required
-                    placeholder="••••••••••••"
-                  />
-                </label>
-
-                <button
-                  type="submit"
-                  className="ows-btn ows-btn--accent"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    width: "100%",
-                    height: "44px",
-                    marginTop: "6px",
-                    fontSize: "14.5px",
-                    fontWeight: "600",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    border: "none",
-                  }}
-                >
-                  <span>Sign in to Dashboard</span>
-                  <ArrowGlyph size={12} />
-                </button>
-              </form>
+            <div style={{ maxWidth: "440px", width: "100%", justifySelf: "end" }}>
+              <SwapForm />
             </div>
           </div>
         </section>
@@ -1835,6 +1865,13 @@ html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.o
 .ows-when:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
 .ows-when:hover .ows-when-cal,.ows-when:focus-visible .ows-when-cal{width:18px;opacity:1;padding-left:4px}
 .ows-nav .ows-btn--accent{justify-self:end}
+.ows-nav-user-cluster{display:flex;align-items:center;gap:8px;justify-self:end}
+.ows-nav-profile-pill{display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb,currentColor 12%,transparent);border:1px solid color-mix(in srgb,currentColor 20%,transparent);border-radius:9999px;padding:3px 9px 3px 4px;font-size:12px;font-weight:500;max-width:200px}
+.ows-nav-avatar{width:22px;height:22px;border-radius:50%;background:var(--ows-accent);color:var(--ows-accent-ink);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.ows-nav-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:85px}
+.ows-nav-role{font-size:9.5px;text-transform:uppercase;font-weight:700;opacity:.8;letter-spacing:.05em;padding-left:3px;border-left:1px solid color-mix(in srgb,currentColor 25%,transparent);flex-shrink:0}
+.ows-btn--nav-logout{height:31px;padding:0 10px;font-size:12px;background:transparent;color:inherit;border:1px solid color-mix(in srgb,currentColor 22%,transparent);cursor:pointer;border-radius:6px;font-weight:500;transition:background-color .2s,border-color .2s,color .2s}
+.ows-btn--nav-logout:hover{background:color-mix(in srgb,#ef4444 20%,transparent);border-color:#ef4444;color:#ef4444}
 
 /* ---- hero ---- */
 .ows-hero{position:relative;min-height:max(620px,var(--ows-hero-h));display:flex;align-items:center;justify-content:center;overflow:hidden;isolation:isolate;cursor:crosshair}

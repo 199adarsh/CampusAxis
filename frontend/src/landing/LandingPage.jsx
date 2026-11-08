@@ -18,7 +18,12 @@ export default function LandingPage() {
         title="CampusAxis"
         tagline={"Connecting every part of campus!"}
         agenda={null}
-        register={{ label: "Go to Dashboard", href: "/dashboard" }}
+        register={{ label: "Sign In", href: "#login" }}
+        cta={{
+          kicker: "Access Portal",
+          title: "Sign in to CampusAxis",
+          subtitle: "Synchronize attendance, internal CIE marks, and syllabus materials live with university ERP."
+        }}
         footer={{ note: "© 2026 CampusAxis · EduVault. All rights reserved." }}
       />
     </div>
