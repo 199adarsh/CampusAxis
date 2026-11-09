@@ -106,7 +106,8 @@ public class OAuthController {
 
         String targetUrl = effectiveRedirectUri + (effectiveRedirectUri.contains("?") ? "&" : "?") +
                 "code=" + URLEncoder.encode(code, StandardCharsets.UTF_8) +
-                "&state=" + URLEncoder.encode(state, StandardCharsets.UTF_8);
+                "&state=" + URLEncoder.encode(state, StandardCharsets.UTF_8) +
+                "&iss=" + URLEncoder.encode(baseUrl, StandardCharsets.UTF_8);
 
         return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(targetUrl)).build();
     }
