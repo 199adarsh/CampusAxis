@@ -59,8 +59,8 @@ public class OAuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "unsupported_response_type"));
         }
 
-        // Redirect user to the clean CampusAxis OAuth Login UI
-        String loginPageUrl = "/oauth-login.html?" +
+        // Redirect user to the clean CampusAxis OAuth Login UI (absolute URL required by OAuth spec)
+        String loginPageUrl = baseUrl + "/oauth-login.html?" +
                 "client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8) +
                 "&redirect_uri=" + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8) +
                 "&state=" + URLEncoder.encode(state, StandardCharsets.UTF_8) +

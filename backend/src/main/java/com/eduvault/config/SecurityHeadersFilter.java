@@ -138,11 +138,18 @@ public class SecurityHeadersFilter implements Filter {
 
         // 1. Mandatory Security Headers
         httpResponse.setHeader("X-Content-Type-Options", "nosniff");
-        httpResponse.setHeader("X-Frame-Options", "DENY");
         httpResponse.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
         httpResponse.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
         httpResponse.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
-        httpResponse.setHeader("Content-Security-Policy", "frame-ancestors 'none'; object-src 'none';");
+
+        String requestUri = httpRequest.getRequestURI();
+        boolean isOAuthFlow = requestUri != null && (requestUri.startsWith("/oauth2/") || requestUri.startsWith("/oauth-login.html"));
+        if (isOAuthFlow) {
+            httpResponse.setHeader("Content-Security-Policy", "frame-ancestors 'self' https://platform.openai.com https://chatgpt.com; object-src 'none';");
+        } else {
+            httpResponse.setHeader("X-Frame-Options", "DENY");
+            httpResponse.setHeader("Content-Security-Policy", "frame-ancestors 'none'; object-src 'none';");
+        }
 
         // Bypass rate limiting on HTTP OPTIONS preflight requests
         if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
