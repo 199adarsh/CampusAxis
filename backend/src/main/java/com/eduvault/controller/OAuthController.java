@@ -53,19 +53,37 @@ public class OAuthController {
             @RequestParam(value = "scope", required = false, defaultValue = "openid student") String scope,
             @RequestParam("state") String state,
             @RequestParam(value = "code_challenge", required = false) String codeChallenge,
-            @RequestParam(value = "code_challenge_method", required = false, defaultValue = "S256") String codeChallengeMethod,
-            @RequestParam(value = "prn", required = false) String prn,
-            @RequestParam(value = "role", required = false, defaultValue = "STUDENT") String role
+            @RequestParam(value = "code_challenge_method", required = false, defaultValue = "S256") String codeChallengeMethod
     ) {
         if (!"code".equals(responseType)) {
             return ResponseEntity.badRequest().body(Map.of("error", "unsupported_response_type"));
         }
 
-        // For ChatGPT direct consent flow: if prn query parameter is absent, redirect or issue student demo session
-        String studentPrn = (prn != null && !prn.isBlank()) ? prn.trim().toUpperCase() : "24UAD019";
-        String department = studentPrn.contains("AD") ? "AIDS" : "CSE";
-        int semester = 4;
-        List<String> enrolled = List.of("sub-cs-301", "sub-math-201", "sub-dbms-401");
+        // Redirect user to the clean CampusAxis OAuth Login UI
+        String loginPageUrl = "/oauth-login.html?" +
+                "client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8) +
+                "&redirect_uri=" + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8) +
+                "&state=" + URLEncoder.encode(state, StandardCharsets.UTF_8) +
+                (codeChallenge != null ? "&code_challenge=" + URLEncoder.encode(codeChallenge, StandardCharsets.UTF_8) : "") +
+                (codeChallengeMethod != null ? "&code_challenge_method=" + URLEncoder.encode(codeChallengeMethod, StandardCharsets.UTF_8) : "");
+
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(loginPageUrl)).build();
+    }
+
+    @PostMapping(value = "/oauth2/authorize/submit", consumes = "application/x-www-form-urlencoded")
+    public ResponseEntity<?> authorizeSubmit(
+            @RequestParam("client_id") String clientId,
+            @RequestParam("redirect_uri") String redirectUri,
+            @RequestParam("state") String state,
+            @RequestParam("prn") String prn,
+            @RequestParam(value = "dob", required = false) String dob,
+            @RequestParam(value = "code_challenge", required = false) String codeChallenge,
+            @RequestParam(value = "code_challenge_method", required = false, defaultValue = "S256") String codeChallengeMethod
+    ) {
+        String studentPrn = prn.trim().toUpperCase();
+        String role = studentPrn.startsWith("TCHR") ? "TEACHER" : "STUDENT";
+        String department = studentPrn.contains("AD") ? "B.Tech-UAD" : "CSE";
+        int semester = 5;
 
         String code = UUID.randomUUID().toString().replace("-", "");
         AUTHORIZATION_CODES.put(code, new AuthCodeRecord(
@@ -73,7 +91,7 @@ public class OAuthController {
                 role,
                 department,
                 semester,
-                enrolled,
+                List.of(),
                 codeChallenge,
                 codeChallengeMethod,
                 redirectUri,

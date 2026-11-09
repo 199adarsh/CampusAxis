@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusAxis — Sign in with Student PRN</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body {
+            background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #09090b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #f4f4f5;
+            padding: 20px;
+        }
+        .card {
+            background: rgba(24, 24, 27, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+        .logo-badge {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+        p.sub { font-size: 14px; color: #a1a1aa; margin-bottom: 28px; line-height: 1.5; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #d4d4d8; margin-bottom: 8px; }
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #18181b;
+            border: 1px solid #3f3f46;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+            margin-bottom: 20px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: #818cf8; box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.2); }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn:hover { opacity: 0.95; }
+        .btn:active { transform: scale(0.98); }
+        .footer-text {
+            font-size: 12px;
+            color: #71717a;
+            margin-top: 24px;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .footer-text span { color: #a1a1aa; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo-badge">🏛️</div>
+        <h1>Connect to CampusAxis</h1>
+        <p class="sub">Authorize ChatGPT to access your verified college attendance, CIE marks, and study notes.</p>
+
+        <form action="/oauth2/authorize/submit" method="POST">
+            <input type="hidden" name="client_id" id="client_id">
+            <input type="hidden" name="redirect_uri" id="redirect_uri">
+            <input type="hidden" name="state" id="state">
+            <input type="hidden" name="code_challenge" id="code_challenge">
+            <input type="hidden" name="code_challenge_method" id="code_challenge_method">
+
+            <label for="prn">College PRN / Roll Number</label>
+            <input type="text" id="prn" name="prn" placeholder="e.g. 24UAD022" required autofocus>
+
+            <label for="dob">Date of Birth (DD-MM-YYYY)</label>
+            <input type="text" id="dob" name="dob" placeholder="e.g. 22-11-2006" required>
+
+            <button type="submit" class="btn">Authorize ChatGPT</button>
+        </form>
+
+        <div class="footer-text">
+            Protected with end-to-end curriculum isolation.<br>
+            <span>CampusAxis OAuth 2.1 Server</span>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        document.getElementById('client_id').value = urlParams.get('client_id') || '';
+        document.getElementById('redirect_uri').value = urlParams.get('redirect_uri') || '';
+        document.getElementById('state').value = urlParams.get('state') || '';
+        document.getElementById('code_challenge').value = urlParams.get('code_challenge') || '';
+        document.getElementById('code_challenge_method').value = urlParams.get('code_challenge_method') || 'S256';
+    </script>
+</body>
+</html>
