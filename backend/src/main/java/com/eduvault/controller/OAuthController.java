@@ -99,10 +99,10 @@ public class OAuthController {
                 System.currentTimeMillis() + 300_000
         ));
 
-        // If redirectUri from client is missing or default, allow the ChatGPT connector callback
-        String effectiveRedirectUri = (redirectUri != null && !redirectUri.isBlank()) 
-                ? redirectUri.trim() 
-                : "https://chatgpt.com/connector/oauth/QmfazbMYHYuz";
+        // Accept OpenAI's CIMD client_id (https://chatgpt.com/oauth/client.json) and its redirect URIs
+        String effectiveRedirectUri = (redirectUri != null && !redirectUri.isBlank())
+                ? redirectUri.trim()
+                : "https://chatgpt.com/connector_platform_oauth_redirect";
 
         String targetUrl = effectiveRedirectUri + (effectiveRedirectUri.contains("?") ? "&" : "?") +
                 "code=" + URLEncoder.encode(code, StandardCharsets.UTF_8) +
