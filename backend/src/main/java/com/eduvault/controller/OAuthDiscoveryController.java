@@ -52,6 +52,25 @@ public class OAuthDiscoveryController {
         ));
     }
 
+    /**
+     * Client ID Metadata Document (CIMD) per OpenAI MCP OAuth spec.
+     * clientId in mcp.json points here. ChatGPT fetches this during OAuth init.
+     * client_id must equal this document's URL. redirect_uris must include ChatGPT callback.
+     */
+    @GetMapping("/.well-known/chatgpt-oauth-client.json")
+    public ResponseEntity<Map<String, Object>> chatgptOauthClient() {
+        String cimdUrl = baseUrl + "/.well-known/chatgpt-oauth-client.json";
+        return ResponseEntity.ok(Map.of(
+                "client_id", cimdUrl,
+                "client_name", "CampusAxis ChatGPT Integration",
+                "redirect_uris", List.of("https://chatgpt.com/connector_platform_oauth_redirect"),
+                "token_endpoint_auth_method", "none",
+                "grant_types", List.of("authorization_code", "refresh_token"),
+                "response_types", List.of("code"),
+                "scope", "openid student"
+        ));
+    }
+
     @GetMapping(value = "/.well-known/openai-apps-challenge", produces = "text/plain")
     public ResponseEntity<String> openaiChallenge() {
         return ResponseEntity.ok()
