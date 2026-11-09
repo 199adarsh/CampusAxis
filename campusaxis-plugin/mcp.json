@@ -3,8 +3,22 @@
   "mcpServers": {
     "campusaxis": {
       "type": "streamable-http",
-      "url": "https://campusaxis.devs.surf/mcp"
+      "url": "https://campusaxis.devs.surf/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth",
+            "client": {
+              "mode": "provided",
+              "clientId": "campusaxis-chatgpt-client",
+              "tokenEndpointAuthMethod": "client_secret_post"
+            },
+            "authorizationUrl": "https://campusaxis.devs.surf/oauth2/authorize",
+            "tokenUrl": "https://campusaxis.devs.surf/oauth2/token",
+            "baseScopes": ["openid", "student"]
+          }
+        }
+      }
     }
   }
 }
-
