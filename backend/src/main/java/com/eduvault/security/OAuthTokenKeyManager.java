@@ -9,16 +9,15 @@ import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.jwt.*;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Configuration
@@ -43,7 +42,7 @@ public class OAuthTokenKeyManager {
                 .build();
     }
 
-    public JWKSet getJwkSet() {
+    public JWKSet getJwks() {
         return new JWKSet(this.rsaKey.toPublicJWK());
     }
 
@@ -57,5 +56,31 @@ public class OAuthTokenKeyManager {
         ImmutableJWKSet<SecurityContext> jwks = new ImmutableJWKSet<>(new JWKSet(this.rsaKey));
         return new NimbusJwtEncoder(jwks);
     }
-}
 
+    public String issueAccessToken(
+            String issuer,
+            String prn,
+            String role,
+            String department,
+            Integer semester,
+            List<String> enrolledSubjects
+    ) {
+        Instant now = Instant.now();
+        JwtClaimsSet.Builder claims = JwtClaimsSet.builder()
+                .issuer(issuer)
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(3600))
+                .subject(prn)
+                .claim("prn", prn)
+                .claim("role", role)
+                .claim("department", department)
+                .claim("semester", semester)
+                .claim("enrolled_subjects", enrolledSubjects != null ? enrolledSubjects : List.of());
+
+        JwsHeader header = JwsHeader.with(org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256)
+                .keyId(rsaKey.getKeyID())
+                .build();
+
+        return jwtEncoder().encode(JwtEncoderParameters.from(header, claims.build())).getTokenValue();
+    }
+}
