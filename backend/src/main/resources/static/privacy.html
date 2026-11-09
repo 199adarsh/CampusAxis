@@ -10,34 +10,67 @@
         h2 { color: #1f2937; margin-top: 28px; }
         p, li { color: #4b5563; }
         .last-updated { font-size: 0.9em; color: #6b7280; }
+        .highlight { background: #f3f4f6; padding: 12px; border-radius: 6px; margin: 12px 0; }
     </style>
 </head>
 <body>
-    <h1>Privacy Policy</h1>
-    <p class="last-updated">Last Updated: November 2026</p>
+    <h1>Privacy Policy for CampusAxis</h1>
+    <p class="last-updated">Effective Date: November 9, 2026</p>
 
-    <p>CampusAxis ("we", "our", or "us") provides an academic intelligence and student management platform for universities. This Privacy Policy explains how information is handled when using CampusAxis and its associated ChatGPT apps, plugins, and MCP endpoints.</p>
+    <p>CampusAxis ("we", "our", or "us") operates the CampusAxis academic portal and its associated Model Context Protocol (MCP) plugin for ChatGPT and Codex. This Privacy Policy strictly adheres to the OpenAI Plugin Guidelines, detailing what data we collect, how it is used, with whom it is shared, and how users maintain control over their data.</p>
 
-    <h2>1. Information We Access</h2>
-    <p>When you authenticate with CampusAxis using your Student PRN and date of birth, we access academic records solely to provide authorized services:</p>
+    <h2>1. Categories of Personal Data Collected</h2>
+    <p>We apply data minimization principles and gather only data strictly required to fulfill the specific academic request:</p>
     <ul>
-        <li>Course attendance percentages and lecture logs.</li>
-        <li>Continuous Internal Evaluation (CIE) test scores and assignment grades.</li>
-        <li>Enrolled subject curriculum and syllabus notes.</li>
-        <li>Official campus announcements.</li>
+        <li><strong>Student Identifier:</strong> Permanent Registration Number (PRN) and Date of Birth (DOB) solely during initial OAuth 2.1 authentication.</li>
+        <li><strong>Academic Performance & Attendance:</strong> Course attendance records, aggregate percentages, lecture logs, and Continuous Internal Evaluation (CIE) test scores.</li>
+        <li><strong>Course Material Queries:</strong> Subject names, unit topics, and search keywords for study notes and syllabi.</li>
     </ul>
 
-    <h2>2. How We Use Information</h2>
-    <p>Data retrieved from your institution is used exclusively to answer your queries in real time. We do not sell, rent, or monetize student personal data or academic records to third parties.</p>
+    <div class="highlight">
+        <strong>Prohibited & Restricted Data Policy:</strong> CampusAxis does NOT solicit, collect, or process Payment Card Information (PCI-DSS), Protected Health Information (PHI), government IDs (SSN/Aadhaar), GPS location coordinates, or full chat transcripts.
+    </div>
 
-    <h2>3. Authentication & Security</h2>
-    <p>All communication between ChatGPT, your client, and CampusAxis uses encrypted HTTPS / TLS 1.3. User authentication is governed by OAuth 2.1 authorization code grant with PKCE (RFC 7636). Access tokens are short-lived, digitally signed JWTs that can be revoked at any time.</p>
+    <h2>2. Purpose of Processing</h2>
+    <p>Data collected is used exclusively for:</p>
+    <ul>
+        <li>Delivering real-time attendance calculations and non-credit (NC) status checks.</li>
+        <li>Summarizing student CIE marks and performance evaluations.</li>
+        <li>Fetching syllabus-verified notes and campus announcements.</li>
+        <li>Matching relevant collegiate and national hackathons based on degree domain.</li>
+    </ul>
+    <p>We do not use student data for surveillance, behavioral tracking, profiling, advertising, or model training.</p>
 
-    <h2>4. Data Retention</h2>
-    <p>We do not store your private chat prompts or model outputs permanently. Cached academic session data is removed upon session termination or token expiry.</p>
+    <h2>3. Categories of Recipients</h2>
+    <p>Data is never sold, leased, or monetized. Data is shared exclusively with:</p>
+    <ul>
+        <li><strong>Host University / Institution LMS & ERP:</strong> To retrieve authorized student academic logs.</li>
+        <li><strong>OpenAI Platform (via MCP runtime):</strong> Responses to user-initiated queries are returned directly through the secure MCP protocol.</li>
+    </ul>
 
-    <h2>5. Contact Us</h2>
-    <p>For questions or privacy inquiries, contact the CampusAxis team at <a href="mailto:raosahebherwade123@gmail.com">raosahebherwade123@gmail.com</a>.</p>
+    <h2>4. Data Retention and Deletion Timelines</h2>
+    <ul>
+        <li><strong>Access Tokens:</strong> Digitally signed JWT tokens expire automatically within 24 hours.</li>
+        <li><strong>Transient Responses:</strong> Query results (attendance figures, notes, CIE marks) are processed ephemerally and not persisted in permanent databases by the MCP server.</li>
+        <li><strong>User Deletion Right:</strong> Disconnecting the CampusAxis connector in ChatGPT immediately invalidates all active session tokens.</li>
+    </ul>
+
+    <h2>5. User Controls & Choices</h2>
+    <p>Users have full autonomy over their integration:</p>
+    <ul>
+        <li><strong>Revocation:</strong> You can disconnect or revoke the CampusAxis plugin at any time directly in ChatGPT Settings &gt; Connectors.</li>
+        <li><strong>Scope Control:</strong> Permissions are restricted to the explicitly authorized scopes (<code>openid</code>, <code>student</code>).</li>
+    </ul>
+
+    <h2>6. Security Measures</h2>
+    <p>All communication requires HTTPS (TLS 1.3). Authorization follows OAuth 2.1 Code Grant with mandatory PKCE (RFC 7636). API keys and client secrets are never exposed to clients.</p>
+
+    <h2>7. Contact Information</h2>
+    <p>For data inquiries, access requests, or privacy concerns, contact:</p>
+    <p>
+        <strong>CampusAxis Privacy & Support Team</strong><br>
+        Email: <a href="mailto:raosahebherwade123@gmail.com">raosahebherwade123@gmail.com</a><br>
+        Website: <a href="https://campusaxis.devs.surf">https://campusaxis.devs.surf</a>
+    </p>
 </body>
 </html>
-
