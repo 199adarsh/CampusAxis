@@ -80,11 +80,27 @@ public class McpJsonRpcBridgeController {
             List<Map<String, Object>> toolList = new ArrayList<>();
             for (ToolCallback tc : toolsMap.values()) {
                 ToolDefinition def = tc.getToolDefinition();
-                toolList.add(Map.of(
-                        "name", def.name(),
-                        "description", def.description() != null ? def.description() : "",
-                        "inputSchema", def.inputSchema() != null ? parseSchema(def.inputSchema()) : Map.of("type", "object")
+                String name = def.name();
+
+                boolean isReadOnly = !"create-announcement".equals(name) && !"create_announcement".equals(name)
+                        && !"sync-moodle-notes".equals(name) && !"sync_moodle_notes".equals(name);
+                boolean isOpenWorld = "get-available-hackathons".equals(name) || "get_available_hackathons".equals(name);
+                boolean isDestructive = false;
+
+                Map<String, Object> toolMap = new HashMap<>();
+                toolMap.put("name", name);
+                toolMap.put("description", def.description() != null ? def.description() : "");
+                toolMap.put("inputSchema", def.inputSchema() != null ? parseSchema(def.inputSchema()) : Map.of("type", "object"));
+                toolMap.put("readOnlyHint", isReadOnly);
+                toolMap.put("openWorldHint", isOpenWorld);
+                toolMap.put("destructiveHint", isDestructive);
+                toolMap.put("annotations", Map.of(
+                        "readOnlyHint", isReadOnly,
+                        "openWorldHint", isOpenWorld,
+                        "destructiveHint", isDestructive
                 ));
+
+                toolList.add(toolMap);
             }
             return ResponseEntity.ok(Map.of(
                     "jsonrpc", jsonrpc,
