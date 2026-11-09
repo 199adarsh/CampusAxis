@@ -276,8 +276,16 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
                         {title || "PDF Document"}
                     </h3>
                     <p className="text-xs text-[#8E8E93] max-w-md mb-4">
-                        Cloud storage bandwidth cap reached or network blocked. You can still read the full extracted notes below or retry download.
+                        {extractedText 
+                            ? "Unable to display PDF preview. You can read the extracted document text below, retry loading, or download the original file."
+                            : "Unable to display PDF preview. Please check your network connection, retry loading, or download the file to view it locally."}
                     </p>
+
+                    {loadError && (
+                        <div className="text-[11px] font-mono text-[#E54D2E] dark:text-[#FF6247] bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg mb-4 max-w-md break-all">
+                            {typeof loadError === 'string' ? loadError : (loadError?.message || String(loadError))}
+                        </div>
+                    )}
 
                     <div className="flex flex-wrap items-center justify-center gap-2.5 mb-6">
                         {directUrl && (

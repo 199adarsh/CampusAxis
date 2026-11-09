@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
     Maximize2,
     Minimize2,
@@ -74,10 +74,56 @@ export default function FullScreenNoteViewer({
     const [numPages, setNumPages] = useState(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [scale, setScale] = useState(1.0);
+    const [containerWidth, setContainerWidth] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return Math.min(window.innerWidth - 64, 1100);
+        }
+        return 800;
+    });
 
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const isDrawingRef = useRef(false);
+
+    useEffect(() => {
+        const node = containerRef.current;
+        if (!node) return;
+
+        const updateWidth = () => {
+            if (node) {
+                const rect = node.getBoundingClientRect();
+                if (rect.width > 50) {
+                    setContainerWidth(rect.width);
+                }
+            }
+        };
+
+        updateWidth();
+
+        let ro;
+        if (typeof ResizeObserver !== 'undefined') {
+            ro = new ResizeObserver((entries) => {
+                for (const entry of entries) {
+                    if (entry.contentRect.width > 50) {
+                        setContainerWidth(entry.contentRect.width);
+                    }
+                }
+            });
+            ro.observe(node);
+        }
+
+        window.addEventListener('resize', updateWidth);
+
+        return () => {
+            if (ro) ro.disconnect();
+            window.removeEventListener('resize', updateWidth);
+        };
+    }, []);
+
+    const calculatedPdfWidth = useMemo(() => {
+        const base = containerWidth ? Math.max(280, Math.min(containerWidth - 64, 1100)) : 800;
+        return Math.round(base * scale);
+    }, [containerWidth, scale]);
 
     // Request native browser fullscreen (F11 equivalent) on open, and exit cleanly on close
     useEffect(() => {
@@ -505,14 +551,7 @@ export default function FullScreenNoteViewer({
                 className="relative flex-1 w-full h-[calc(100vh-3rem)] overflow-auto bg-[#18181B] flex justify-center items-start"
             >
                 {/* 1. Underlying Note Content */}
-                <div
-                    className="relative min-w-full min-h-full flex flex-col items-center p-4 sm:p-8"
-                    style={{
-                        transform: `scale(${scale})`,
-                        transformOrigin: 'top center',
-                        transition: 'transform 0.1s ease-out'
-                    }}
-                >
+                <div className="relative min-w-full min-h-full flex flex-col items-center p-4 sm:p-8">
                     {isPdf && fileSource ? (
                         <Document
                             file={fileSource}
@@ -527,16 +566,16 @@ export default function FullScreenNoteViewer({
                         >
                             <Page
                                 pageNumber={pageNumber}
-                                width={Math.min(window.innerWidth - 64, 960)}
+                                width={calculatedPdfWidth}
                                 renderAnnotationLayer={false}
                                 renderTextLayer={false}
-                                className="bg-white shadow-xl"
+                                className="bg-white shadow-xl transition-all duration-150"
                             />
                         </Document>
                     ) : docxHtml ? (
-                        <div className="max-w-4xl w-full bg-white text-[#1D1D1F] rounded-2xl p-8 sm:p-12 shadow-2xl border border-[#27272A]">
+                        <div className="max-w-4xl w-full bg-white text-[#1D1D1F] rounded-2xl p-4 sm:p-8 md:p-12 shadow-2xl border border-[#27272A] overflow-x-auto">
                             <div
-                                className="docx-content prose prose-slate max-w-none"
+                                className="docx-content prose prose-slate max-w-none break-words"
                                 dangerouslySetInnerHTML={{ __html: docxHtml }}
                             />
                         </div>

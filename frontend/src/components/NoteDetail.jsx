@@ -39,16 +39,56 @@ function setBoundedCache(map, key, value) {
         const firstKey = map.keys().next().value;
         if (firstKey !== undefined) {
             if (map === blobCache) {
-                const oldUrl = map.get(firstKey);
-                if (oldUrl && typeof oldUrl === 'string' && oldUrl.startsWith('blob:')) {
-                    URL.revokeObjectURL(oldUrl);
-                }
+                const firstVal = map.get(firstKey);
+                URL.revokeObjectURL(typeof firstVal === 'string' ? firstVal : firstVal?.url);
             }
             map.delete(firstKey);
         }
     }
     map.set(key, value);
 }
+
+const isDisallowedMime = (type) => {
+    if (!type || typeof type !== 'string') return false;
+    const t = type.toLowerCase();
+    return t.includes('text/plain') || t.includes('text/html') || t.includes('application/json');
+};
+
+const isValidDocumentBlob = (blob, contentTypeHeader = null, expectedExt = null) => {
+    if (!blob || typeof blob.size !== 'number' || blob.size < 64) return false;
+    if (contentTypeHeader && isDisallowedMime(contentTypeHeader)) return false;
+    if (blob.type && isDisallowedMime(blob.type)) return false;
+
+    const normExt = (expectedExt || '').toLowerCase().replace(/^\./, '');
+    if (normExt === 'pdf') {
+        if (contentTypeHeader) {
+            const ct = contentTypeHeader.toLowerCase();
+            if (!ct.includes('pdf') && !ct.includes('octet-stream') && !ct.includes('binary')) return false;
+        }
+        if (blob.type) {
+            const bt = blob.type.toLowerCase();
+            if (!bt.includes('pdf') && !bt.includes('octet-stream') && !bt.includes('binary')) return false;
+        }
+    } else if (normExt === 'docx') {
+        if (contentTypeHeader) {
+            const ct = contentTypeHeader.toLowerCase();
+            if (ct.includes('text/') || ct.includes('image/') || ct.includes('pdf')) return false;
+        }
+        if (blob.type) {
+            const bt = blob.type.toLowerCase();
+            if (
+                !bt.includes('word') &&
+                !bt.includes('officedocument') &&
+                !bt.includes('zip') &&
+                !bt.includes('octet-stream') &&
+                !bt.includes('binary')
+            ) {
+                return false;
+            }
+        }
+    }
+    return true;
+};
 
 const NoteDetail = () => {
     const { id: noteId } = useParams();
@@ -108,6 +148,7 @@ const NoteDetail = () => {
     const [blobUrl, setBlobUrl] = useState(null);
     const [pdfData, setPdfData] = useState(null);
     const [docxBlob, setDocxBlob] = useState(null);
+    const [docxHtml, setDocxHtml] = useState(null);
     const [docLoading, setDocLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState(0);
@@ -140,6 +181,30 @@ const NoteDetail = () => {
                     if (active) console.warn('docx-preview render error:', err);
                 }
             })();
+        }
+        return () => {
+            active = false;
+        };
+    }, [docxBlob]);
+
+    useEffect(() => {
+        let active = true;
+        if (docxBlob) {
+            (async () => {
+                try {
+                    const arrayBuffer = await docxBlob.arrayBuffer();
+                    const mammoth = await import('mammoth');
+                    const convert = mammoth.default?.convertToHtml || mammoth.convertToHtml;
+                    const { value: html } = await convert({ arrayBuffer });
+                    if (active && html) {
+                        setDocxHtml(html);
+                    }
+                } catch (err) {
+                    if (active) console.warn('mammoth conversion error for FullScreenNoteViewer:', err);
+                }
+            })();
+        } else {
+            setDocxHtml(null);
         }
         return () => {
             active = false;
@@ -190,7 +255,18 @@ const NoteDetail = () => {
             setPresignedUrl(presignedCache.get(noteId));
         }
         if (blobCache.has(noteId)) {
-            setBlobUrl(blobCache.get(noteId));
+            const cached = blobCache.get(noteId);
+            const cachedUrl = typeof cached === 'string' ? cached : cached?.url;
+            const cachedBlob = cached?.blob;
+            if (cachedUrl) setBlobUrl(cachedUrl);
+            if (cachedBlob) {
+                const ext = ((note?.originalFilename || note?.fileUrl || '').split('.').pop() || '').toLowerCase();
+                if (ext === 'docx') {
+                    setDocxBlob(cachedBlob);
+                } else if (ext === 'pdf') {
+                    cachedBlob.arrayBuffer().then(buf => setPdfData(new Uint8Array(buf))).catch(() => {});
+                }
+            }
         }
 
         const fetchNoteData = async () => {
@@ -232,19 +308,35 @@ const NoteDetail = () => {
     useEffect(() => {
         if (!presignedUrl && !note?.fileUrl) return;
         if (blobCache.has(noteId)) {
-            setBlobUrl(blobCache.get(noteId));
-            return;
+            const cached = blobCache.get(noteId);
+            if (cached && typeof cached === 'object' && (isDisallowedMime(cached.type) || isDisallowedMime(cached.blob?.type))) {
+                blobCache.delete(noteId);
+            } else {
+                const cachedUrl = typeof cached === 'string' ? cached : cached?.url;
+                const cachedBlob = cached?.blob;
+                if (cachedUrl) setBlobUrl(cachedUrl);
+                if (cachedBlob) {
+                    const ext = ((note?.originalFilename || note?.fileUrl || '').split('.').pop() || '').toLowerCase();
+                    if (ext === 'docx') {
+                        setDocxBlob(cachedBlob);
+                    } else if (ext === 'pdf') {
+                        cachedBlob.arrayBuffer().then(buf => setPdfData(new Uint8Array(buf))).catch(() => {});
+                    }
+                }
+                return;
+            }
         }
 
         let cancelled = false;
         const loadBlob = async () => {
             setDocLoading(true);
             let blob = null;
+            const ext = ((note?.originalFilename || note?.fileUrl || '').split('.').pop() || '').toLowerCase();
 
             // 0. Persistent IndexedDB Cache (0 KB B2 Bandwidth)
             try {
                 const idbBlob = await getCachedNoteBlob(noteId);
-                if (idbBlob && (!idbBlob.type || !idbBlob.type.includes('text/plain'))) {
+                if (idbBlob && isValidDocumentBlob(idbBlob, null, ext)) {
                     blob = idbBlob;
                 }
             } catch (e) {
@@ -257,9 +349,12 @@ const NoteDetail = () => {
                     const res = await fetch(`${API_BASE}/files/${noteId}/raw`);
                     if (res.ok) {
                         const ct = res.headers.get('content-type') || '';
-                        if (!ct.includes('text/plain')) {
-                            blob = await res.blob();
-                            setCachedNoteBlob(noteId, blob);
+                        if (!isDisallowedMime(ct)) {
+                            const candidateBlob = await res.blob();
+                            if (isValidDocumentBlob(candidateBlob, ct, ext)) {
+                                blob = candidateBlob;
+                                setCachedNoteBlob(noteId, blob);
+                            }
                         }
                     }
                 } catch (e) {
@@ -277,9 +372,12 @@ const NoteDetail = () => {
                     const res = await fetch(fetchUrl);
                     if (res.ok) {
                         const ct = res.headers.get('content-type') || '';
-                        if (!ct.includes('text/plain')) {
-                            blob = await res.blob();
-                            setCachedNoteBlob(noteId, blob);
+                        if (!isDisallowedMime(ct)) {
+                            const candidateBlob = await res.blob();
+                            if (isValidDocumentBlob(candidateBlob, ct, ext)) {
+                                blob = candidateBlob;
+                                setCachedNoteBlob(noteId, blob);
+                            }
                         }
                     }
                 } catch (e) {
@@ -294,9 +392,12 @@ const NoteDetail = () => {
                     const res = await fetch(`${API_BASE}/files/raw/${rawKey}`);
                     if (res.ok) {
                         const ct = res.headers.get('content-type') || '';
-                        if (!ct.includes('text/plain')) {
-                            blob = await res.blob();
-                            setCachedNoteBlob(noteId, blob);
+                        if (!isDisallowedMime(ct)) {
+                            const candidateBlob = await res.blob();
+                            if (isValidDocumentBlob(candidateBlob, ct, ext)) {
+                                blob = candidateBlob;
+                                setCachedNoteBlob(noteId, blob);
+                            }
                         }
                     }
                 } catch (err) {
@@ -306,12 +407,11 @@ const NoteDetail = () => {
 
             if (cancelled) return;
 
-            if (blob) {
+            if (blob && isValidDocumentBlob(blob, null, ext)) {
                 const bUrl = URL.createObjectURL(blob);
-                setBoundedCache(blobCache, noteId, bUrl);
+                setBoundedCache(blobCache, noteId, { url: bUrl, blob, ext, type: blob.type });
                 setBlobUrl(bUrl);
 
-                const ext = ((note?.originalFilename || note?.fileUrl || '').split('.').pop() || '').toLowerCase();
                 if (ext === 'docx') {
                     if (!cancelled) setDocxBlob(blob);
                 } else if (ext === 'pdf') {

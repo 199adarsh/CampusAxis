@@ -19,8 +19,11 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -478,13 +481,17 @@ public class ApiController {
     public ResponseEntity<Resource> getNoteRawById(@PathVariable String noteId) {
         Optional<Note> noteOpt = database.getNoteById(noteId);
         if (noteOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
+                    .header(HttpHeaders.PRAGMA, "no-cache")
+                    .build();
         }
         Note note = noteOpt.get();
-        String fileName = note.getFileUrl();
-        if (fileName == null || fileName.isBlank()) {
-            fileName = note.getTitle() != null ? note.getTitle() : "document";
-        }
+        String fileName = (note.getOriginalFilename() != null && !note.getOriginalFilename().isBlank())
+                ? note.getOriginalFilename()
+                : (note.getFileUrl() != null && !note.getFileUrl().isBlank()
+                    ? note.getFileUrl()
+                    : (note.getTitle() != null ? note.getTitle() : "document"));
 
         // 1. Try local storage
         if (note.getFileUrl() != null) {
@@ -512,6 +519,10 @@ public class ApiController {
         }
 
         // 2. Try S3/R2 storage with multi-key candidates
+        byte[] foundBytes = null;
+        boolean transientStorageError = false;
+        Throwable lastStorageError = null;
+
         if (backblazeStorageService != null) {
             LinkedHashSet<String> candidates = new LinkedHashSet<>();
             if (note.getB2ObjectKey() != null && !note.getB2ObjectKey().isBlank()) {
@@ -533,7 +544,6 @@ public class ApiController {
                 }
             }
 
-            byte[] foundBytes = null;
             for (String key : candidates) {
                 try {
                     byte[] bytes = backblazeStorageService.getObjectBytes(key);
@@ -541,10 +551,13 @@ public class ApiController {
                         foundBytes = bytes;
                         break;
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    if (isTransientStorageException(e)) {
+                        transientStorageError = true;
+                        lastStorageError = e;
+                    }
+                }
             }
-
-
 
             if (foundBytes != null && foundBytes.length > 0) {
                 String contentType = resolveContentType(fileName);
@@ -558,7 +571,33 @@ public class ApiController {
             }
         }
 
-        // 3. Resilient Fallback: If binary not found in storage, return note's extracted text
+        if (transientStorageError) {
+            HttpStatus status = HttpStatus.BAD_GATEWAY;
+            if (lastStorageError != null) {
+                if (lastStorageError instanceof BackblazeStorageService.StorageUnavailableException sue && sue.getStatusCode() == 503) {
+                    status = HttpStatus.SERVICE_UNAVAILABLE;
+                } else if (lastStorageError instanceof S3Exception s3e && s3e.statusCode() == 503) {
+                    status = HttpStatus.SERVICE_UNAVAILABLE;
+                } else if (lastStorageError.getMessage() != null && lastStorageError.getMessage().contains("503")) {
+                    status = HttpStatus.SERVICE_UNAVAILABLE;
+                }
+            }
+            return ResponseEntity.status(status)
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
+                    .header(HttpHeaders.PRAGMA, "no-cache")
+                    .header("Retry-After", "3")
+                    .build();
+        }
+
+        // For binary documents (PDF, DOCX, etc.), do NOT fall back to 200 text/plain when binary is missing
+        if (isBinaryDocument(note, fileName)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
+                    .header(HttpHeaders.PRAGMA, "no-cache")
+                    .build();
+        }
+
+        // 3. Resilient Fallback for non-binary text notes
         if (note.getExtractedText() != null && !note.getExtractedText().isBlank()) {
             byte[] textBytes = note.getExtractedText().getBytes(java.nio.charset.StandardCharsets.UTF_8);
             String txtFileName = (note.getTitle() != null ? note.getTitle().replaceAll("[\\\\/:*?\"<>|]", "_") : "notes") + ".txt";
@@ -567,11 +606,58 @@ public class ApiController {
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + txtFileName + "\"")
                     .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                     .header(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS")
-                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
+                    .header(HttpHeaders.PRAGMA, "no-cache")
                     .body(new ByteArrayResource(textBytes));
         }
 
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .build();
+    }
+
+    private boolean isTransientStorageException(Throwable t) {
+        if (t == null) return false;
+        Throwable current = t;
+        while (current != null) {
+            if (current instanceof NoSuchKeyException) {
+                return false;
+            }
+            if (current instanceof S3Exception s3e) {
+                if (s3e.statusCode() == 404) {
+                    return false;
+                }
+                return true;
+            }
+            if (current instanceof BackblazeStorageService.StorageUnavailableException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return true;
+    }
+
+    private boolean isBinaryDocument(Note note, String fileName) {
+        if (fileName != null && fileName.contains(".")) {
+            String ext = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+            if (ext.equals(".txt") || ext.equals(".text") || ext.equals(".md") || ext.equals(".csv") || ext.equals(".log") || ext.equals(".json") || ext.equals(".xml") || ext.equals(".html")) {
+                return false;
+            }
+            return true;
+        }
+        if (note != null) {
+            if (note.getOriginalFilename() != null && isBinaryDocument(null, note.getOriginalFilename())) {
+                return true;
+            }
+            if (note.getFileUrl() != null && isBinaryDocument(null, note.getFileUrl())) {
+                return true;
+            }
+            if (note.getB2ObjectKey() != null && isBinaryDocument(null, note.getB2ObjectKey())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String resolveContentType(String fileName) {
@@ -582,8 +668,11 @@ public class ApiController {
         if (lower.endsWith(".doc")) return "application/msword";
         if (lower.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
         if (lower.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
+        if (lower.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if (lower.endsWith(".xls")) return "application/vnd.ms-excel";
         if (lower.endsWith(".png")) return "image/png";
         if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+        if (lower.endsWith(".txt")) return "text/plain";
         return "application/octet-stream";
     }
 
@@ -607,11 +696,13 @@ public class ApiController {
             try {
                 Resource resource = new UrlResource(path.toUri());
                 String contentType = java.nio.file.Files.probeContentType(path);
-                if (contentType == null) contentType = "application/octet-stream";
+                if (contentType == null) contentType = resolveContentType(fileName);
                 return ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(contentType))
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
                         .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                        .header(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS")
+                        .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
                         .body(resource);
             } catch (Exception e) {
                 // fall through
@@ -619,7 +710,11 @@ public class ApiController {
         }
 
         // Fallback: Stream directly from Backblaze B2 if available
-        try {
+        byte[] foundBytes = null;
+        boolean transientStorageError = false;
+        Throwable lastStorageError = null;
+
+        if (backblazeStorageService != null) {
             LinkedHashSet<String> b2KeyCandidates = new LinkedHashSet<>();
             b2KeyCandidates.add(fileName);
             if (fileName.contains("/")) {
@@ -639,21 +734,59 @@ public class ApiController {
                     });
 
             for (String key : b2KeyCandidates) {
-                byte[] bytes = backblazeStorageService.getObjectBytes(key);
-                if (bytes != null && bytes.length > 0) {
-                    String contentType = resolveContentType(fileName);
-                    return ResponseEntity.ok()
-                            .contentType(MediaType.parseMediaType(contentType))
-                            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
-                            .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-                            .header(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS")
-                            .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
-                            .body(new org.springframework.core.io.ByteArrayResource(bytes));
+                try {
+                    byte[] bytes = backblazeStorageService.getObjectBytes(key);
+                    if (bytes != null && bytes.length > 0) {
+                        foundBytes = bytes;
+                        break;
+                    }
+                } catch (Exception e) {
+                    if (isTransientStorageException(e)) {
+                        transientStorageError = true;
+                        lastStorageError = e;
+                    }
                 }
             }
-        } catch (Exception ignored) {}
+        }
 
-        // Fallback: If not found in storage, check database for extracted text
+        if (foundBytes != null && foundBytes.length > 0) {
+            String contentType = resolveContentType(fileName);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS")
+                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                    .body(new org.springframework.core.io.ByteArrayResource(foundBytes));
+        }
+
+        if (transientStorageError) {
+            HttpStatus status = HttpStatus.BAD_GATEWAY;
+            if (lastStorageError != null) {
+                if (lastStorageError instanceof BackblazeStorageService.StorageUnavailableException sue && sue.getStatusCode() == 503) {
+                    status = HttpStatus.SERVICE_UNAVAILABLE;
+                } else if (lastStorageError instanceof S3Exception s3e && s3e.statusCode() == 503) {
+                    status = HttpStatus.SERVICE_UNAVAILABLE;
+                } else if (lastStorageError.getMessage() != null && lastStorageError.getMessage().contains("503")) {
+                    status = HttpStatus.SERVICE_UNAVAILABLE;
+                }
+            }
+            return ResponseEntity.status(status)
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
+                    .header(HttpHeaders.PRAGMA, "no-cache")
+                    .header("Retry-After", "3")
+                    .build();
+        }
+
+        // For binary documents, do NOT fall back to 200 text/plain when binary is missing
+        if (isBinaryDocument(null, fileName)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
+                    .header(HttpHeaders.PRAGMA, "no-cache")
+                    .build();
+        }
+
+        // Fallback: If not found in storage and not a binary document, check database for extracted text
         final String lookupTarget = fileName;
         Optional<Note> matchingNote = database.getAllNotes().stream()
                 .filter(n -> lookupTarget.equals(n.getFileUrl()) ||
@@ -667,10 +800,15 @@ public class ApiController {
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"extracted_notes.txt\"")
                     .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                     .header(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS")
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
+                    .header(HttpHeaders.PRAGMA, "no-cache")
                     .body(new org.springframework.core.io.ByteArrayResource(textBytes));
         }
 
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .build();
     }
 
     /**

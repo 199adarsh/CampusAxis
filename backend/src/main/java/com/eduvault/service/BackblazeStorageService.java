@@ -189,17 +189,72 @@ public class BackblazeStorageService {
         }
     }
 
+    public static class StorageUnavailableException extends RuntimeException {
+        private final int statusCode;
+
+        public StorageUnavailableException(String message, Throwable cause, int statusCode) {
+            super(message, cause);
+            this.statusCode = statusCode;
+        }
+
+        public StorageUnavailableException(String message, Throwable cause) {
+            this(message, cause, 502);
+        }
+
+        public int getStatusCode() {
+            return statusCode;
+        }
+    }
+
     public byte[] getObjectBytes(String key) {
-        try {
-            GetObjectRequest request = GetObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(key)
-                    .build();
-            return s3Client.getObjectAsBytes(request).asByteArray();
-        } catch (Exception e) {
-            logger.warn("Failed to download B2 object {}: {}", key, e.getMessage());
+        if (key == null || key.isBlank()) {
             return null;
         }
+        int maxAttempts = 2;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                GetObjectRequest request = GetObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .build();
+                return s3Client.getObjectAsBytes(request).asByteArray();
+            } catch (NoSuchKeyException e) {
+                logger.debug("B2 object {} not found (NoSuchKey)", key);
+                return null;
+            } catch (S3Exception e) {
+                if (e.statusCode() == 404) {
+                    logger.debug("B2 object {} not found (404)", key);
+                    return null;
+                }
+                if (attempt < maxAttempts && (e.statusCode() >= 500 || e.statusCode() == 429)) {
+                    logger.warn("Transient B2 S3 error on attempt {} for key {}: status={} msg={}. Retrying...",
+                            attempt, key, e.statusCode(), e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage());
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                    continue;
+                }
+                logger.error("B2 S3 error downloading object {}: status={} msg={}", key, e.statusCode(),
+                        e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage());
+                int status = e.statusCode() == 503 ? 503 : (e.statusCode() == 429 ? 429 : 502);
+                throw new StorageUnavailableException("B2 S3 storage error (" + e.statusCode() + "): " + e.getMessage(), e, status);
+            } catch (Exception e) {
+                if (attempt < maxAttempts) {
+                    logger.warn("Transient B2 error on attempt {} for key {}: {}. Retrying...", attempt, key, e.getMessage());
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                    continue;
+                }
+                logger.error("Failed to download B2 object {}: {}", key, e.getMessage());
+                throw new StorageUnavailableException("Transient B2 failure downloading object " + key + ": " + e.getMessage(), e, 502);
+            }
+        }
+        return null;
     }
 
     /**
