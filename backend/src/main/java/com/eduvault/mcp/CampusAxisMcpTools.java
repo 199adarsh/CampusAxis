@@ -81,6 +81,9 @@ public class CampusAxisMcpTools {
     @Value("${app.lms.ty.password:${LMS_TY_PASS:}}")
     private String lmsTyPassword;
 
+    @Autowired
+    private com.eduvault.service.PortalScraperService portalScraperService;
+
     // ==========================================
     // 🎓 STUDENT CAPABILITIES
     // ==========================================
@@ -90,8 +93,42 @@ public class CampusAxisMcpTools {
           description = "Get overall attendance overview across all enrolled subjects for the authenticated student.")
     public Map<String, Object> getOverallAttendance() {
         StudentPrincipal student = studentResolver.resolveCurrentStudent();
-        List<Subject> subjects = getAuthorizedSubjectsForStudent(student);
+        List<DashboardSubject> liveSubjects = getLiveStudentSubjects(student);
 
+        if (!liveSubjects.isEmpty()) {
+            int totalAttended = 0;
+            int totalConducted = 0;
+            List<Map<String, Object>> subjectBreakdown = new ArrayList<>();
+
+            for (DashboardSubject ds : liveSubjects) {
+                int attended = ds.getTotalAttended();
+                int conducted = ds.getTotalConducted();
+                totalAttended += attended;
+                totalConducted += conducted;
+
+                subjectBreakdown.add(Map.of(
+                        "subjectId", ds.getId() != null ? ds.getId() : "",
+                        "subjectName", ds.getName() != null ? ds.getName() : "",
+                        "code", ds.getCode() != null ? ds.getCode() : "",
+                        "attendancePercent", ds.getAttendance() + "%",
+                        "attended", attended,
+                        "conducted", conducted
+                ));
+            }
+
+            double overallPercent = totalConducted > 0 ? ((double) totalAttended / totalConducted) * 100.0 : 0.0;
+
+            return Map.of(
+                    "studentPrn", student.prn(),
+                    "overallAttendancePercent", String.format("%.2f%%", overallPercent),
+                    "totalAttended", totalAttended,
+                    "totalConducted", totalConducted,
+                    "subjects", subjectBreakdown
+            );
+        }
+
+        // Fallback to static catalog if live portal profile not yet fetched
+        List<Subject> subjects = getAuthorizedSubjectsForStudent(student);
         int totalAttended = 0;
         int totalConducted = 0;
         List<Map<String, Object>> subjectBreakdown = new ArrayList<>();
@@ -130,6 +167,30 @@ public class CampusAxisMcpTools {
             @ToolParam(description = "Subject ID or Course Code", required = true) String subjectIdentifier) {
 
         StudentPrincipal student = studentResolver.resolveCurrentStudent();
+        List<DashboardSubject> liveSubjects = getLiveStudentSubjects(student);
+
+        if (!liveSubjects.isEmpty() && subjectIdentifier != null) {
+            String clean = subjectIdentifier.trim().toLowerCase();
+            DashboardSubject matched = liveSubjects.stream()
+                    .filter(s -> (s.getId() != null && s.getId().equalsIgnoreCase(clean))
+                            || (s.getCode() != null && s.getCode().equalsIgnoreCase(clean))
+                            || (s.getName() != null && s.getName().toLowerCase().contains(clean)))
+                    .findFirst()
+                    .orElse(null);
+
+            if (matched != null) {
+                return Map.of(
+                        "subjectId", matched.getId() != null ? matched.getId() : "",
+                        "subjectName", matched.getName() != null ? matched.getName() : "",
+                        "code", matched.getCode() != null ? matched.getCode() : "",
+                        "attendancePercent", matched.getAttendance() + "%",
+                        "attended", matched.getTotalAttended(),
+                        "conducted", matched.getTotalConducted(),
+                        "detailedAttendance", matched.getDetailedAttendance() != null ? matched.getDetailedAttendance() : List.of()
+                );
+            }
+        }
+
         Subject subject = findAuthorizedSubject(student, subjectIdentifier);
 
         if (subject == null) {
@@ -154,6 +215,51 @@ public class CampusAxisMcpTools {
             @ToolParam(description = "Optional Subject ID to scope to a single subject", required = false) String subjectIdentifier) {
 
         StudentPrincipal student = studentResolver.resolveCurrentStudent();
+        List<DashboardSubject> liveSubjects = getLiveStudentSubjects(student);
+
+        if (!liveSubjects.isEmpty()) {
+            if (subjectIdentifier != null && !subjectIdentifier.isBlank()) {
+                String clean = subjectIdentifier.trim().toLowerCase();
+                DashboardSubject matched = liveSubjects.stream()
+                        .filter(s -> (s.getId() != null && s.getId().equalsIgnoreCase(clean))
+                                || (s.getCode() != null && s.getCode().equalsIgnoreCase(clean))
+                                || (s.getName() != null && s.getName().toLowerCase().contains(clean)))
+                        .findFirst()
+                        .orElse(null);
+
+                if (matched != null) {
+                    return Map.of(
+                            "subjectId", matched.getId() != null ? matched.getId() : "",
+                            "subjectName", matched.getName() != null ? matched.getName() : "",
+                            "cieScore", String.valueOf(matched.getCie()),
+                            "maxCie", String.valueOf(matched.getMaxCie())
+                    );
+                }
+            }
+
+            int totalObtained = 0;
+            int totalMax = 0;
+            List<Map<String, String>> cieList = new ArrayList<>();
+            for (DashboardSubject ds : liveSubjects) {
+                totalObtained += ds.getCie();
+                totalMax += ds.getMaxCie();
+                cieList.add(Map.of(
+                        "subjectId", ds.getId() != null ? ds.getId() : "",
+                        "subjectName", ds.getName() != null ? ds.getName() : "",
+                        "code", ds.getCode() != null ? ds.getCode() : "",
+                        "cieScore", String.valueOf(ds.getCie()),
+                        "maxCie", String.valueOf(ds.getMaxCie())
+                ));
+            }
+
+            double avgPercent = totalMax > 0 ? ((double) totalObtained / totalMax) * 100.0 : 0.0;
+            return Map.of(
+                    "studentPrn", student.prn(),
+                    "totalScore", totalObtained + "/" + totalMax,
+                    "averagePercent", String.format("%.2f%%", avgPercent),
+                    "cieScores", cieList
+            );
+        }
 
         if (subjectIdentifier != null && !subjectIdentifier.isBlank()) {
             Subject s = findAuthorizedSubject(student, subjectIdentifier);
@@ -435,6 +541,24 @@ public class CampusAxisMcpTools {
     // ==========================================
     // 🛡️ SECURITY & SCOPING HELPERS
     // ==========================================
+
+    private List<DashboardSubject> getLiveStudentSubjects(StudentPrincipal student) {
+        if (student == null || student.prn() == null || portalScraperService == null) {
+            return List.of();
+        }
+        Optional<StudentProfile> profileOpt = studentProfileRepository.findById(student.prn());
+        if (profileOpt.isPresent() && profileOpt.get().getDob() != null && !profileOpt.get().getDob().isBlank()) {
+            try {
+                PortalDashboardResponse resp = portalScraperService.fetchDashboard(student.prn(), profileOpt.get().getDob());
+                if (resp != null && resp.getSubjects() != null) {
+                    return resp.getSubjects();
+                }
+            } catch (Exception e) {
+                logger.warn("Could not retrieve live portal dashboard for PRN {}: {}", student.prn(), e.getMessage());
+            }
+        }
+        return List.of();
+    }
 
     private List<Subject> getAuthorizedSubjectsForStudent(StudentPrincipal student) {
         List<Subject> all = subjectRepository.findAll();
