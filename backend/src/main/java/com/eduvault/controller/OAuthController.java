@@ -113,16 +113,31 @@ public class OAuthController {
 
     @PostMapping(value = "/oauth2/token")
     public ResponseEntity<?> token(
-            @RequestParam("grant_type") String grantType,
-            @RequestParam("code") String code,
-            @RequestParam(value = "redirect_uri", required = false) String redirectUri,
-            @RequestParam(value = "client_id", required = false) String clientId,
-            @RequestParam(value = "client_secret", required = false) String clientSecret,
-            @RequestParam(value = "code_verifier", required = false) String codeVerifier,
-            @RequestHeader(value = "Authorization", required = false) String authHeader
+            @RequestParam(value = "grant_type", required = false) String paramGrantType,
+            @RequestParam(value = "code", required = false) String paramCode,
+            @RequestParam(value = "redirect_uri", required = false) String paramRedirectUri,
+            @RequestParam(value = "client_id", required = false) String paramClientId,
+            @RequestParam(value = "client_secret", required = false) String paramClientSecret,
+            @RequestParam(value = "code_verifier", required = false) String paramCodeVerifier,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody(required = false) Map<String, Object> body
     ) {
-        if (!"authorization_code".equals(grantType) && !"refresh_token".equals(grantType)) {
+        String grantType = (paramGrantType != null && !paramGrantType.isBlank()) 
+                ? paramGrantType 
+                : (body != null && body.get("grant_type") != null ? String.valueOf(body.get("grant_type")) : null);
+        String code = (paramCode != null && !paramCode.isBlank()) 
+                ? paramCode 
+                : (body != null && body.get("code") != null ? String.valueOf(body.get("code")) : null);
+        String codeVerifier = (paramCodeVerifier != null && !paramCodeVerifier.isBlank()) 
+                ? paramCodeVerifier 
+                : (body != null && body.get("code_verifier") != null ? String.valueOf(body.get("code_verifier")) : null);
+
+        if (grantType == null || (!"authorization_code".equals(grantType) && !"refresh_token".equals(grantType))) {
             return ResponseEntity.badRequest().body(Map.of("error", "unsupported_grant_type"));
+        }
+
+        if (code == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "invalid_request", "error_description", "code is missing"));
         }
 
         AuthCodeRecord record = AUTHORIZATION_CODES.remove(code);
