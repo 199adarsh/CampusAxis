@@ -27,10 +27,24 @@ public class McpJsonRpcBridgeController {
         }
     }
 
-    @PostMapping(value = "/mcp", consumes = {"application/json", "*/*"}, produces = "application/json")
-    public ResponseEntity<?> handleJsonRpc(@RequestBody(required = false) Map<String, Object> request) {
+    @PostMapping(value = "/mcp")
+    public ResponseEntity<?> handleJsonRpc(
+            @RequestBody(required = false) String rawBody,
+            jakarta.servlet.http.HttpServletRequest httpRequest
+    ) {
+        Map<String, Object> request = null;
+        if (rawBody != null && !rawBody.trim().isEmpty()) {
+            try {
+                request = objectMapper.readValue(rawBody, Map.class);
+            } catch (Exception e) {
+                log.warn("Failed to parse /mcp rawBody as JSON: {}", rawBody);
+            }
+        }
+
         if (request == null) {
-            return ResponseEntity.ok(Map.of("jsonrpc", "2.0", "result", Map.of()));
+            return ResponseEntity.ok()
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .body(Map.of("jsonrpc", "2.0", "result", Map.of()));
         }
 
         String jsonrpc = (String) request.getOrDefault("jsonrpc", "2.0");
