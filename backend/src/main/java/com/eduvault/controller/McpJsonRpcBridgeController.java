@@ -27,11 +27,39 @@ public class McpJsonRpcBridgeController {
         }
     }
 
-    @PostMapping("/mcp")
-    public ResponseEntity<?> handleJsonRpc(@RequestBody Map<String, Object> request) {
+    @PostMapping(value = "/mcp", consumes = {"application/json", "*/*"}, produces = "application/json")
+    public ResponseEntity<?> handleJsonRpc(@RequestBody(required = false) Map<String, Object> request) {
+        if (request == null) {
+            return ResponseEntity.ok(Map.of("jsonrpc", "2.0", "result", Map.of()));
+        }
+
         String jsonrpc = (String) request.getOrDefault("jsonrpc", "2.0");
         Object id = request.get("id");
         String method = (String) request.get("method");
+
+        if ("initialize".equals(method)) {
+            return ResponseEntity.ok(Map.of(
+                    "jsonrpc", jsonrpc,
+                    "id", id != null ? id : 1,
+                    "result", Map.of(
+                            "protocolVersion", "2024-11-05",
+                            "capabilities", Map.of(
+                                    "tools", Map.of("listChanged", true)
+                            ),
+                            "serverInfo", Map.of(
+                                    "name", "CampusAxis MCP Server",
+                                    "version", "1.0.0"
+                            )
+                    )
+            ));
+        }
+
+        if ("notifications/initialized".equals(method) || "initialized".equals(method)) {
+            return ResponseEntity.ok(Map.of(
+                    "jsonrpc", jsonrpc,
+                    "result", Map.of()
+            ));
+        }
 
         if ("tools/list".equals(method)) {
             List<Map<String, Object>> toolList = new ArrayList<>();
