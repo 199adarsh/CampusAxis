@@ -235,7 +235,7 @@ export default function CampusAuthSwapForm({ onAuthSuccess, className = '' }) {
       const portalRes = await axios.post(`${API_BASE}/portal/dashboard`, {
         prn: cleanPrn,
         dob: cleanDob
-      }, { timeout: 8000 });
+      }, { timeout: 45000 });
 
       if (portalRes.data) {
         studentProfile = {

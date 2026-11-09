@@ -113,7 +113,7 @@ export function SwapForm({
       const portalRes = await axios.post(
         `${API_BASE}/portal/dashboard`,
         { prn, dob },
-        { timeout: 10000 }
+        { timeout: 45000 }
       );
 
       if (!portalRes.data?.profile) {
@@ -187,7 +187,7 @@ export function SwapForm({
       const facultyRes = await axios.post(
         `${API_BASE}/portal/faculty/login`,
         { facultyId: id, password: pass },
-        { timeout: 8000 }
+        { timeout: 25000 }
       );
 
       const teacherProfile = facultyRes.data;
