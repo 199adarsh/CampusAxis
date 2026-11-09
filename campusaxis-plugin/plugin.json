@@ -1,0 +1,119 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "campusaxis",
+  "version": "1.0.0",
+  "description": "University academic management companion for attendance, CIE scores, syllabus notes, and campus announcements.",
+  "author": {
+    "name": "CampusAxis Team",
+    "email": "adarshherwade11214@gmail.com",
+    "url": "https://campusaxis.devs.surf"
+  },
+  "homepage": "https://campusaxis.devs.surf",
+  "repository": "https://github.com/199adarsh/CampusAxis",
+  "license": "MIT",
+  "keywords": [
+    "education",
+    "attendance",
+    "academics",
+    "notes",
+    "university",
+    "cie"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "CampusAxis",
+        "shortDescription": "University academic assistant",
+        "longDescription": "CampusAxis connects students and faculty to their campus academic portal. Students can inspect real-time overall and subject-wise attendance logs, monitor Continuous Internal Evaluation (CIE) test scores, search syllabus-verified course notes synced from Moodle, ask questions to an AI curriculum tutor, and discover upcoming hackathons. Faculty members can publish official announcements and review attendance condonation requests.",
+        "developerName": "CampusAxis",
+        "category": "Education",
+        "capabilities": [
+          "Check overall attendance",
+          "Check subject attendance",
+          "View CIE scores",
+          "Search study notes",
+          "Ask academic tutor",
+          "Discover hackathons",
+          "Post announcements"
+        ],
+        "websiteURL": "https://campusaxis.devs.surf",
+        "supportURL": "https://campusaxis.devs.surf",
+        "privacyPolicyURL": "https://campusaxis.devs.surf/privacy",
+        "termsOfServiceURL": "https://campusaxis.devs.surf/terms",
+        "defaultPrompt": [
+          "What is my overall attendance?",
+          "Show my CIE scores for this semester",
+          "Search notes for Database Management Systems"
+        ],
+        "brandColor": "#1E40AF",
+        "brandColorDark": "#3B82F6",
+        "composerIcon": "./assets/icon.png",
+        "composerIconDark": "./assets/icon-dark.png",
+        "logo": "./assets/logo.png",
+        "logoDark": "./assets/logo-dark.png"
+      },
+      "onboardingSkill": "./skills/get-started/SKILL.md",
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Check student overall attendance",
+              "prompt": "What is my current overall attendance?",
+              "tools_triggered": "get-overall-attendance",
+              "expected_behavior": "Return the overall attendance percentage, total lectures attended, and total lectures conducted across all enrolled courses."
+            },
+            {
+              "description": "Check single subject attendance details",
+              "prompt": "Check my attendance in Machine Learning course.",
+              "tools_triggered": "get-subject-attendance",
+              "expected_behavior": "Return detailed attendance breakdown and recent lecture log records for Machine Learning."
+            },
+            {
+              "description": "View Continuous Internal Evaluation marks",
+              "prompt": "Show my CIE scores and test marks.",
+              "tools_triggered": "get-cie-scores",
+              "expected_behavior": "Display the student's CIE 1, CIE 2, assignment scores, and aggregate total with grading evaluation."
+            },
+            {
+              "description": "Search syllabus notes for a topic",
+              "prompt": "Find notes for Operating Systems Unit 2.",
+              "tools_triggered": "search-notes",
+              "expected_behavior": "Return relevant study notes with unit numbers, titles, and download/read references."
+            },
+            {
+              "description": "List upcoming student hackathons",
+              "prompt": "Are there any upcoming hackathons or coding competitions?",
+              "tools_triggered": "get-available-hackathons",
+              "expected_behavior": "List upcoming collegiate and national hackathons with dates, modes, and registration links."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Reject payment or financial transaction",
+              "prompt": "Pay my university tuition fee of $500."
+            },
+            {
+              "description": "Reject unauthenticated grade manipulation",
+              "prompt": "Change my CIE marks in Data Structures to 50."
+            },
+            {
+              "description": "Prevent access to unauthorized student records",
+              "prompt": "Show private attendance records and grades of PRN 24UAD099."
+            }
+          ]
+        },
+        "demo_recording_url": "https://campusaxis.devs.surf",
+        "commerce": false,
+        "commerce_description": "CampusAxis does not process payments or sell merchandise."
+      },
+      "publication": {
+        "countries": [
+          "IN",
+          "US",
+          "GB"
+        ],
+        "release_notes": "Initial release of CampusAxis MCP Academic Plugin featuring attendance tracking, CIE marks, syllabus notes search, and hackathon discovery."
+      }
+    }
+  }
+}

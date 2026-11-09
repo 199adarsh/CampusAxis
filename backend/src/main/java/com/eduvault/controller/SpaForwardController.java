@@ -23,4 +23,14 @@ public class SpaForwardController {
     public String forward() {
         return "forward:/index.html";
     }
+
+    @GetMapping("/privacy")
+    public String privacy() {
+        return "forward:/privacy.html";
+    }
+
+    @GetMapping("/terms")
+    public String terms() {
+        return "forward:/terms.html";
+    }
 }

@@ -99,6 +99,16 @@ public class McpJsonRpcBridgeController {
             Map<String, Object> arguments = params != null ? (Map<String, Object>) params.get("arguments") : Map.of();
 
             ToolCallback tc = toolsMap.get(toolName);
+            if (tc == null && toolName != null) {
+                // Support snake_case, kebab-case, and camelCase aliases
+                String normalized = toolName.replace("-", "").replace("_", "").toLowerCase();
+                for (Map.Entry<String, ToolCallback> entry : toolsMap.entrySet()) {
+                    if (entry.getKey().replace("-", "").replace("_", "").toLowerCase().equals(normalized)) {
+                        tc = entry.getValue();
+                        break;
+                    }
+                }
+            }
             if (tc == null) {
                 return ResponseEntity.ok(Map.of(
                         "jsonrpc", jsonrpc,
