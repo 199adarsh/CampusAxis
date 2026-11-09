@@ -62,10 +62,11 @@ export default function FullScreenNoteViewer({
     docxBlob,
     docxHtml,
     blobUrl,
+    isTeacher = false,
     onClose
 }) {
     // Current tool: 'select' | 'pen' | 'highlighter' | 'eraser' | 'text' | 'rect' | 'arrow'
-    const [tool, setTool] = useState('pen');
+    const [tool, setTool] = useState(isTeacher ? 'pen' : 'select');
     const [color, setColor] = useState('#0071E3');
     const [strokeWidth, setStrokeWidth] = useState(4);
 
@@ -640,25 +641,27 @@ export default function FullScreenNoteViewer({
                     )}
                 </div>
 
-                {/* 2. Live HTML5 Annotation Canvas Overlay */}
-                <canvas
-                    ref={canvasRef}
-                    onPointerDown={handlePointerDown}
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={handlePointerUp}
-                    onPointerLeave={handlePointerUp}
-                    className={`absolute inset-0 z-20 ${tool === 'select'
-                        ? 'pointer-events-none cursor-default'
-                        : tool === 'eraser'
-                            ? 'pointer-events-auto cursor-cell'
-                            : tool === 'text'
-                                ? 'pointer-events-auto cursor-text'
-                                : 'pointer-events-auto cursor-crosshair'
-                        }`}
-                />
+                {/* 2. Live HTML5 Annotation Canvas Overlay - Teachers only */}
+                {isTeacher && (
+                    <canvas
+                        ref={canvasRef}
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerLeave={handlePointerUp}
+                        className={`absolute inset-0 z-20 ${tool === 'select'
+                            ? 'pointer-events-none cursor-default'
+                            : tool === 'eraser'
+                                ? 'pointer-events-auto cursor-cell'
+                                : tool === 'text'
+                                    ? 'pointer-events-auto cursor-text'
+                                    : 'pointer-events-auto cursor-crosshair'
+                            }`}
+                    />
+                )}
 
                 {/* 3. Committed Text Annotations */}
-                {textInputs.map(txt => (
+                {isTeacher && textInputs.map(txt => (
                     <div
                         key={txt.id}
                         className="absolute z-20 pointer-events-none font-semibold px-2 py-0.5 rounded"
@@ -675,7 +678,7 @@ export default function FullScreenNoteViewer({
                 ))}
 
                 {/* 4. Active Text Input Box */}
-                {activeTextInput && (
+                {isTeacher && activeTextInput && (
                     <div
                         className="absolute z-30 flex items-center gap-1.5 bg-[#18181B] border border-[#3F3F46] rounded-lg p-1.5 shadow-2xl"
                         style={{
@@ -711,8 +714,9 @@ export default function FullScreenNoteViewer({
                 )}
             </div>
 
-            {/* Eraser.io Inspired Floating Minimalist Bottom Toolbar */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-[#18181B]/90 backdrop-blur-xl border border-[#27272A] shadow-2xl">
+            {/* Eraser.io Inspired Floating Minimalist Bottom Toolbar - Teachers only */}
+            {isTeacher && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-[#18181B]/90 backdrop-blur-xl border border-[#27272A] shadow-2xl">
                 {/* Select / Pan Tool */}
                 <button
                     onClick={() => setTool('select')}
@@ -865,6 +869,7 @@ export default function FullScreenNoteViewer({
                     <Trash2 size={16} />
                 </button>
             </div>
+            )}
         </div>
     );
 }

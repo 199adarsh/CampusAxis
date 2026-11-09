@@ -38,10 +38,15 @@ public class DocumentConversionService {
     private static final Logger logger = LoggerFactory.getLogger(DocumentConversionService.class);
 
     public byte[] convertPptToPdf(Path pptPath, String fileName) throws Exception {
+        try (InputStream is = Files.newInputStream(pptPath)) {
+            return convertPptToPdf(is, fileName);
+        }
+    }
+
+    public byte[] convertPptToPdf(InputStream is, String fileName) throws Exception {
         logger.info("Converting {} to PDF", fileName);
         
-        try (InputStream is = Files.newInputStream(pptPath);
-             PDDocument pdf = new PDDocument();
+        try (PDDocument pdf = new PDDocument();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             
             Dimension pgsize;

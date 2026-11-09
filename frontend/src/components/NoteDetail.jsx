@@ -223,7 +223,7 @@ const NoteDetail = () => {
                 const ext = getFileExt(note);
                 if (ext === 'docx' || ext === 'doc') {
                     setDocxBlob(cachedBlob);
-                } else if (ext === 'pdf') {
+                } else if (ext === 'pdf' || ext === 'ppt' || ext === 'pptx') {
                     cachedBlob.arrayBuffer().then(buf => setPdfData(new Uint8Array(buf))).catch(() => {});
                 }
             }
@@ -279,7 +279,7 @@ const NoteDetail = () => {
                     const ext = getFileExt(note);
                     if (ext === 'docx' || ext === 'doc') {
                         setDocxBlob(cachedBlob);
-                    } else if (ext === 'pdf') {
+                    } else if (ext === 'pdf' || ext === 'ppt' || ext === 'pptx') {
                         cachedBlob.arrayBuffer().then(buf => setPdfData(new Uint8Array(buf))).catch(() => {});
                     }
                 }
@@ -293,17 +293,41 @@ const NoteDetail = () => {
             let blob = null;
             const ext = getFileExt(note);
 
-            // 0. Persistent IndexedDB Cache (0 KB B2 Bandwidth)
-            try {
-                const idbBlob = await getCachedNoteBlob(noteId);
-                if (idbBlob && isValidDocumentBlob(idbBlob, null, ext)) {
-                    blob = idbBlob;
+            // 0. For PPT/PPTX, fetch on-the-fly converted PDF for native presentation slide viewing
+            if ((ext === 'ppt' || ext === 'pptx') && noteId) {
+                try {
+                    const pdfRes = await fetch(`${API_BASE}/files/${noteId}/pdf`);
+                    if (pdfRes.ok) {
+                        const convertedBlob = await pdfRes.blob();
+                        if (convertedBlob.size > 200) {
+                            blob = convertedBlob;
+                            const arrayBuffer = await convertedBlob.arrayBuffer();
+                            if (!cancelled) {
+                                setPdfData(new Uint8Array(arrayBuffer));
+                                const bUrl = URL.createObjectURL(convertedBlob);
+                                setBlobUrl(bUrl);
+                                setBoundedCache(blobCache, noteId, { url: bUrl, blob: convertedBlob, ext, type: 'application/pdf' });
+                            }
+                        }
+                    }
+                } catch (convErr) {
+                    console.warn('PPT conversion fetch failed:', convErr);
                 }
-            } catch (e) {
-                console.warn('IDB read error:', e);
             }
 
-            // 1. Direct Backend Note Raw Proxy (Guaranteed same-origin, bypasses B2 CORS)
+            // 1. Persistent IndexedDB Cache (0 KB B2 Bandwidth)
+            if (!blob) {
+                try {
+                    const idbBlob = await getCachedNoteBlob(noteId);
+                    if (idbBlob && isValidDocumentBlob(idbBlob, null, ext)) {
+                        blob = idbBlob;
+                    }
+                } catch (e) {
+                    console.warn('IDB read error:', e);
+                }
+            }
+
+            // 2. Direct Backend Note Raw Proxy (Guaranteed same-origin, bypasses B2 CORS)
             if (!blob && noteId) {
                 try {
                     const res = await fetch(`${API_BASE}/files/${noteId}/raw`);
@@ -566,7 +590,8 @@ const NoteDetail = () => {
     if (!note) return null;
 
     const fileExt = getFileExt(note);
-    const isPdf = fileExt === 'pdf';
+    const isPpt = fileExt === 'ppt' || fileExt === 'pptx';
+    const isPdf = fileExt === 'pdf' || (Boolean(pdfData) && isPpt);
     const isOfficeDoc = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(fileExt);
     const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(fileExt);
     const resolvedPdfUrl = blobUrl || (presignedUrl && !presignedUrl.startsWith('http') ? presignedUrl : `${API_BASE}/files/${noteId}/raw`);
@@ -757,6 +782,14 @@ const NoteDetail = () => {
                                 onFullScreen={() => setIsFullScreen(true)}
                                 className="h-full border-none rounded-none"
                             />
+                        ) : (isPpt && presignedUrl && presignedUrl.startsWith('http')) ? (
+                            <div className="flex-1 w-full h-full flex flex-col bg-[#F5F5F7]">
+                                <iframe
+                                    src={`https://docs.google.com/viewer?url=${encodeURIComponent(presignedUrl)}&embedded=true`}
+                                    className="w-full h-full border-none"
+                                    title={note.title || 'PowerPoint Presentation'}
+                                />
+                            </div>
                         ) : hasValidExtractedText ? (
                             <div className="flex-1 w-full h-full overflow-y-auto bg-[#F5F5F7] dark:bg-black p-3 sm:p-6 flex justify-center text-[#1D1D1F] dark:text-[#F5F5F7]">
                                 <div className="w-full max-w-[816px] bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm rounded-xs p-6 sm:p-12 my-2 font-sans text-sm leading-relaxed text-[#1D1D1F] dark:text-[#F5F5F7]">
@@ -1102,6 +1135,7 @@ const NoteDetail = () => {
                     pdfData={pdfData}
                     docxBlob={docxBlob}
                     blobUrl={blobUrl}
+                    isTeacher={isTeacher}
                     onClose={() => setIsFullScreen(false)}
                 />
             )}

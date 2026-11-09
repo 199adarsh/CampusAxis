@@ -27,6 +27,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -615,6 +616,90 @@ public class ApiController {
                 .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
                 .header(HttpHeaders.PRAGMA, "no-cache")
                 .build();
+    }
+
+    @GetMapping("/files/{noteId}/pdf")
+    public ResponseEntity<Resource> getNoteAsPdf(@PathVariable String noteId) {
+        Optional<Note> noteOpt = database.getNoteById(noteId);
+        if (noteOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        Note note = noteOpt.get();
+        String fileName = (note.getOriginalFilename() != null && !note.getOriginalFilename().isBlank())
+                ? note.getOriginalFilename()
+                : (note.getFileUrl() != null && !note.getFileUrl().isBlank()
+                    ? note.getFileUrl()
+                    : (note.getTitle() != null ? note.getTitle() : "document"));
+        String lower = fileName.toLowerCase();
+
+        if (lower.endsWith(".pdf")) {
+            return getNoteRawById(noteId);
+        }
+
+        byte[] fileBytes = null;
+        if (note.getFileUrl() != null) {
+            Path path = fileStorageService.getFilePath(note.getFileUrl());
+            if (!Files.exists(path)) path = Paths.get("./data").resolve(note.getFileUrl());
+            if (!Files.exists(path)) path = Paths.get("./backend/data").resolve(note.getFileUrl());
+            if (Files.exists(path)) {
+                try {
+                    fileBytes = Files.readAllBytes(path);
+                } catch (Exception ignored) {}
+            }
+        }
+        if (fileBytes == null && backblazeStorageService != null) {
+            LinkedHashSet<String> candidates = new LinkedHashSet<>();
+            if (note.getB2ObjectKey() != null && !note.getB2ObjectKey().isBlank()) {
+                candidates.add(note.getB2ObjectKey().trim());
+            }
+            if (note.getFileUrl() != null && !note.getFileUrl().isBlank() && !note.getFileUrl().startsWith("http")) {
+                candidates.add(note.getFileUrl().trim());
+            }
+            if (note.getOriginalFilename() != null && !note.getOriginalFilename().isBlank()) {
+                candidates.add(note.getOriginalFilename().trim());
+            }
+            for (String key : candidates) {
+                try {
+                    byte[] bytes = backblazeStorageService.getObjectBytes(key);
+                    if (bytes != null && bytes.length > 0) {
+                        fileBytes = bytes;
+                        break;
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        if (fileBytes != null && fileBytes.length > 0) {
+            try {
+                if (lower.endsWith(".ppt") || lower.endsWith(".pptx")) {
+                    byte[] pdfBytes = documentConversionService.convertPptToPdf(new ByteArrayInputStream(fileBytes), fileName);
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.APPLICATION_PDF)
+                            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName.replaceAll("(?i)\\.pptx?$", ".pdf") + "\"")
+                            .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                            .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                            .body(new ByteArrayResource(pdfBytes));
+                } else if (lower.endsWith(".docx")) {
+                    Path tempDocx = Files.createTempFile("docx_", ".docx");
+                    try {
+                        Files.write(tempDocx, fileBytes);
+                        byte[] pdfBytes = documentConversionService.convertDocxToPdf(tempDocx);
+                        return ResponseEntity.ok()
+                                .contentType(MediaType.APPLICATION_PDF)
+                                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName.replaceAll("(?i)\\.docx?$", ".pdf") + "\"")
+                                .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                                .body(new ByteArrayResource(pdfBytes));
+                    } finally {
+                        Files.deleteIfExists(tempDocx);
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("PDF conversion failed for noteId {}: {}", noteId, e.getMessage());
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
     }
 
     private boolean isTransientStorageException(Throwable t) {
