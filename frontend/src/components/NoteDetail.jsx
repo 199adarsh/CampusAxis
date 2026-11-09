@@ -11,6 +11,9 @@ import {
     AiChat02Icon,
     Cancel01Icon,
     File01Icon,
+    Pdf02Icon,
+    Doc02Icon,
+    Ppt02Icon,
     Tick02Icon,
     Copy01Icon,
     RefreshIcon,
@@ -22,6 +25,7 @@ import {
 import { Maximize2 } from 'lucide-react';
 import DocumentLoadingBar from './DocumentLoadingBar';
 import PdfViewer from './PdfViewer';
+import DocxViewer from './DocxViewer';
 import FullScreenNoteViewer from './FullScreenNoteViewer';
 import { cn } from '@/lib/utils';
 import { getCachedNoteBlob, setCachedNoteBlob } from '@/lib/pdfCache';
@@ -69,7 +73,7 @@ const isValidDocumentBlob = (blob, contentTypeHeader = null, expectedExt = null)
             const bt = blob.type.toLowerCase();
             if (!bt.includes('pdf') && !bt.includes('octet-stream') && !bt.includes('binary')) return false;
         }
-    } else if (normExt === 'docx') {
+    } else if (normExt === 'docx' || normExt === 'doc') {
         if (contentTypeHeader) {
             const ct = contentTypeHeader.toLowerCase();
             if (ct.includes('text/') || ct.includes('image/') || ct.includes('pdf')) return false;
@@ -88,6 +92,12 @@ const isValidDocumentBlob = (blob, contentTypeHeader = null, expectedExt = null)
         }
     }
     return true;
+};
+
+const getFileExt = (n) => {
+    if (!n) return '';
+    const raw = (n.originalFilename || n.fileUrl || '').split('?')[0].split('#')[0];
+    return (raw.split('.').pop() || '').toLowerCase();
 };
 
 const NoteDetail = () => {
@@ -148,7 +158,6 @@ const NoteDetail = () => {
     const [blobUrl, setBlobUrl] = useState(null);
     const [pdfData, setPdfData] = useState(null);
     const [docxBlob, setDocxBlob] = useState(null);
-    const [docxHtml, setDocxHtml] = useState(null);
     const [docLoading, setDocLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState(0);
@@ -161,55 +170,6 @@ const NoteDetail = () => {
     const [copiedIndex, setCopiedIndex] = useState(null);
     const scrollRef = useRef(null);
     const textareaRef = useRef(null);
-    const docxContainerRef = useRef(null);
-
-    // Render docx-preview dynamically only when docxBlob is available (avoids eager bundle cost)
-    useEffect(() => {
-        let active = true;
-        if (docxBlob && docxContainerRef.current) {
-            docxContainerRef.current.innerHTML = '';
-            (async () => {
-                try {
-                    const { renderAsync } = await import('docx-preview');
-                    if (!active || !docxContainerRef.current) return;
-                    await renderAsync(docxBlob, docxContainerRef.current, null, {
-                        inWrapper: false,
-                        ignoreWidth: false,
-                        ignoreHeight: false
-                    });
-                } catch (err) {
-                    if (active) console.warn('docx-preview render error:', err);
-                }
-            })();
-        }
-        return () => {
-            active = false;
-        };
-    }, [docxBlob]);
-
-    useEffect(() => {
-        let active = true;
-        if (docxBlob) {
-            (async () => {
-                try {
-                    const arrayBuffer = await docxBlob.arrayBuffer();
-                    const mammoth = await import('mammoth');
-                    const convert = mammoth.default?.convertToHtml || mammoth.convertToHtml;
-                    const { value: html } = await convert({ arrayBuffer });
-                    if (active && html) {
-                        setDocxHtml(html);
-                    }
-                } catch (err) {
-                    if (active) console.warn('mammoth conversion error for FullScreenNoteViewer:', err);
-                }
-            })();
-        } else {
-            setDocxHtml(null);
-        }
-        return () => {
-            active = false;
-        };
-    }, [docxBlob]);
 
     // Minimize sidebar when side panel is open so notes and AI chat stay side-by-side
     useEffect(() => {
@@ -260,8 +220,8 @@ const NoteDetail = () => {
             const cachedBlob = cached?.blob;
             if (cachedUrl) setBlobUrl(cachedUrl);
             if (cachedBlob) {
-                const ext = ((note?.originalFilename || note?.fileUrl || '').split('.').pop() || '').toLowerCase();
-                if (ext === 'docx') {
+                const ext = getFileExt(note);
+                if (ext === 'docx' || ext === 'doc') {
                     setDocxBlob(cachedBlob);
                 } else if (ext === 'pdf') {
                     cachedBlob.arrayBuffer().then(buf => setPdfData(new Uint8Array(buf))).catch(() => {});
@@ -316,8 +276,8 @@ const NoteDetail = () => {
                 const cachedBlob = cached?.blob;
                 if (cachedUrl) setBlobUrl(cachedUrl);
                 if (cachedBlob) {
-                    const ext = ((note?.originalFilename || note?.fileUrl || '').split('.').pop() || '').toLowerCase();
-                    if (ext === 'docx') {
+                    const ext = getFileExt(note);
+                    if (ext === 'docx' || ext === 'doc') {
                         setDocxBlob(cachedBlob);
                     } else if (ext === 'pdf') {
                         cachedBlob.arrayBuffer().then(buf => setPdfData(new Uint8Array(buf))).catch(() => {});
@@ -331,7 +291,7 @@ const NoteDetail = () => {
         const loadBlob = async () => {
             setDocLoading(true);
             let blob = null;
-            const ext = ((note?.originalFilename || note?.fileUrl || '').split('.').pop() || '').toLowerCase();
+            const ext = getFileExt(note);
 
             // 0. Persistent IndexedDB Cache (0 KB B2 Bandwidth)
             try {
@@ -412,7 +372,7 @@ const NoteDetail = () => {
                 setBoundedCache(blobCache, noteId, { url: bUrl, blob, ext, type: blob.type });
                 setBlobUrl(bUrl);
 
-                if (ext === 'docx') {
+                if (ext === 'docx' || ext === 'doc') {
                     if (!cancelled) setDocxBlob(blob);
                 } else if (ext === 'pdf') {
                     try {
@@ -605,7 +565,7 @@ const NoteDetail = () => {
 
     if (!note) return null;
 
-    const fileExt = ((note.originalFilename || note.fileUrl || '').split('.').pop() || '').toLowerCase();
+    const fileExt = getFileExt(note);
     const isPdf = fileExt === 'pdf';
     const isOfficeDoc = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(fileExt);
     const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(fileExt);
@@ -629,7 +589,7 @@ const NoteDetail = () => {
             )}
 
             {/* Top Navigation Bar */}
-            <header className="h-14 px-4 sm:px-6 bg-[#FFFFFF] border-b border-[#E5E5EA] flex items-center justify-between shrink-0 z-20">
+            <header className="h-16 px-4 sm:px-6 bg-[#FFFFFF] border-b border-[#E2E2E2] flex items-center justify-between shrink-0 z-20">
                 <div className="flex items-center gap-3 min-w-0">
                     <button
                         onClick={() => navigate('/notes')}
@@ -639,15 +599,41 @@ const NoteDetail = () => {
                         <ArrowLeft02Icon size={16} />
                     </button>
                     <div className="flex items-center gap-2 min-w-0">
-                        <File01Icon size={16} className="text-[#0071E3] shrink-0" />
+                        {(() => {
+                            const ext = getFileExt(note);
+                            if (ext === 'pdf') return <Pdf02Icon size={18} className="text-rose-600 shrink-0" />;
+                            if (ext === 'docx' || ext === 'doc') return <Doc02Icon size={18} className="text-blue-600 shrink-0" />;
+                            if (ext === 'pptx' || ext === 'ppt') return <Ppt02Icon size={18} className="text-amber-600 shrink-0" />;
+                            return <File01Icon size={18} className="text-[#0071E3] shrink-0" />;
+                        })()}
                         <h1 className="text-xs sm:text-sm font-semibold text-[#1D1D1F] truncate max-w-[200px] sm:max-w-[360px] md:max-w-[480px]">
                             {note.title}
                         </h1>
-                        {note.unit && (
-                            <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-[#F5F5F7] text-[11px] font-medium text-[#6E6E73] border border-[#E5E5EA] shrink-0">
-                                {note.unit}
-                            </span>
-                        )}
+                        <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-[#F5F5F7] text-[11px] font-medium text-[#6E6E73] border border-[#E5E5EA] shrink-0">
+                            {note.unit || "General"}
+                        </span>
+                        {(() => {
+                            const isMoodle = Boolean(
+                                note.moodleId ||
+                                (note.uploadedBy && (note.uploadedBy.toLowerCase().includes('lms') || note.uploadedBy.toLowerCase().includes('moodle')))
+                            );
+                            if (isMoodle) {
+                                return (
+                                    <span className="hidden md:inline-flex items-center gap-1.5 text-[10px] text-[#8E8E93] dark:text-[#AEAEB2] font-medium shrink-0">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#8E8E93]/70 dark:bg-[#636366]" />
+                                        Synced with Moodle
+                                    </span>
+                                );
+                            }
+                            if (note.uploadedBy) {
+                                return (
+                                    <span className="hidden md:inline-block text-[11px] text-[#8E8E93] truncate shrink-0">
+                                        • By {note.uploadedBy}
+                                    </span>
+                                );
+                            }
+                            return null;
+                        })()}
                     </div>
                 </div>
 
@@ -703,17 +689,15 @@ const NoteDetail = () => {
                         </button>
                     )}
 
-                    {isTeacher && (
-                        <button
-                            onClick={() => setIsFullScreen(true)}
-                            className="px-3.5 py-1.5 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-xs active:scale-95"
-                            title="Open Full Screen Note Annotator"
-                        >
-                            <Maximize2 size={14} />
-                            <span className="hidden sm:inline">Open in Full Screen</span>
-                            <span className="sm:hidden">Full Screen</span>
-                        </button>
-                    )}
+                    <button
+                        onClick={() => setIsFullScreen(true)}
+                        className="px-3.5 py-1.5 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-xs active:scale-95"
+                        title="Open Full Screen Note Annotator"
+                    >
+                        <Maximize2 size={14} />
+                        <span className="hidden sm:inline">Full Screen</span>
+                        <span className="sm:hidden">Full</span>
+                    </button>
 
                     <button
                         onClick={handleDownload}
@@ -727,13 +711,13 @@ const NoteDetail = () => {
             </header>
 
             {/* Side-by-Side Content Canvas */}
-            <div className="flex-1 w-full h-[calc(100%-3.5rem)] min-h-[450px] flex flex-col md:flex-row overflow-hidden relative">
+            <div className="flex-1 w-full h-[calc(100%-4rem)] min-h-[450px] flex flex-col md:flex-row overflow-hidden relative">
 
                 {/* LEFT: Notes Document Preview Area */}
                 <div className={cn(
                     "h-full min-h-[450px] bg-[#F5F5F7] relative flex flex-col overflow-hidden transition-all duration-200",
                     isPanelOpen
-                        ? "hidden md:flex flex-1 min-w-0 border-r border-[#E5E5EA]"
+                        ? "hidden md:flex flex-1 min-w-0 border-r border-[#E2E2E2]"
                         : "flex-1 w-full"
                 )}>
                     {isPdf ? (
@@ -752,6 +736,7 @@ const NoteDetail = () => {
                                 presignedUrl={presignedUrl || resolvedPdfUrl}
                                 title={note.title}
                                 onDownload={handleDownload}
+                                onFullScreen={() => setIsFullScreen(true)}
                                 extractedText={note.extractedText}
                             />
                         )
@@ -765,25 +750,27 @@ const NoteDetail = () => {
                                 />
                             </div>
                         ) : docxBlob ? (
-                            <div className="flex-1 w-full h-full overflow-y-auto bg-[#F5F5F7] p-4 sm:p-6 text-[#1D1D1F]">
-                                <div className="max-w-4xl mx-auto bg-white border border-[#E5E5EA] rounded-2xl p-6 sm:p-8 shadow-xs">
-                                    <div ref={docxContainerRef} className="docx-preview-container overflow-x-auto" />
-                                </div>
-                            </div>
+                            <DocxViewer
+                                blob={docxBlob}
+                                title={note.title}
+                                onDownload={handleDownload}
+                                onFullScreen={() => setIsFullScreen(true)}
+                                className="h-full border-none rounded-none"
+                            />
                         ) : hasValidExtractedText ? (
-                            <div className="flex-1 w-full h-full overflow-y-auto bg-[#F5F5F7] p-4 sm:p-6 text-[#1D1D1F]">
-                                <div className="max-w-4xl mx-auto bg-white border border-[#E5E5EA] rounded-2xl p-6 sm:p-8 shadow-xs">
-                                    <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-                                        <span>Document layout preview unavailable. Showing extracted text.</span>
+                            <div className="flex-1 w-full h-full overflow-y-auto bg-[#F5F5F7] dark:bg-black p-3 sm:p-6 flex justify-center text-[#1D1D1F] dark:text-[#F5F5F7]">
+                                <div className="w-full max-w-[816px] bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm rounded-xs p-6 sm:p-12 my-2 font-sans text-sm leading-relaxed text-[#1D1D1F] dark:text-[#F5F5F7]">
+                                    <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#E5E5EA] dark:border-[#2C2C2E] text-xs text-[#8E8E93] dark:text-[#AEAEB2]">
+                                        <span>Document Text View</span>
                                     </div>
-                                    <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-[#1D1D1F]">
+                                    <div className="whitespace-pre-wrap">
                                         {note.extractedText}
                                     </div>
                                 </div>
                             </div>
                         ) : (
                             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-[#F5F5F7]">
-                                <div className="bg-white border border-[#E5E5EA] rounded-2xl p-8 max-w-md mx-auto text-center shadow-xs">
+                                <div className="bg-white border border-[#E5E5EA] rounded-xl p-8 max-w-md mx-auto text-center shadow-xs">
                                     <File01Icon size={36} className="text-[#0071E3] mx-auto mb-3" />
                                     <h3 className="text-base font-semibold text-[#1D1D1F]">{note.title || 'Office Document'}</h3>
                                     <p className="text-xs text-[#6E6E73] mt-1.5 mb-5">
@@ -808,13 +795,13 @@ const NoteDetail = () => {
                                 alt={note.title}
                                 loading="lazy"
                                 decoding="async"
-                                className="max-w-full max-h-full object-contain rounded-2xl border border-[#E5E5EA] bg-white shadow-xs"
+                                className="max-w-full max-h-full object-contain rounded-xl border border-[#E5E5EA] bg-white shadow-xs"
                             />
                         </div>
                     ) : hasValidExtractedText ? (
-                        <div className="flex-1 w-full h-full overflow-y-auto bg-[#F5F5F7] p-4 sm:p-6 text-[#1D1D1F]">
-                            <div className="max-w-4xl mx-auto bg-white border border-[#E5E5EA] rounded-2xl p-6 sm:p-8 shadow-xs">
-                                <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-[#1D1D1F]">
+                        <div className="flex-1 w-full h-full overflow-y-auto bg-[#F5F5F7] dark:bg-black p-3 sm:p-6 flex justify-center text-[#1D1D1F] dark:text-[#F5F5F7]">
+                            <div className="w-full max-w-[816px] bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm rounded-xs p-6 sm:p-12 my-2 font-sans text-sm leading-relaxed text-[#1D1D1F] dark:text-[#F5F5F7]">
+                                <div className="whitespace-pre-wrap">
                                     {note.extractedText}
                                 </div>
                             </div>
@@ -1113,7 +1100,7 @@ const NoteDetail = () => {
                     isPdf={isPdf}
                     resolvedPdfUrl={resolvedPdfUrl}
                     pdfData={pdfData}
-                    docxHtml={docxHtml}
+                    docxBlob={docxBlob}
                     blobUrl={blobUrl}
                     onClose={() => setIsFullScreen(false)}
                 />

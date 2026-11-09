@@ -5,6 +5,9 @@ import {
     Upload01Icon,
     Book02Icon,
     File02Icon,
+    Pdf02Icon,
+    Doc02Icon,
+    Ppt02Icon,
     ArrowUpRight01Icon,
     RefreshIcon,
     InboxIcon,
@@ -92,20 +95,39 @@ const matchesCategory = (note, cat) => {
     return false;
 };
 
-const NoteCard = React.memo(function NoteCard({ note, subject, subjectName, onOpen, onDownload }) {
-    const badgeLabel = getNoteBadge(note);
+const NoteCard = React.memo(function NoteCard({ note, subject, subjectName, onOpen, onDownload, showSubject = false }) {
     const displayTitle = getCleanTitle(note.title);
     const resolvedSubjectName = subjectName || (typeof subject === 'object' ? subject?.name : subject) || 'Study Material';
+
+    const ext = (note.originalFilename || note.fileUrl || '').split('?')[0].toLowerCase();
+    const isPdf = ext.endsWith('.pdf');
+    const isDoc = ext.endsWith('.doc') || ext.endsWith('.docx');
+    const isPpt = ext.endsWith('.ppt') || ext.endsWith('.pptx');
+
+    const isMoodle = Boolean(
+        note.moodleId ||
+        (note.uploadedBy && (note.uploadedBy.toLowerCase().includes('lms') || note.uploadedBy.toLowerCase().includes('moodle')))
+    );
+    const uploaderLabel = !isMoodle && note.uploadedBy ? `By ${note.uploadedBy}` : '';
+
+    const IconComponent = isPdf ? Pdf02Icon : isDoc ? Doc02Icon : isPpt ? Ppt02Icon : File02Icon;
+    const iconContainerClass = isPdf
+        ? "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400"
+        : isDoc
+            ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
+            : isPpt
+                ? "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
+                : "bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#0071E3]";
 
     return (
         <div
             onClick={() => onOpen(note)}
-            className="bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] hover:border-[#0071E3]/50 dark:hover:border-[#0071E3]/60 rounded-xl p-3.5 transition-all duration-150 cursor-pointer flex flex-col justify-between group shadow-2xs hover:shadow-xs active:scale-[0.99]"
+            className="bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] hover:border-[#0071E3]/50 dark:hover:border-[#0071E3]/60 rounded-xl p-3 sm:p-3.5 transition-all duration-150 cursor-pointer flex flex-col justify-between group shadow-2xs hover:shadow-xs active:scale-[0.99] select-none h-[152px] sm:h-[160px]"
         >
-            <div>
-                {/* Header: Icon, Unit Pill, Format */}
-                <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#0071E3] flex items-center justify-center shrink-0">
+            <div className="flex-1 flex flex-col">
+                {/* Header: Document HugeIcon & Unit Pill */}
+                <div className="flex items-center justify-between gap-1.5 mb-2 shrink-0">
+                    <div className={cn("w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 border border-black/5 dark:border-white/5", iconContainerClass)}>
                         {note.thumbnailUrl || note.coverImage ? (
                             <img
                                 src={note.thumbnailUrl || note.coverImage}
@@ -115,34 +137,37 @@ const NoteCard = React.memo(function NoteCard({ note, subject, subjectName, onOp
                                 className="w-full h-full object-cover rounded-lg"
                             />
                         ) : (
-                            <File02Icon size={15} />
+                            <IconComponent size={15} className="sm:size-[16px]" />
                         )}
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[10px] font-semibold text-[#0071E3] dark:text-[#5AC8FA] bg-[#DEEDFC]/70 dark:bg-blue-950/40 px-2 py-0.5 rounded-md">
-                            {note.unit || "Unit 1"}
-                        </span>
-                        <span className="text-[9px] font-bold text-[#8E8E93] uppercase tracking-wider">
-                            {badgeLabel}
+                    <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-[10px] font-medium text-[#6E6E73] dark:text-[#AEAEB2] bg-[#F2F2F7] dark:bg-[#2C2C2E] px-2 py-0.5 rounded-md">
+                            {note.unit || "General"}
                         </span>
                     </div>
                 </div>
 
-                {/* Title & Subject */}
-                <div>
-                    <h3 className="font-semibold text-xs text-[#1D1D1F] dark:text-white line-clamp-2 leading-snug group-hover:text-[#0071E3] transition-colors">
-                        {displayTitle}
-                    </h3>
-                    <p className="text-[11px] text-[#8E8E93] mt-1 truncate">
-                        {resolvedSubjectName}
-                    </p>
+                {/* Title & Optional Subtitle - Constant Height */}
+                <div className="mt-0.5 flex-1 flex flex-col justify-start">
+                    <div className="h-[34px] sm:h-[38px] flex items-start overflow-hidden">
+                        <h3 className="font-semibold text-[11.5px] sm:text-[12.5px] text-[#1D1D1F] dark:text-[#F5F5F7] line-clamp-2 leading-snug tracking-tight group-hover:text-[#0071E3] transition-colors">
+                            {displayTitle}
+                        </h3>
+                    </div>
+                    <div className="h-4 mt-0.5 overflow-hidden">
+                        {(showSubject ? resolvedSubjectName : uploaderLabel) ? (
+                            <p className="text-[9.5px] sm:text-[10px] text-[#8E8E93] dark:text-[#AEAEB2] truncate font-medium">
+                                {showSubject ? resolvedSubjectName : uploaderLabel}
+                            </p>
+                        ) : null}
+                    </div>
                 </div>
             </div>
 
-            {/* Bottom Footer: Date & Download */}
-            <div className="pt-2.5 mt-2.5 border-t border-[#F2F2F7] dark:border-[#2C2C2E] flex items-center justify-between text-[10px] text-[#8E8E93]">
-                <span>
+            {/* Bottom Footer: Date & Download - Anchored to bottom */}
+            <div className="pt-2 mt-auto border-t border-[#F2F2F7] dark:border-[#2C2C2E] flex items-center justify-between text-[9.5px] sm:text-[10px] text-[#8E8E93] dark:text-[#AEAEB2] shrink-0">
+                <span className="truncate max-w-[65%]">
                     {note.createdAt
                         ? new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
                         : 'Recent'}
@@ -154,7 +179,7 @@ const NoteCard = React.memo(function NoteCard({ note, subject, subjectName, onOp
                     title="Download Document"
                     type="button"
                 >
-                    <Download01Icon size={14} />
+                    <Download01Icon size={13} className="sm:size-[14px]" />
                 </button>
             </div>
         </div>
@@ -679,9 +704,9 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
                     <>
 
 
-                        {/* Direct Notes List Grid - Sleek, Compact & Responsive */}
+                        {/* Direct Notes List Grid - Sleek, Compact & Responsive 2-Col Mobile */}
                         {displayNotes.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-16">
+                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3 pb-16">
                                 {displayNotes.map((note) => {
                                     const rId = resolveSubjectId(note);
                                     const sub = subjectMap.get(rId);
@@ -691,6 +716,7 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
                                             note={note}
                                             subject={sub}
                                             subjectName={sub?.name}
+                                            showSubject={!activeSubjectId || activeSubjectId === 'all'}
                                             onOpen={handleOpenNote}
                                             onDownload={handleDownloadNote}
                                         />

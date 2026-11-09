@@ -23,6 +23,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { toast } from 'sonner';
+import DocxViewer from './DocxViewer';
 
 if (typeof window !== 'undefined') {
     pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -30,6 +31,12 @@ if (typeof window !== 'undefined') {
         import.meta.url
     ).toString();
 }
+
+const PDF_OPTIONS = {
+    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version || '5.4.296'}/standard_fonts/`,
+    cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version || '5.4.296'}/cmaps/`,
+    cMapPacked: true,
+};
 
 const COLORS = [
     { id: 'white', hex: '#FFFFFF', name: 'White' },
@@ -52,6 +59,7 @@ export default function FullScreenNoteViewer({
     isPdf,
     resolvedPdfUrl,
     pdfData,
+    docxBlob,
     docxHtml,
     blobUrl,
     onClose
@@ -114,9 +122,19 @@ export default function FullScreenNoteViewer({
 
         window.addEventListener('resize', updateWidth);
 
+        const handleWheel = (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                const delta = e.deltaY < 0 ? 0.1 : -0.1;
+                setScale(s => Math.min(2.5, Math.max(0.4, parseFloat((s + delta).toFixed(2)))));
+            }
+        };
+        node.addEventListener('wheel', handleWheel, { passive: false });
+
         return () => {
             if (ro) ro.disconnect();
             window.removeEventListener('resize', updateWidth);
+            node.removeEventListener('wheel', handleWheel);
         };
     }, []);
 
@@ -465,8 +483,23 @@ export default function FullScreenNoteViewer({
         setActiveTextInput(null);
     };
 
-    // File Source for PDF
-    const fileSource = pdfData && pdfData.byteLength > 0 ? { data: pdfData } : resolvedPdfUrl;
+    // File Source for PDF with stable memoized reference
+    const fileRef = useRef(null);
+    const fileSource = useMemo(() => {
+        if (pdfData && pdfData.byteLength > 0) {
+            if (fileRef.current?.data && fileRef.current.data.byteLength === pdfData.byteLength) {
+                const prev = fileRef.current.data;
+                if (prev === pdfData || (prev[0] === pdfData[0] && prev[prev.length - 1] === pdfData[pdfData.length - 1])) {
+                    return fileRef.current;
+                }
+            }
+            const next = { data: pdfData };
+            fileRef.current = next;
+            return next;
+        }
+        fileRef.current = null;
+        return resolvedPdfUrl;
+    }, [pdfData, resolvedPdfUrl]);
 
     return (
         <div className="fixed inset-0 z-50 bg-[#121214] flex flex-col text-[#F5F5F7] select-none font-sans overflow-hidden">
@@ -555,6 +588,7 @@ export default function FullScreenNoteViewer({
                     {isPdf && fileSource ? (
                         <Document
                             file={fileSource}
+                            options={PDF_OPTIONS}
                             onLoadSuccess={({ numPages: n }) => setNumPages(n)}
                             loading={
                                 <div className="text-xs text-[#71717A] py-20 flex flex-col items-center gap-2">
@@ -572,6 +606,14 @@ export default function FullScreenNoteViewer({
                                 className="bg-white shadow-xl transition-all duration-150"
                             />
                         </Document>
+                    ) : docxBlob ? (
+                        <div className="w-full flex justify-center">
+                            <DocxViewer
+                                blob={docxBlob}
+                                title={note?.title}
+                                className="max-w-4xl border-[#27272A] shadow-2xl"
+                            />
+                        </div>
                     ) : docxHtml ? (
                         <div className="max-w-4xl w-full bg-white text-[#1D1D1F] rounded-2xl p-4 sm:p-8 md:p-12 shadow-2xl border border-[#27272A] overflow-x-auto">
                             <div

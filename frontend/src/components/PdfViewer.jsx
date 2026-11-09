@@ -21,10 +21,17 @@ if (typeof window !== 'undefined') {
     ).toString();
 }
 
-export default function PdfViewer({ url, data, presignedUrl, title, onDownload, extractedText }) {
+const PDF_OPTIONS = {
+    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version || '5.4.296'}/standard_fonts/`,
+    cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version || '5.4.296'}/cmaps/`,
+    cMapPacked: true,
+};
+
+export default function PdfViewer({ url, data, presignedUrl, title, onDownload, onFullScreen, extractedText }) {
     const [numPages, setNumPages] = useState(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [visiblePages, setVisiblePages] = useState(() => new Set([1]));
+    const [aspectRatio, setAspectRatio] = useState(1.414);
     const [scale, setScale] = useState(1.0);
     const [containerWidth, setContainerWidth] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -36,6 +43,14 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
     const containerRef = useRef(null);
     const scrollContainerRef = useRef(null);
     const pageRefs = useRef({});
+
+    const onPageLoadSuccess = useCallback((page) => {
+        if (page?.originalWidth && page?.originalHeight) {
+            setAspectRatio(page.originalHeight / page.originalWidth);
+        } else if (page?.width && page?.height) {
+            setAspectRatio(page.height / page.width);
+        }
+    }, []);
 
     const scrollToPage = useCallback((target) => {
         const el = pageRefs.current[target];
@@ -90,9 +105,19 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
         };
         window.addEventListener('resize', handleResize);
 
+        const handleWheel = (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                const delta = e.deltaY < 0 ? 0.1 : -0.1;
+                setScale(s => Math.min(2.5, Math.max(0.4, parseFloat((s + delta).toFixed(2)))));
+            }
+        };
+        node.addEventListener('wheel', handleWheel, { passive: false });
+
         return () => {
             ro.disconnect();
             window.removeEventListener('resize', handleResize);
+            node.removeEventListener('wheel', handleWheel);
         };
     }, []);
 
@@ -100,18 +125,32 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
     const directUrl = presignedUrl || (typeof url === 'string' ? url : null);
 
     const handleOpenNative = () => {
+        if (onFullScreen) {
+            onFullScreen();
+            return;
+        }
         if (directUrl) {
-            window.open(directUrl, '_blank', 'noopener,noreferrer');
+            window.open(directUrl, '_blank', 'noopener');
         } else if (onDownload) {
             onDownload();
         }
     };
 
-    // Memoize fileSource to avoid infinite re-render loops in react-pdf
+    // Memoize fileSource with stable ref to avoid react-pdf reload warning
+    const fileRef = useRef(null);
     const fileSource = useMemo(() => {
         if (data && data.byteLength > 0) {
-            return { data };
+            if (fileRef.current?.data && fileRef.current.data.byteLength === data.byteLength) {
+                const prev = fileRef.current.data;
+                if (prev === data || (prev[0] === data[0] && prev[prev.length - 1] === data[data.length - 1])) {
+                    return fileRef.current;
+                }
+            }
+            const next = { data };
+            fileRef.current = next;
+            return next;
         }
+        fileRef.current = null;
         return url;
     }, [data, url]);
 
@@ -121,8 +160,8 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
     }, [containerWidth, scale]);
 
     const placeholderHeight = useMemo(() => {
-        return Math.round(calculatedWidth * 1.414);
-    }, [calculatedWidth]);
+        return Math.round(calculatedWidth * (aspectRatio || 1.414));
+    }, [calculatedWidth, aspectRatio]);
 
     // Active pages to mount (+- 1 buffer page around visible pages)
     const mountedPages = useMemo(() => {
@@ -204,64 +243,69 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
     }, [numPages]);
 
     const pageNav = (
-        <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-[#E5E5EA] dark:border-[#2C2C2E] bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-md sticky top-0 z-20 select-none text-xs">
-            <div className="flex items-center gap-1 sm:gap-1.5">
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-md border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-xl select-none text-xs">
+            <div className="flex items-center gap-1">
                 <button
                     type="button"
                     disabled={pageNumber <= 1}
                     onClick={() => scrollToPage(Math.max(1, pageNumber - 1))}
-                    className="p-1.5 rounded-lg border border-[#E5E5EA] dark:border-[#2C2C2E] disabled:opacity-40 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer disabled:cursor-not-allowed text-[#1D1D1F] dark:text-white transition-colors"
+                    className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed text-[#1D1D1F] dark:text-white transition-colors"
                     title="Previous page"
                 >
                     <ArrowLeft01Icon size={14} />
                 </button>
-                <span className="font-medium text-[#1D1D1F] dark:text-[#F5F5F7] px-1.5 sm:px-2 min-w-[60px] sm:min-w-[70px] text-center text-[11px] sm:text-xs">
+                <span className="font-medium text-[#1D1D1F] dark:text-[#F5F5F7] px-1 min-w-[50px] text-center text-[11px]">
                     {numPages ? `${pageNumber} / ${numPages}` : '...'}
                 </span>
                 <button
                     type="button"
                     disabled={!numPages || pageNumber >= numPages}
                     onClick={() => scrollToPage(Math.min(numPages, pageNumber + 1))}
-                    className="p-1.5 rounded-lg border border-[#E5E5EA] dark:border-[#2C2C2E] disabled:opacity-40 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer disabled:cursor-not-allowed text-[#1D1D1F] dark:text-white transition-colors"
+                    className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed text-[#1D1D1F] dark:text-white transition-colors"
                     title="Next page"
                 >
                     <ArrowRight01Icon size={14} />
                 </button>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-1.5">
+            <div className="h-3.5 w-px bg-[#E5E5EA] dark:bg-[#2C2C2E]" />
+
+            <div className="flex items-center gap-1">
                 <button
                     type="button"
                     onClick={() => setScale(s => Math.max(0.6, s - 0.15))}
-                    className="p-1.5 rounded-lg border border-[#E5E5EA] dark:border-[#2C2C2E] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer text-[#1D1D1F] dark:text-white transition-colors"
+                    className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-[#1D1D1F] dark:text-white transition-colors"
                     title="Zoom out"
                 >
                     <ZoomOutAreaIcon size={14} />
                 </button>
-                <span className="font-mono text-[10px] sm:text-[11px] text-[#6E6E73] dark:text-[#AEAEB2] min-w-[36px] sm:min-w-[42px] text-center">
+                <span className="font-mono text-[10px] text-[#6E6E73] dark:text-[#AEAEB2] min-w-[34px] text-center">
                     {Math.round(scale * 100)}%
                 </span>
                 <button
                     type="button"
                     onClick={() => setScale(s => Math.min(2.5, s + 0.15))}
-                    className="p-1.5 rounded-lg border border-[#E5E5EA] dark:border-[#2C2C2E] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer text-[#1D1D1F] dark:text-white transition-colors"
+                    className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-[#1D1D1F] dark:text-white transition-colors"
                     title="Zoom in"
                 >
                     <ZoomInAreaIcon size={14} />
                 </button>
+            </div>
 
-                {directUrl && (
+            {directUrl && (
+                <>
+                    <div className="h-3.5 w-px bg-[#E5E5EA] dark:bg-[#2C2C2E]" />
                     <button
                         type="button"
                         onClick={handleOpenNative}
-                        className="ml-1 p-1.5 px-2.5 rounded-lg bg-[#0071E3] hover:bg-[#0077ED] text-white flex items-center gap-1 font-semibold text-[11px] cursor-pointer shadow-xs transition-colors"
+                        className="p-1 px-2.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white flex items-center gap-1 font-semibold text-[10px] cursor-pointer transition-colors shadow-xs"
                         title="Open in native mobile PDF viewer"
                     >
-                        <ViewIcon size={13} />
-                        <span className="hidden xs:inline">Full View</span>
+                        <ViewIcon size={12} />
+                        <span className="hidden xs:inline">Full</span>
                     </button>
-                )}
-            </div>
+                </>
+            )}
         </div>
     );
 
@@ -345,6 +389,7 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
             >
                 <Document
                     file={fileSource}
+                    options={PDF_OPTIONS}
                     onLoadSuccess={onDocumentLoadSuccess}
                     onLoadError={onDocumentLoadError}
                     loading={
@@ -365,12 +410,13 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
                                     ref={(el) => (pageRefs.current[pNum] = el)}
                                     data-page-number={pNum}
                                     className="flex flex-col items-center"
-                                    style={{ minHeight: `${placeholderHeight}px`, width: `${calculatedWidth}px` }}
+                                    style={{ minHeight: isMounted ? 'auto' : `${placeholderHeight}px`, width: `${calculatedWidth}px` }}
                                 >
                                     {isMounted ? (
                                         <Page
                                             pageNumber={pNum}
                                             width={calculatedWidth}
+                                            onLoadSuccess={onPageLoadSuccess}
                                             className="shadow-sm rounded-lg overflow-hidden border border-[#E5E5EA] dark:border-[#2C2C2E] bg-white"
                                             renderAnnotationLayer={false}
                                             renderTextLayer={false}
@@ -395,6 +441,7 @@ export default function PdfViewer({ url, data, presignedUrl, title, onDownload, 
                         <Page
                             pageNumber={1}
                             width={calculatedWidth}
+                            onLoadSuccess={onPageLoadSuccess}
                             className="shadow-sm rounded-lg overflow-hidden border border-[#E5E5EA] dark:border-[#2C2C2E] bg-white"
                             renderAnnotationLayer={false}
                             renderTextLayer={false}

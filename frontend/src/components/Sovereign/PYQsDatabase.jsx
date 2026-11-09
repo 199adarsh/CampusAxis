@@ -441,13 +441,13 @@ const PYQsDatabase = ({
                 {/* BEGIN: QuestionRecordsTable */}
                 <section>
                     {loading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4">
                             {[1, 2, 3, 4].map(i => (
                                 <div key={i} className="h-44 rounded-xl bg-slate-100 animate-pulse border border-[#E2E2E2]" />
                             ))}
                         </div>
                     ) : paginatedPyqs.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4">
                             {paginatedPyqs.map((q, i) => {
                                 const sub = (subjects || []).find(s => s.id === q.subjectId);
                                 const subjectName = sub?.name || q.subjectName || (q.subjectId ? `Subject #${q.subjectId}` : 'Examination Paper');
