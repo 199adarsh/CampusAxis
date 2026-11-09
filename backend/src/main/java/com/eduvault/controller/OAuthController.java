@@ -99,7 +99,12 @@ public class OAuthController {
                 System.currentTimeMillis() + 300_000
         ));
 
-        String targetUrl = redirectUri + (redirectUri.contains("?") ? "&" : "?") +
+        // If redirectUri from client is missing or default, allow the ChatGPT connector callback
+        String effectiveRedirectUri = (redirectUri != null && !redirectUri.isBlank()) 
+                ? redirectUri.trim() 
+                : "https://chatgpt.com/connector/oauth/QmfazbMYHYuz";
+
+        String targetUrl = effectiveRedirectUri + (effectiveRedirectUri.contains("?") ? "&" : "?") +
                 "code=" + URLEncoder.encode(code, StandardCharsets.UTF_8) +
                 "&state=" + URLEncoder.encode(state, StandardCharsets.UTF_8);
 
