@@ -70,3 +70,4 @@ public class DefaultContentTypeFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 }
+
