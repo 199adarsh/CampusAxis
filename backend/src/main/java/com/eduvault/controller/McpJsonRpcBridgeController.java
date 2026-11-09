@@ -87,6 +87,12 @@ public class McpJsonRpcBridgeController {
                 boolean isOpenWorld = "get-available-hackathons".equals(name) || "get_available_hackathons".equals(name);
                 boolean isDestructive = false;
 
+                Map<String, Object> toolAnnotations = Map.of(
+                        "readOnlyHint", isReadOnly,
+                        "destructiveHint", isDestructive,
+                        "openWorldHint", isOpenWorld
+                );
+
                 Map<String, Object> toolMap = new HashMap<>();
                 toolMap.put("name", name);
                 toolMap.put("description", def.description() != null ? def.description() : "");
@@ -94,11 +100,8 @@ public class McpJsonRpcBridgeController {
                 toolMap.put("readOnlyHint", isReadOnly);
                 toolMap.put("openWorldHint", isOpenWorld);
                 toolMap.put("destructiveHint", isDestructive);
-                toolMap.put("annotations", Map.of(
-                        "readOnlyHint", isReadOnly,
-                        "openWorldHint", isOpenWorld,
-                        "destructiveHint", isDestructive
-                ));
+                toolMap.put("provided_tool_annotations", toolAnnotations);
+                toolMap.put("annotations", toolAnnotations);
 
                 toolList.add(toolMap);
             }
@@ -115,6 +118,11 @@ public class McpJsonRpcBridgeController {
             Map<String, Object> arguments = params != null ? (Map<String, Object>) params.get("arguments") : Map.of();
 
             ToolCallback tc = toolsMap.get(toolName);
+            if (tc == null && toolName != null) {
+                if ("view-nc-requests".equals(toolName) || "view_nc_requests".equals(toolName)) {
+                    tc = toolsMap.get("view-attendance-condonation-requests");
+                }
+            }
             if (tc == null && toolName != null) {
                 // Support snake_case, kebab-case, and camelCase aliases
                 String normalized = toolName.replace("-", "").replace("_", "").toLowerCase();

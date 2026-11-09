@@ -459,9 +459,9 @@ public class CampusAxisMcpTools {
         );
     }
 
-    // 2. View NC requests
-    @Tool(name = "view-nc-requests",
-          description = "View pending or reviewed attendance non-credit / condonation requests. (Faculty/Teachers only)")
+    // 2. View attendance condonation requests
+    @Tool(name = "view-attendance-condonation-requests",
+          description = "View pending or reviewed attendance non-credit / condonation requests submitted by students. (Faculty/Teachers only)")
     public List<Map<String, Object>> viewNcRequests(
             @ToolParam(description = "Optional status filter (e.g. PENDING, APPROVED, REJECTED, ALL)", required = false) String status,
             @ToolParam(description = "Optional student PRN filter", required = false) String studentPrn) {
