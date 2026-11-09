@@ -27,8 +27,7 @@ public class OAuthDiscoveryController {
                 "response_types_supported", List.of("code"),
                 "grant_types_supported", List.of("authorization_code", "refresh_token"),
                 "code_challenge_methods_supported", List.of("S256"),
-                "token_endpoint_auth_methods_supported", List.of("none", "client_secret_post", "client_secret_basic"),
-                "scopes_supported", List.of("openid", "student", "offline_access")
+                "token_endpoint_auth_methods_supported", List.of("none", "client_secret_post", "client_secret_basic")
         ));
     }
 
