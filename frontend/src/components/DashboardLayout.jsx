@@ -151,7 +151,9 @@ const DashboardLayout = () => {
       {/* Sidebar Navigation */}
       <aside className="w-[260px] border-r border-border bg-muted/30 flex-shrink-0 flex flex-col hidden md:flex backdrop-blur-sm">
         <div className="h-16 border-b border-border flex items-center px-6 font-bold text-lg gap-3 tracking-tight">
-          <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 rounded-lg flex items-center justify-center text-zinc-50 dark:text-zinc-900 text-sm shadow-sm ring-1 ring-zinc-900/10 dark:ring-zinc-100/10">E</div>
+          <div className="w-8 h-8 rounded-lg overflow-hidden shadow-xs shrink-0 border border-border bg-white flex items-center justify-center p-0.5">
+            <img src="/favicon.png" alt="EduVault" className="w-full h-full object-contain" />
+          </div>
           EduVault
         </div>
         <div className="p-4 flex-1 space-y-1">

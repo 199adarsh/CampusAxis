@@ -645,8 +645,8 @@ const SovereignLayout = () => {
 
                         <div className="flex items-center gap-2.5 min-w-0">
 
-                            <div className="w-8 h-8 rounded-lg overflow-hidden shadow-xs shrink-0 border border-border-subtle" title="Campusaxis Portal">
-                                <img src="/favicon.png" alt="Campusaxis" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                            <div className="w-8 h-8 rounded-lg overflow-hidden shadow-xs shrink-0 border border-border-subtle bg-white flex items-center justify-center p-0.5" title="Campusaxis Portal">
+                                <img src="/favicon.png" alt="Campusaxis" className="w-full h-full object-contain" />
                             </div>
 
                             <div className="flex flex-col min-w-0">
