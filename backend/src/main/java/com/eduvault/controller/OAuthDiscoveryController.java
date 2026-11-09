@@ -14,7 +14,7 @@ public class OAuthDiscoveryController {
     @Value("${app.oauth.base-url:https://campusaxis.devs.surf}")
     private String baseUrl;
 
-    @Value("${openai.apps.challenge-token:}")
+    @Value("${openai.apps.challenge-token:xcgy5hdUDP-5QE_mGFwfk-mPYn16snf3rqLXbmcCLbI}")
     private String challengeToken;
 
     @GetMapping("/.well-known/oauth-authorization-server")
@@ -37,9 +37,11 @@ public class OAuthDiscoveryController {
         return oauthAuthorizationServer();
     }
 
-    @GetMapping("/.well-known/openai-apps-challenge")
+    @GetMapping(value = "/.well-known/openai-apps-challenge", produces = "text/plain")
     public ResponseEntity<String> openaiChallenge() {
-        return ResponseEntity.ok(challengeToken.isBlank() ? "pending-verification" : challengeToken);
+        return ResponseEntity.ok()
+                .header("Content-Type", "text/plain;charset=UTF-8")
+                .body("xcgy5hdUDP-5QE_mGFwfk-mPYn16snf3rqLXbmcCLbI");
     }
 }
 
