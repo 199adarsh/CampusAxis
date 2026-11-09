@@ -489,11 +489,12 @@ public class CampusAxisMcpTools {
                 .collect(Collectors.toList());
     }
 
-    // 3. Sync the notes with Moodle (SY / TY default credentials handled)
+    // 3. Sync the notes with Moodle (SY / TY default credentials handled, with optional single subject scope)
     @Tool(name = "sync-moodle-notes",
-          description = "Synchronize courses and study notes from Moodle LMS for SY or TY. (Faculty/Teachers only)")
+          description = "Synchronize courses and study notes from Moodle LMS for SY or TY. Can optionally target a single subject or course. (Faculty/Teachers only)")
     public Map<String, Object> syncMoodleNotes(
-            @ToolParam(description = "Class tier: 'SY' for Second Year or 'TY' for Third Year", required = true) String yearTier) {
+            @ToolParam(description = "Class tier: 'SY' for Second Year or 'TY' for Third Year", required = true) String yearTier,
+            @ToolParam(description = "Optional Subject ID, Course Code (e.g. 01ADL301), or Course Name to sync single subject only", required = false) String subjectIdentifier) {
 
         StudentPrincipal caller = studentResolver.resolveCurrentStudent();
         if (!caller.isTeacher()) {
@@ -518,21 +519,40 @@ public class CampusAxisMcpTools {
         }
 
         try {
-            LmsCredentials credentials = new LmsCredentials(username, password, false, null);
+            List<String> courseIds = (subjectIdentifier != null && !subjectIdentifier.isBlank())
+                    ? List.of(subjectIdentifier.trim())
+                    : null;
+
+            LmsCredentials credentials = new LmsCredentials(username, password, false, courseIds);
             LmsSyncResponse response = lmsScraperService.syncNotes(credentials);
-            return Map.of(
-                    "status", "SUCCESS",
-                    "yearTier", yearTier.toUpperCase(),
-                    "username", username,
-                    "importedCount", response.getImportedCount(),
-                    "totalDiscoveredCourses", response.getTotalDiscoveredCourses(),
-                    "courses", response.getCourses() != null ? response.getCourses() : List.of()
-            );
+
+            LmsProgress progress = lmsScraperService.getProgress(username);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("status", "SUCCESS");
+            result.put("yearTier", yearTier.toUpperCase());
+            result.put("username", username);
+            result.put("scopedSubject", subjectIdentifier != null ? subjectIdentifier.trim() : "ALL");
+            result.put("importedCount", response.getImportedCount());
+            result.put("totalDiscoveredCourses", response.getTotalDiscoveredCourses());
+            result.put("progress", progress != null ? Map.of(
+                    "status", progress.getStatus() != null ? progress.getStatus() : "COMPLETED",
+                    "stage", progress.getCurrentStage() != null ? progress.getCurrentStage() : "Sync complete",
+                    "percent", progress.getPercent(),
+                    "importedCount", progress.getImportedCount(),
+                    "materialsFound", progress.getMaterialsFound(),
+                    "skippedCount", progress.getSkippedCount(),
+                    "failureCount", progress.getFailureCount()
+            ) : Map.of("percent", 100, "status", "COMPLETED"));
+            result.put("courses", response.getCourses() != null ? response.getCourses() : List.of());
+
+            return result;
         } catch (Exception e) {
             logger.error("Error in syncMoodleNotes tool: {}", e.getMessage(), e);
             return Map.of(
                     "status", "FAILED",
                     "yearTier", yearTier.toUpperCase(),
+                    "scopedSubject", subjectIdentifier != null ? subjectIdentifier.trim() : "ALL",
                     "error", e.getMessage() != null ? e.getMessage() : "Moodle sync failed"
             );
         }
