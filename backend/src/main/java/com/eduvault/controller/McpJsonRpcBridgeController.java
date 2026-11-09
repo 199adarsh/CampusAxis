@@ -27,11 +27,12 @@ public class McpJsonRpcBridgeController {
         }
     }
 
-    @PostMapping(value = "/mcp")
+    @RequestMapping(value = "/mcp", method = org.springframework.web.bind.annotation.RequestMethod.POST)
     public ResponseEntity<?> handleJsonRpc(
-            @RequestBody(required = false) String rawBody,
-            jakarta.servlet.http.HttpServletRequest httpRequest
-    ) {
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            jakarta.servlet.http.HttpServletResponse httpResponse
+    ) throws java.io.IOException {
+        String rawBody = new String(httpRequest.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
         Map<String, Object> request = null;
         if (rawBody != null && !rawBody.trim().isEmpty()) {
             try {

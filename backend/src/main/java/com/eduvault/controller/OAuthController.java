@@ -114,15 +114,28 @@ public class OAuthController {
 
     @PostMapping(value = "/oauth2/token")
     public ResponseEntity<?> token(
-            @RequestParam(value = "grant_type", required = false) String paramGrantType,
-            @RequestParam(value = "code", required = false) String paramCode,
-            @RequestParam(value = "redirect_uri", required = false) String paramRedirectUri,
-            @RequestParam(value = "client_id", required = false) String paramClientId,
-            @RequestParam(value = "client_secret", required = false) String paramClientSecret,
-            @RequestParam(value = "code_verifier", required = false) String paramCodeVerifier,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @RequestBody(required = false) Map<String, Object> body
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            @RequestHeader(value = "Authorization", required = false) String authHeader
     ) {
+        // Read from form params first, then try JSON body
+        String paramGrantType = httpRequest.getParameter("grant_type");
+        String paramCode = httpRequest.getParameter("code");
+        String paramRedirectUri = httpRequest.getParameter("redirect_uri");
+        String paramClientId = httpRequest.getParameter("client_id");
+        String paramClientSecret = httpRequest.getParameter("client_secret");
+        String paramCodeVerifier = httpRequest.getParameter("code_verifier");
+
+        Map<String, Object> body = null;
+        String ct = httpRequest.getContentType();
+        if (ct != null && ct.contains("application/json")) {
+            try {
+                String rawBody = new String(httpRequest.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                if (rawBody != null && !rawBody.isBlank()) {
+                    body = new com.fasterxml.jackson.databind.ObjectMapper().readValue(rawBody, Map.class);
+                }
+            } catch (Exception ignored) {}
+        }
+
         String grantType = (paramGrantType != null && !paramGrantType.isBlank()) 
                 ? paramGrantType 
                 : (body != null && body.get("grant_type") != null ? String.valueOf(body.get("grant_type")) : null);
