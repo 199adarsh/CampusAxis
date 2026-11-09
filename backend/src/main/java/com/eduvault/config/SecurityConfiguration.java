@@ -16,11 +16,11 @@ public class SecurityConfiguration {
     @Order(1)
     public SecurityFilterChain mcpSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/mcp", "/mcp/**")
+            .securityMatcher("/mcp", "/mcp/**", "/sse", "/sse/**")
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/mcp", "/mcp/**").authenticated()
+                .requestMatchers("/mcp", "/mcp/**", "/sse", "/sse/**").authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
 
