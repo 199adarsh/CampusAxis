@@ -27,6 +27,49 @@ import {
   rateLimiter,
 } from "../../lib/auth-security";
 
+function parsePrnDetails(rawPrn: string) {
+  const prn = (rawPrn || "").trim().toUpperCase();
+  const match = prn.match(/^(\d{2})([A-Z]{2,4})(\d{2,4})$/);
+
+  const deptMap: Record<string, string> = {
+    UAD: "B.Tech AI & Data Science",
+    AD: "B.Tech AI & Data Science",
+    UCS: "B.Tech Computer Science",
+    CS: "B.Tech Computer Science",
+    CSE: "B.Tech Computer Science",
+    UIT: "B.Tech Information Tech",
+    IT: "B.Tech Information Tech",
+    UEC: "B.Tech Electronics & Telecom",
+    ETC: "B.Tech Electronics & Telecom",
+    EC: "B.Tech Electronics & Telecom",
+    UME: "B.Tech Mechanical Eng",
+    ME: "B.Tech Mechanical Eng",
+    UCE: "B.Tech Civil Engineering",
+    CE: "B.Tech Civil Engineering",
+    UEE: "B.Tech Electrical Eng",
+    EE: "B.Tech Electrical Eng",
+    TEXT: "B.Tech Textile Tech",
+  };
+
+  if (!match) {
+    return {
+      batch: "",
+      department: "Engineering Scholar",
+      rollNo: "",
+    };
+  }
+
+  const [, yearPrefix, deptCode, roll] = match;
+  const dept = deptMap[deptCode] || `${deptCode} Engineering`;
+  const year = 2000 + parseInt(yearPrefix, 10);
+
+  return {
+    batch: `Batch '${yearPrefix} (${year}–${year + 4})`,
+    department: dept,
+    rollNo: `Roll #${parseInt(roll, 10)}`,
+  };
+}
+
 export interface SwapFormProps {
   initialMode?: "student" | "faculty";
   className?: string;
@@ -51,18 +94,22 @@ export function SwapForm({
   const [syncStepIndex, setSyncStepIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [activeSession, setActiveSession] = useState<any>(null);
+  const [onboardingStudent, setOnboardingStudent] = useState<any>(null);
 
   const studentSteps = [
-    "Checking authentication...",
-    "Connecting to university portal...",
-    "Fetching attendance & CIE marks...",
-    "Syncing enrolled courses..."
+    "Authenticating credentials with campus server...",
+    "Connecting to university examination portal...",
+    "Decrypting attendance and syllabus records...",
+    "Importing internal CIE evaluation scores...",
+    "Cataloging enrolled courses & timetable...",
+    "Finalizing your personalized sovereign vault..."
   ];
 
   const facultySteps = [
-    "Checking faculty credentials...",
-    "Verifying departmental clearance...",
-    "Syncing course assignments..."
+    "Checking faculty departmental credentials...",
+    "Verifying institutional clearance...",
+    "Syncing course assignments & student rosters...",
+    "Initializing faculty management suite..."
   ];
 
   useEffect(() => {
@@ -103,11 +150,22 @@ export function SwapForm({
     setError(null);
     setSyncStepIndex(0);
 
+    const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+
+    // Fast probe for cached student name if known
+    try {
+      axios.get(`${API_BASE}/profile?prn=${encodeURIComponent(prn)}`, { timeout: 1200 })
+        .then((res) => {
+          if (res.data?.name) {
+            setOnboardingStudent(res.data);
+          }
+        })
+        .catch(() => {});
+    } catch {}
+
     const interval = setInterval(() => {
       setSyncStepIndex((prev) => (prev < studentSteps.length - 1 ? prev + 1 : prev));
-    }, 600);
-
-    const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+    }, 2800);
 
     try {
       const portalRes = await axios.post(
@@ -121,6 +179,8 @@ export function SwapForm({
       }
 
       const studentProfile = { ...portalRes.data.profile, prn, dob, role: "student" };
+      setOnboardingStudent(studentProfile);
+      setSyncStepIndex(studentSteps.length - 1);
       const studentSubjects = portalRes.data?.subjects || [];
 
       await enforceConstantTimeDelay(performance.now(), 700);
@@ -179,7 +239,7 @@ export function SwapForm({
 
     const interval = setInterval(() => {
       setSyncStepIndex((prev) => (prev < facultySteps.length - 1 ? prev + 1 : prev));
-    }, 600);
+    }, 2200);
 
     const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
@@ -284,6 +344,128 @@ export function SwapForm({
             <span>Sign Out</span>
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    const studentMeta = parsePrnDetails(studentPrn);
+    const displayName =
+      onboardingStudent?.name ||
+      (isFaculty
+        ? facultyId
+          ? facultyId.split("@")[0]
+          : "Faculty"
+        : studentPrn
+        ? studentPrn.toUpperCase()
+        : "Scholar");
+    const displayRole = isFaculty
+      ? "Faculty Member"
+      : onboardingStudent?.department || studentMeta.department;
+    const steps = isFaculty ? facultySteps : studentSteps;
+    const progress = Math.min(
+      96,
+      Math.round(((syncStepIndex + 1) / steps.length) * 100)
+    );
+
+    return (
+      <div
+        className={`relative w-full max-w-[400px] mx-auto text-left rounded-xl border border-[#DCE6F8] bg-gradient-to-b from-[#F7FAFF] via-white to-white shadow-[0_20px_60px_-20px_rgba(40,91,232,0.22)] p-6 sm:p-7 overflow-hidden ${className}`}
+      >
+        {/* Ambient Top Glow */}
+        <div className="absolute -top-16 -left-16 w-44 h-44 bg-[#285BE8]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        {/* Header with Avatar & Live Pulse */}
+        <div className="relative flex flex-col items-center text-center pt-1 pb-3">
+          <div className="relative mb-3">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#285BE8] via-[#3B72FF] to-[#608AF8] p-0.5 shadow-lg shadow-blue-500/25 flex items-center justify-center">
+              <div className="w-full h-full rounded-[14px] bg-white flex items-center justify-center font-bold text-xl text-[#285BE8] tracking-tight">
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+            </div>
+          </div>
+
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase bg-[#EDF3FF] text-[#285BE8] border border-[#DCE8FF] mb-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#285BE8] animate-pulse" />
+            Live Portal Sync
+          </span>
+
+          <h3 className="text-[17px] font-bold text-[#172033] tracking-tight">
+            Onboarding you, <br />
+            <span className="text-[#285BE8] font-extrabold">{displayName}</span>
+          </h3>
+
+          <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2.5 text-[11px]">
+            <span className="px-2 py-0.5 rounded-md bg-[#F2F5FA] border border-[#E3EAF4] font-mono font-medium text-slate-700">
+              {isFaculty ? facultyId : studentPrn.toUpperCase()}
+            </span>
+            {displayRole && (
+              <span className="px-2 py-0.5 rounded-md bg-[#F2F5FA] border border-[#E3EAF4] font-medium text-slate-600">
+                {displayRole}
+              </span>
+            )}
+            {studentMeta.batch && !isFaculty && (
+              <span className="px-2 py-0.5 rounded-md bg-[#F2F5FA] border border-[#E3EAF4] font-medium text-slate-600">
+                {studentMeta.batch}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="my-3.5">
+          <div className="flex justify-between items-center text-[11px] font-medium text-slate-500 mb-1.5">
+            <span>Importing university records</span>
+            <span className="font-mono text-[#285BE8] font-semibold">
+              {progress}%
+            </span>
+          </div>
+          <div className="h-1.5 w-full bg-[#EBF1FA] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#285BE8] to-[#4F86F7] rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Checklist Steps */}
+        <div className="p-3.5 rounded-xl bg-white border border-[#E5EAF2] shadow-sm space-y-2 mb-3.5">
+          {steps.map((step, idx) => {
+            const isDone = idx < syncStepIndex;
+            const isCurrent = idx === syncStepIndex;
+            return (
+              <div
+                key={step}
+                className={`flex items-center gap-2.5 text-xs transition-colors duration-300 ${
+                  isDone
+                    ? "text-emerald-700 font-medium"
+                    : isCurrent
+                    ? "text-[#285BE8] font-semibold"
+                    : "text-slate-400"
+                }`}
+              >
+                {isDone ? (
+                  <CheckmarkCircle02Icon className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : isCurrent ? (
+                  <Loading03Icon className="w-4 h-4 animate-spin text-[#285BE8] shrink-0" />
+                ) : (
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-200 shrink-0 mx-1" />
+                )}
+                <span className="leading-tight text-[11px] sm:text-xs">
+                  {step}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="text-[10.5px] text-center text-slate-400 leading-relaxed">
+          Initial scrape securely imports live attendance & CIE marks so future logins are instant.
+        </p>
       </div>
     );
   }
