@@ -37,7 +37,7 @@ public class SecurityConfiguration {
                     response.setHeader("WWW-Authenticate",
                             "Bearer realm=\"https://campusaxis.devs.surf\", " +
                             "authorization_uri=\"https://campusaxis.devs.surf/oauth2/authorize\", " +
-                            "resource_metadata=\"https://campusaxis.devs.surf/.well-known/oauth-authorization-server\"");
+                            "resource_metadata=\"https://campusaxis.devs.surf/.well-known/oauth-protected-resource\"");
                     response.getWriter().write("{\"error\":\"unauthorized\",\"authorization_uri\":\"https://campusaxis.devs.surf/oauth2/authorize\"}");
                 })
             );

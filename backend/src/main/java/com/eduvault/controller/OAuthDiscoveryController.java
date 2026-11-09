@@ -37,6 +37,21 @@ public class OAuthDiscoveryController {
         return oauthAuthorizationServer();
     }
 
+    /**
+     * RFC 9728 — OAuth Protected Resource Metadata.
+     * OpenAI MCP clients resolve resource_metadata from WWW-Authenticate to this endpoint,
+     * then follow authorization_servers[0] to discover the OAuth AS.
+     */
+    @GetMapping("/.well-known/oauth-protected-resource")
+    public ResponseEntity<Map<String, Object>> oauthProtectedResource() {
+        return ResponseEntity.ok(Map.of(
+                "resource", baseUrl + "/mcp",
+                "authorization_servers", List.of(baseUrl + "/.well-known/oauth-authorization-server"),
+                "scopes_supported", List.of("openid", "student"),
+                "bearer_methods_supported", List.of("header")
+        ));
+    }
+
     @GetMapping(value = "/.well-known/openai-apps-challenge", produces = "text/plain")
     public ResponseEntity<String> openaiChallenge() {
         return ResponseEntity.ok()
