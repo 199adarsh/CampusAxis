@@ -22,7 +22,18 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/mcp", "/mcp/**", "/sse", "/sse/**").authenticated()
             )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> {})
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.setHeader("WWW-Authenticate",
+                            "Bearer realm=\"https://campusaxis.devs.surf\", " +
+                            "authorization_uri=\"https://campusaxis.devs.surf/oauth2/authorize\", " +
+                            "resource_metadata=\"https://campusaxis.devs.surf/.well-known/oauth-authorization-server\"");
+                    response.getWriter().write("{\"error\":\"unauthorized\",\"authorization_uri\":\"https://campusaxis.devs.surf/oauth2/authorize\"}");
+                })
+            );
 
         return http.build();
     }
