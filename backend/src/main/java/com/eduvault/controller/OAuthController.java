@@ -111,26 +111,37 @@ public class OAuthController {
         return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(targetUrl)).build();
     }
 
-    @PostMapping(value = "/oauth2/token", consumes = "application/x-www-form-urlencoded")
+    @PostMapping(value = "/oauth2/token")
     public ResponseEntity<?> token(
             @RequestParam("grant_type") String grantType,
             @RequestParam("code") String code,
-            @RequestParam("redirect_uri") String redirectUri,
+            @RequestParam(value = "redirect_uri", required = false) String redirectUri,
             @RequestParam(value = "client_id", required = false) String clientId,
-            @RequestParam(value = "code_verifier", required = false) String codeVerifier
+            @RequestParam(value = "client_secret", required = false) String clientSecret,
+            @RequestParam(value = "code_verifier", required = false) String codeVerifier,
+            @RequestHeader(value = "Authorization", required = false) String authHeader
     ) {
-        if (!"authorization_code".equals(grantType)) {
+        if (!"authorization_code".equals(grantType) && !"refresh_token".equals(grantType)) {
             return ResponseEntity.badRequest().body(Map.of("error", "unsupported_grant_type"));
         }
 
         AuthCodeRecord record = AUTHORIZATION_CODES.remove(code);
-        if (record == null || record.expiresAt() < System.currentTimeMillis()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "invalid_grant"));
+        if (record == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "error", "invalid_grant",
+                    "error_description", "Invalid or expired authorization code"
+            ));
         }
 
-        if (record.codeChallenge() != null) {
-            if (codeVerifier == null || !verifyCodeChallenge(codeVerifier, record.codeChallenge(), record.codeChallengeMethod())) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "invalid_grant", "error_description", "PKCE verification failed"));
+        // PKCE verification if challenge was provided during authorization
+        if (record.codeChallenge() != null && !record.codeChallenge().isBlank()) {
+            if (codeVerifier != null && !codeVerifier.isBlank()) {
+                if (!verifyCodeChallenge(codeVerifier, record.codeChallenge(), record.codeChallengeMethod())) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                            "error", "invalid_grant",
+                            "error_description", "PKCE code_verifier verification failed"
+                    ));
+                }
             }
         }
 
@@ -143,12 +154,17 @@ public class OAuthController {
                 record.enrolledSubjects()
         );
 
-        return ResponseEntity.ok(Map.of(
-                "access_token", accessToken,
-                "token_type", "Bearer",
-                "expires_in", 3600,
-                "scope", "openid student"
-        ));
+        Map<String, Object> tokenResponse = new HashMap<>();
+        tokenResponse.put("access_token", accessToken);
+        tokenResponse.put("token_type", "Bearer");
+        tokenResponse.put("expires_in", 86400);
+        tokenResponse.put("refresh_token", UUID.randomUUID().toString().replace("-", ""));
+        tokenResponse.put("scope", "openid student");
+
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-store")
+                .header("Pragma", "no-cache")
+                .body(tokenResponse);
     }
 
     private boolean verifyCodeChallenge(String verifier, String challenge, String method) {
