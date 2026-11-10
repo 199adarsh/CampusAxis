@@ -1,7 +1,6 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
-import { GlassIconReveal } from '@/components/ui/liquid-glass-logo-reveal';
 import SovereignLayout from './components/Sovereign/SovereignLayout';
 import LandingPage from './landing/LandingPage';
 
@@ -16,20 +15,9 @@ const OptimizationPage = React.lazy(() => import('./components/Sovereign/Optimiz
 const Settings = React.lazy(() => import('./components/Sovereign/Settings'));
 
 const RouteLoadingFallback = () => (
-  <div className="w-full min-h-[60vh] flex flex-col items-center justify-center p-8 text-center">
-    <div className="relative w-48 h-48">
-      <GlassIconReveal
-        logo="/icon.svg"
-        label="Loading module..."
-        look="light"
-        background="transparent"
-        logoColor="#0071E3"
-        tileSize={160}
-        logoScale={0.7}
-        className="w-full h-full"
-      />
-    </div>
-    <span className="text-xs text-slate-400 font-medium tracking-wide -mt-2">Loading module...</span>
+  <div className="w-full min-h-[50vh] flex flex-col items-center justify-center p-8 text-center animate-pulse">
+    <div className="w-8 h-8 rounded-full border-2 border-[#0071E3]/20 border-t-[#0071E3] animate-spin mb-3" />
+    <span className="text-xs text-slate-400 font-medium tracking-wide">Loading module...</span>
   </div>
 );
 
