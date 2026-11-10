@@ -166,7 +166,7 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                 <div className={cn("h-16 flex items-center border-b border-[#E2E2E2] shrink-0", collapsed ? "justify-center px-2" : "justify-between px-4")}>
                     <div className={cn("flex items-center gap-2.5 min-w-0", collapsed && "justify-center")}>
                         <div className="w-9 h-9 rounded-xl overflow-hidden shadow-xs shrink-0 border border-[#E2E2E2] bg-white flex items-center justify-center p-0.5" title="Campusaxis Portal">
-                            <img src="/favicon.png" alt="Campusaxis" className="w-full h-full object-contain" />
+                            <img src="/icon.svg" alt="Campusaxis" className="w-full h-full object-contain" />
                         </div>
                         {!collapsed && (
                             <div className="flex flex-col min-w-0">
