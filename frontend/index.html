@@ -78,6 +78,48 @@
   }
   </script>
 
+  <!-- Schema.org FAQPage for Google Rich Snippets -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is CampusAxis?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "CampusAxis (campusaxis.devs.surf) is a student-built academic hub created for students at DKTE (TEI) Ichalkaranji. It provides curated study notes, past exam question papers (PYQs), ERP attendance tracking, and semester roadmaps."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which engineering branches are supported on CampusAxis?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "CampusAxis supports all DKTE departments with focused resources for Artificial Intelligence and Data Science (AIDS), Computer Science, Mechanical, and related engineering branches."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is CampusAxis an official portal of DKTE?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. CampusAxis is an independent open-source initiative built by student developers to help classmates easily access academic materials."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How can I access DKTE PYQs and notes on CampusAxis?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Visit https://campusaxis.devs.surf/notes or https://campusaxis.devs.surf/pyqs to browse and download subject-wise study notes and previous year exam question papers."
+        }
+      }
+    ]
+  }
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -88,6 +130,21 @@
 </head>
 
 <body>
+  <noscript>
+    <main style="font-family: sans-serif; padding: 2rem; max-width: 800px; margin: auto;">
+      <h1>CampusAxis — DKTE Student Academic Hub | AIDS Notes &amp; PYQs</h1>
+      <p>CampusAxis (campusaxis.devs.surf) is a community-driven academic platform built by students for DKTE (TEI) Ichalkaranji. Browse verified college notes, past question papers (PYQs), attendance tracking calculators, and semester exam roadmaps.</p>
+      <h2>Supported Branches &amp; Resources</h2>
+      <ul>
+        <li><a href="/notes">DKTE Study Notes &amp; Subject Vault</a></li>
+        <li><a href="/pyqs">Previous Year University Question Papers (PYQs)</a></li>
+        <li><a href="/attendance">75% Attendance &amp; Bunk Intelligence Calculator</a></li>
+        <li><a href="/roadmaps">Semester Syllabi &amp; Preparation Roadmaps</a></li>
+        <li><a href="/ai-assistant">CampusAxis Academic AI Assistant</a></li>
+      </ul>
+      <p>Specialized focus on Artificial Intelligence and Data Science (AIDS), Computer Science, and Engineering at DKTE.</p>
+    </main>
+  </noscript>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
