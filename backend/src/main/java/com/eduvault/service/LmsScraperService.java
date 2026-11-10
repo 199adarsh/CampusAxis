@@ -723,6 +723,9 @@ public class LmsScraperService {
 
             // Extract text for AI
             String extractedText = fileStorageService.extractTextFromBytes(bytes, filename);
+            if (extractedText != null) {
+                extractedText = extractedText.replace("\u0000", "");
+            }
 
             List<String> tags = new ArrayList<>();
             tags.add("LMS");

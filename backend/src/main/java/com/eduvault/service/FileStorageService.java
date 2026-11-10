@@ -159,7 +159,7 @@ public class FileStorageService {
         try (InputStream is = file.getInputStream()) {
             if (lowerName.endsWith(".pdf")) {
                 try (PDDocument document = Loader.loadPDF(is.readAllBytes())) {
-                    return new PDFTextStripper().getText(document);
+                    return sanitizeText(new PDFTextStripper().getText(document));
                 }
             } else if (lowerName.endsWith(".docx")) {
                 try (XWPFDocument doc = new XWPFDocument(is)) {
@@ -167,7 +167,7 @@ public class FileStorageService {
                     for (XWPFParagraph p : doc.getParagraphs()) {
                         sb.append(p.getText()).append("\n");
                     }
-                    return sb.toString();
+                    return sanitizeText(sb.toString());
                 }
             } else if (lowerName.endsWith(".pptx")) {
                 try (XMLSlideShow ppt = new XMLSlideShow(is)) {
@@ -179,7 +179,7 @@ public class FileStorageService {
                             }
                         }
                     }
-                    return sb.toString();
+                    return sanitizeText(sb.toString());
                 }
             } else {
                 return "Text extraction only supported for PDFs, DOCX and PPTX.";
@@ -206,6 +206,11 @@ public class FileStorageService {
         }
     }
 
+    private String sanitizeText(String text) {
+        if (text == null) return null;
+        return text.replace("\u0000", "");
+    }
+
     public String extractTextFromBytes(byte[] bytes, String originalName) {
         if (bytes == null || bytes.length == 0) return "";
         String lowerName = originalName != null ? originalName.toLowerCase() : "";
@@ -216,12 +221,12 @@ public class FileStorageService {
                     PDFTextStripper stripper = new PDFTextStripper();
                     stripper.setStartPage(1);
                     stripper.setEndPage(Math.min(50, document.getNumberOfPages()));
-                    return stripper.getText(document);
+                    return sanitizeText(stripper.getText(document));
                 }
             } else if (lowerName.endsWith(".docx")) {
                 try (XWPFDocument doc = new XWPFDocument(new ByteArrayInputStream(bytes));
                      XWPFWordExtractor extractor = new XWPFWordExtractor(doc)) {
-                    return extractor.getText();
+                    return sanitizeText(extractor.getText());
                 }
             } else if (lowerName.endsWith(".pptx")) {
                 try (XMLSlideShow ppt = new XMLSlideShow(new ByteArrayInputStream(bytes))) {
@@ -233,7 +238,7 @@ public class FileStorageService {
                             }
                         }
                     }
-                    return sb.toString();
+                    return sanitizeText(sb.toString());
                 }
             } else {
                 return "Text extraction only supported for PDFs, DOCX and PPTX.";

@@ -111,10 +111,28 @@ public class Note {
         this.tags = tags;
         this.aiImportantTopics = aiImportantTopics;
         this.aiGeneratedQuestions = aiGeneratedQuestions;
-        this.extractedText = extractedText;
+        this.extractedText = (extractedText != null) ? extractedText.replace("\u0000", "") : null;
         this.okfStatus = (okfStatus != null) ? okfStatus : "PENDING";
         this.okfFilePath = okfFilePath;
         this.okfCompiledAt = okfCompiledAt;
+    }
+
+    public void setExtractedText(String extractedText) {
+        this.extractedText = (extractedText != null) ? extractedText.replace("\u0000", "") : null;
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void sanitizeData() {
+        if (this.extractedText != null) {
+            this.extractedText = this.extractedText.replace("\u0000", "");
+        }
+        if (this.title != null) {
+            this.title = this.title.replace("\u0000", "");
+        }
+        if (this.originalFilename != null) {
+            this.originalFilename = this.originalFilename.replace("\u0000", "");
+        }
     }
 
     public Note toSummary() {
@@ -180,7 +198,10 @@ public class Note {
         public NoteBuilder tags(List<String> tags) { this.tags = tags; return this; }
         public NoteBuilder aiImportantTopics(List<String> aiImportantTopics) { this.aiImportantTopics = aiImportantTopics; return this; }
         public NoteBuilder aiGeneratedQuestions(List<Question> aiGeneratedQuestions) { this.aiGeneratedQuestions = aiGeneratedQuestions; return this; }
-        public NoteBuilder extractedText(String extractedText) { this.extractedText = extractedText; return this; }
+        public NoteBuilder extractedText(String extractedText) {
+            this.extractedText = (extractedText != null) ? extractedText.replace("\u0000", "") : null;
+            return this;
+        }
         public NoteBuilder okfStatus(String okfStatus) { this.okfStatus = okfStatus; return this; }
         public NoteBuilder okfFilePath(String okfFilePath) { this.okfFilePath = okfFilePath; return this; }
         public NoteBuilder okfCompiledAt(String okfCompiledAt) { this.okfCompiledAt = okfCompiledAt; return this; }
