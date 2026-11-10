@@ -1,7 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import OnwardSummitTemplate from './onward-summit-template';
+import { AppLoadingScreen } from '@/components/ui/liquid-glass-logo-reveal';
 
 export default function LandingPage() {
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     document.documentElement.classList.add('hide-scrollbar');
     document.body.classList.add('hide-scrollbar');
@@ -13,6 +16,13 @@ export default function LandingPage() {
 
   return (
     <div className="relative w-full min-h-screen">
+      {loading && (
+        <AppLoadingScreen
+          logo="/icon.svg"
+          minDuration={2400}
+          onLoaded={() => setLoading(false)}
+        />
+      )}
       <OnwardSummitTemplate
         brand="CampusAxis"
         title="CampusAxis"

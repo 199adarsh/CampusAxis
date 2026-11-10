@@ -5,6 +5,9 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    __BUNDLED_DEV__: false,
+  },
   plugins: [
     react(),
     tailwindcss(),

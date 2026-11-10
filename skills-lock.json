@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "hallmark": {
+      "source": "nutlope/hallmark",
+      "sourceType": "github",
+      "skillPath": "skills/hallmark/SKILL.md",
+      "computedHash": "1465546d7971f57d428a0cbccfe0fa0426d1c309bec28ceefeb70e76f38c640e"
+    },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "7d02317432c125f492beb6db9ebf0ca8782df9abb45c771d5aa57acb1e94f39e"
+    },
     "neon": {
       "source": "neondatabase/agent-skills",
       "sourceType": "github",

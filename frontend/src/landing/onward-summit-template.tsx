@@ -15,7 +15,12 @@ export type OwsFeature = {
   text: string;
 };
 
-export type OwsAudience = { role: string; pitch: string };
+export type OwsAudience = {
+  role: string;
+  pitch: string;
+  points?: string[];
+  metric?: { value: string; label: string };
+};
 
 export type OwsSession = {
   /** 24-hour venue time, e.g. "13:30". */
@@ -204,16 +209,43 @@ const DEFAULT_AUDIENCES: OwsAudience[] = [
     role: "1. Roadmaps",
     pitch:
       "Interactive curriculum skill trees and milestone roadmaps keep your semester prep and career goals perfectly aligned.",
+    points: [
+      "Prerequisite trees mapped directly to your branch syllabus",
+      "Milestone-based project paths to build strong placement portfolios",
+      "Semester schedule alignment with zero guesswork on course pacing",
+    ],
+    metric: {
+      value: "100%",
+      label: "curriculum coverage",
+    },
   },
   {
     role: "2. Notes & PYQs",
     pitch:
       "Instant neural search across lecture notes and past papers gives you verified, grounded answers for every exam question.",
+    points: [
+      "10+ years of solved university exam papers with verified answers",
+      "Semantic search across handwritten notes, slides, and faculty decks",
+      "Key formula sheets and high-yield exam question priority tags",
+    ],
+    metric: {
+      value: "<200ms",
+      label: "grounded search latency",
+    },
   },
   {
     role: "3. Attendance",
     pitch:
       "Direct college portal sync tracks your lectures automatically, projecting exactly what you need to keep your 75% safe.",
+    points: [
+      "Automated background sync with your university ERP attendance logs",
+      "Safe bunk calculator with real-time class threshold projections",
+      "Early warning alerts before you risk medical or debarment lists",
+    ],
+    metric: {
+      value: "75%",
+      label: "threshold protection",
+    },
   },
 ];
 
@@ -2206,8 +2238,31 @@ export default function OnwardSummitTemplate({
                     ))}
                   </span>
                 </p>
+                {audiences[aud]?.points && (
+                  <ul className="ows-how-list ows-rise" key={"pts-" + aud}>
+                    {audiences[aud].points.map((pt, i) => (
+                      <li key={i} className="ows-how-item">
+                        <span className="ows-how-item-bullet" aria-hidden="true" />
+                        <span>{pt}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {audiences[aud]?.metric && (
+                  <div className="ows-how-footer ows-rise" key={"met-" + aud}>
+                    <span className="ows-how-metric-val">{audiences[aud].metric.value}</span>
+                    <span className="ows-how-metric-lbl">{audiences[aud].metric.label}</span>
+                  </div>
+                )}
               </div>
               <div className="ows-how-interactive ows-rise">
+                <div className="ows-how-console-bar" aria-hidden="true">
+                  <span>Interactive Engine</span>
+                  <span className="ows-how-console-status">
+                    <span className="ows-how-console-dot" />
+                    Live simulation
+                  </span>
+                </div>
                 <WebhookRelay />
               </div>
             </div>
@@ -2797,10 +2852,19 @@ html:has(.ows-root)::-webkit-scrollbar,body:has(.ows-root)::-webkit-scrollbar,.o
 .ows-rise.ows-pre{opacity:0;transform:translateY(22px)}
 
 /* ---- how it works layout ---- */
-.ows-how-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(32px,5vw,72px);align-items:center;margin-top:clamp(24px,3vw,36px)}
+.ows-how-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(32px,5vw,64px);align-items:center;margin-top:clamp(20px,2.5vw,32px)}
 .ows-how-copy{display:flex;flex-direction:column}
-.ows-how-interactive{display:flex;align-items:center;justify-content:center;width:100%;margin-top:clamp(28px,4vw,48px)}
-.ows-how-interactive .fig-webhook-relay{width:100%!important;max-width:410px!important;background:transparent!important;border:none!important;box-shadow:none!important}
+.ows-how-list{list-style:none;padding:0;margin:20px 0 0;display:flex;flex-direction:column;gap:10px}
+.ows-how-item{display:flex;align-items:baseline;gap:10px;font-size:14px;line-height:1.5;color:color-mix(in srgb,var(--ows-ink) 80%,transparent)}
+.ows-how-item-bullet{width:5px;height:5px;border-radius:50%;background:var(--ows-mid);flex-shrink:0;transform:translateY(-1px)}
+.ows-how-footer{display:flex;align-items:baseline;gap:8px;margin-top:22px;padding-top:16px;border-top:1px solid color-mix(in srgb,var(--ows-ink) 8%,transparent)}
+.ows-how-metric-val{font-size:16px;font-weight:600;letter-spacing:-.02em;color:var(--ows-ink)}
+.ows-how-metric-lbl{font-size:12.5px;color:var(--ows-muted)}
+.ows-how-interactive{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;background:color-mix(in srgb,var(--ows-paper) 70%,var(--ows-tint));border:1px solid color-mix(in srgb,var(--ows-ink) 8%,transparent);border-radius:16px;padding:14px 18px 20px}
+.ows-how-console-bar{display:flex;align-items:center;justify-content:space-between;width:100%;padding-bottom:10px;margin-bottom:8px;border-bottom:1px solid color-mix(in srgb,var(--ows-ink) 6%,transparent);font-size:11px;font-weight:500;color:var(--ows-muted)}
+.ows-how-console-status{display:inline-flex;align-items:center;gap:6px;font-size:11px}
+.ows-how-console-dot{width:6px;height:6px;border-radius:50%;background:var(--ows-mid)}
+.ows-how-interactive .fig-webhook-relay{width:100%!important;max-width:390px!important;background:transparent!important;border:none!important;box-shadow:none!important}
 .ows-how-interactive .fig-webhook-relay .ik-plate-base,
 .ows-how-interactive .fig-webhook-relay svg{background:transparent!important}
 .ows-how-interactive .ik-credit,
