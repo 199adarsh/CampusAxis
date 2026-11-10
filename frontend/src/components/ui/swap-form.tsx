@@ -359,6 +359,17 @@ export function SwapForm({
         : studentPrn
         ? studentPrn.toUpperCase()
         : "Scholar");
+    const formatTitleCase = (str: string) => {
+      if (!str) return "";
+      return str
+        .toLowerCase()
+        .split(" ")
+        .filter(Boolean)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+    };
+
+    const formattedName = formatTitleCase(displayName);
     const displayRole = isFaculty
       ? "Faculty Member"
       : onboardingStudent?.department || studentMeta.department;
@@ -370,92 +381,90 @@ export function SwapForm({
 
     return (
       <div
-        className={`relative w-full max-w-[400px] mx-auto text-left rounded-xl border border-[#DCE6F8] bg-gradient-to-b from-[#F7FAFF] via-white to-white shadow-[0_20px_60px_-20px_rgba(40,91,232,0.22)] p-6 sm:p-7 overflow-hidden ${className}`}
+        className={`relative w-full max-w-[390px] mx-auto text-left rounded-2xl border border-slate-200/90 bg-white shadow-xl shadow-slate-900/5 p-6 sm:p-7 ${className}`}
       >
-        {/* Ambient Top Glow */}
-        <div className="absolute -top-16 -left-16 w-44 h-44 bg-[#285BE8]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-
         {/* Header with Avatar & Live Pulse */}
-        <div className="relative flex flex-col items-center text-center pt-1 pb-3">
+        <div className="flex flex-col items-center text-center">
           <div className="relative mb-3">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#285BE8] via-[#3B72FF] to-[#608AF8] p-0.5 shadow-lg shadow-blue-500/25 flex items-center justify-center">
-              <div className="w-full h-full rounded-[14px] bg-white flex items-center justify-center font-bold text-xl text-[#285BE8] tracking-tight">
-                {displayName.charAt(0).toUpperCase()}
-              </div>
+            <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200/90 flex items-center justify-center font-semibold text-lg text-slate-800 shadow-xs">
+              {displayName.charAt(0).toUpperCase()}
             </div>
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center">
+              <span className="w-1 h-1 rounded-full bg-white" />
             </div>
           </div>
 
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase bg-[#EDF3FF] text-[#285BE8] border border-[#DCE8FF] mb-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#285BE8] animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-medium bg-blue-50/80 text-blue-700 border border-blue-200/60 mb-2.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
             Live Portal Sync
           </span>
 
-          <h3 className="text-[17px] font-bold text-[#172033] tracking-tight">
-            Onboarding you, <br />
-            <span className="text-[#285BE8] font-extrabold">{displayName}</span>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            Onboarding you
+          </p>
+          <h3 className="text-base sm:text-[17px] font-semibold text-slate-900 tracking-tight mt-0.5">
+            {formattedName}
           </h3>
 
           <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2.5 text-[11px]">
-            <span className="px-2 py-0.5 rounded-md bg-[#F2F5FA] border border-[#E3EAF4] font-mono font-medium text-slate-700">
+            <span className="px-2 py-0.5 rounded-md bg-slate-100 font-mono font-medium text-slate-700 border border-slate-200/70">
               {isFaculty ? facultyId : studentPrn.toUpperCase()}
             </span>
             {displayRole && (
-              <span className="px-2 py-0.5 rounded-md bg-[#F2F5FA] border border-[#E3EAF4] font-medium text-slate-600">
-                {displayRole}
-              </span>
+              <>
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-600 font-medium">{displayRole}</span>
+              </>
             )}
             {studentMeta.batch && !isFaculty && (
-              <span className="px-2 py-0.5 rounded-md bg-[#F2F5FA] border border-[#E3EAF4] font-medium text-slate-600">
-                {studentMeta.batch}
-              </span>
+              <>
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-500">{studentMeta.batch}</span>
+              </>
             )}
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="my-3.5">
-          <div className="flex justify-between items-center text-[11px] font-medium text-slate-500 mb-1.5">
+        <div className="my-4">
+          <div className="flex justify-between items-center text-[11px] font-medium text-slate-600 mb-1.5">
             <span>Importing university records</span>
-            <span className="font-mono text-[#285BE8] font-semibold">
+            <span className="font-mono tabular-nums text-slate-900 font-semibold">
               {progress}%
             </span>
           </div>
-          <div className="h-1.5 w-full bg-[#EBF1FA] rounded-full overflow-hidden">
+          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-[#285BE8] to-[#4F86F7] rounded-full transition-all duration-500 ease-out"
+              className="h-full bg-[#0071E3] rounded-full transition-all duration-300 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
 
         {/* Checklist Steps */}
-        <div className="p-3.5 rounded-xl bg-white border border-[#E5EAF2] shadow-sm space-y-2 mb-3.5">
+        <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-200/70 space-y-2 mb-3.5">
           {steps.map((step, idx) => {
             const isDone = idx < syncStepIndex;
             const isCurrent = idx === syncStepIndex;
             return (
               <div
                 key={step}
-                className={`flex items-center gap-2.5 text-xs transition-colors duration-300 ${
+                className={`flex items-center gap-2.5 text-xs transition-colors duration-200 ${
                   isDone
-                    ? "text-emerald-700 font-medium"
+                    ? "text-slate-700 font-medium"
                     : isCurrent
-                    ? "text-[#285BE8] font-semibold"
+                    ? "text-slate-900 font-semibold"
                     : "text-slate-400"
                 }`}
               >
                 {isDone ? (
-                  <CheckmarkCircle02Icon className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <CheckmarkCircle02Icon className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 ) : isCurrent ? (
-                  <Loading03Icon className="w-4 h-4 animate-spin text-[#285BE8] shrink-0" />
+                  <Loading03Icon className="w-3.5 h-3.5 animate-spin text-[#0071E3] shrink-0" />
                 ) : (
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-200 shrink-0 mx-1" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0 mx-1" />
                 )}
-                <span className="leading-tight text-[11px] sm:text-xs">
+                <span className="leading-tight text-[11px] sm:text-[11.5px]">
                   {step}
                 </span>
               </div>
@@ -463,8 +472,8 @@ export function SwapForm({
           })}
         </div>
 
-        <p className="text-[10.5px] text-center text-slate-400 leading-relaxed">
-          Initial scrape securely imports live attendance & CIE marks so future logins are instant.
+        <p className="text-[11px] text-center text-slate-400 leading-relaxed">
+          Initial scrape securely imports live attendance &amp; CIE marks so future logins are instant.
         </p>
       </div>
     );
