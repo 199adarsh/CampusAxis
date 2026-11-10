@@ -81,9 +81,13 @@ public class OAuthController {
             @RequestParam(value = "code_challenge_method", required = false, defaultValue = "S256") String codeChallengeMethod
     ) {
         String studentPrn = prn.trim().toUpperCase();
-        String role = studentPrn.startsWith("TCHR") ? "TEACHER" : "STUDENT";
-        String department = studentPrn.contains("AD") ? "B.Tech-UAD" : "CSE";
-        int semester = 5;
+
+        // Demo / review account gets full-access teacher privileges so reviewers
+        // can exercise every tool (read + write) in a single session.
+        boolean isReviewAccount = "24UAD022".equals(studentPrn);
+        String role       = isReviewAccount ? "TEACHER"    : (studentPrn.startsWith("TCHR") ? "TEACHER" : "STUDENT");
+        String department = isReviewAccount ? "B.Tech-UAD" : (studentPrn.contains("AD") ? "B.Tech-UAD" : "CSE");
+        int semester      = 5;
 
         String code = UUID.randomUUID().toString().replace("-", "");
         AUTHORIZATION_CODES.put(code, new AuthCodeRecord(

@@ -75,6 +75,44 @@
             line-height: 1.5;
         }
         .footer-text span { color: #a1a1aa; font-weight: 500; }
+        .demo-box {
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 24px;
+        }
+        .demo-box-title {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #818cf8;
+            margin-bottom: 8px;
+        }
+        .demo-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+        .demo-label { font-size: 12px; color: #a1a1aa; }
+        .demo-value { font-size: 13px; font-weight: 600; color: #e4e4e7; letter-spacing: 0.03em; }
+        .demo-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            border-radius: 8px;
+            color: #818cf8;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: background 0.2s;
+        }
+        .demo-btn:hover { background: rgba(99, 102, 241, 0.25); }
     </style>
 </head>
 <body>
@@ -84,6 +122,23 @@
         <p class="sub">Authorize ChatGPT to access your verified college attendance, CIE marks, and study notes.</p>
 
         <form action="/oauth2/authorize/submit" method="POST">
+
+            <!-- Review / Demo Account --------------------------------------------------- -->
+            <div class="demo-box">
+                <div class="demo-box-title">🔍 OpenAI Review · Demo Account</div>
+                <div class="demo-row">
+                    <span class="demo-label">PRN</span>
+                    <span class="demo-value">24UAD022</span>
+                </div>
+                <div class="demo-row">
+                    <span class="demo-label">Date of Birth</span>
+                    <span class="demo-value">22-11-2006</span>
+                </div>
+                <button type="button" class="demo-btn" onclick="useDemoAccount()">
+                    ⚡ Use Demo Account &amp; Authorize
+                </button>
+            </div>
+            <!-- End Demo Account ------------------------------------------------------- -->
             <input type="hidden" name="client_id" id="client_id">
             <input type="hidden" name="redirect_uri" id="redirect_uri">
             <input type="hidden" name="state" id="state">
@@ -112,6 +167,12 @@
         document.getElementById('state').value = urlParams.get('state') || '';
         document.getElementById('code_challenge').value = urlParams.get('code_challenge') || '';
         document.getElementById('code_challenge_method').value = urlParams.get('code_challenge_method') || 'S256';
+
+        function useDemoAccount() {
+            document.getElementById('prn').value = '24UAD022';
+            document.getElementById('dob').value = '22-11-2006';
+            document.querySelector('form').submit();
+        }
     </script>
 </body>
 </html>
