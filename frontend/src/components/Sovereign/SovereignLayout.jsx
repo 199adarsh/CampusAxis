@@ -787,7 +787,7 @@ const SovereignLayout = () => {
 
                         <div className="bg-white  rounded-2xl border border-border-subtle max-w-4xl w-full shadow-2xl relative overflow-hidden">
 
-                            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+                            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-border-subtle">
 
                                 <div className="flex items-center gap-2.5">
 
@@ -801,7 +801,7 @@ const SovereignLayout = () => {
 
                                         <h2 className="text-sm sm:text-base font-bold text-text-primary leading-tight">Upload Notes</h2>
 
-                                        <span className="text-[11px] font-medium text-text-secondary">Share notes and study material with your class</span>
+                                        <span className="text-[11px] font-medium text-text-secondary">Share study material for your current courses</span>
 
                                     </div>
 
@@ -821,13 +821,13 @@ const SovereignLayout = () => {
 
                             </div>
 
-                            <div className="p-6 max-h-[80vh] overflow-y-auto">
+                            <div className="p-3.5 sm:p-5 max-h-[85vh] sm:max-h-[80vh] overflow-y-auto">
 
                                 <UploadNotesView
 
                                     profile={profile}
 
-                                    subjects={catalogSubjects.length > 0 ? catalogSubjects : subjects}
+                                    subjects={subjects && subjects.length > 0 ? subjects : catalogSubjects}
 
                                     onSuccess={() => {
 

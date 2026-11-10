@@ -715,13 +715,16 @@ const NoteDetail = () => {
                     )}
 
                     <button
-                        onClick={() => setIsFullScreen(true)}
-                        className="px-3.5 py-1.5 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-xs active:scale-95"
+                        onClick={() => {
+                            if (window.innerWidth >= 768) {
+                                setIsFullScreen(true);
+                            }
+                        }}
+                        className="hidden md:flex px-3.5 py-1.5 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-xl transition-all items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-xs active:scale-95"
                         title="Open Full Screen Note Annotator"
                     >
                         <Maximize2 size={14} />
-                        <span className="hidden sm:inline">Full Screen</span>
-                        <span className="sm:hidden">Full</span>
+                        <span>Full Screen</span>
                     </button>
 
                     <button
@@ -761,7 +764,7 @@ const NoteDetail = () => {
                                 presignedUrl={presignedUrl || resolvedPdfUrl}
                                 title={note.title}
                                 onDownload={handleDownload}
-                                onFullScreen={() => setIsFullScreen(true)}
+                                onFullScreen={typeof window !== 'undefined' && window.innerWidth >= 768 ? () => setIsFullScreen(true) : undefined}
                                 extractedText={note.extractedText}
                             />
                         )
@@ -779,7 +782,7 @@ const NoteDetail = () => {
                                 blob={docxBlob}
                                 title={note.title}
                                 onDownload={handleDownload}
-                                onFullScreen={() => setIsFullScreen(true)}
+                                onFullScreen={typeof window !== 'undefined' && window.innerWidth >= 768 ? () => setIsFullScreen(true) : undefined}
                                 className="h-full border-none rounded-none"
                             />
                         ) : (isPpt && presignedUrl && presignedUrl.startsWith('http')) ? (

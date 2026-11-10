@@ -92,6 +92,7 @@ const AttendanceAnalytics = () => {
     const { profile, subjects: globalSubjects, refreshData, loading } = useOutletContext();
     const [selectedSubject, setSelectedSubject] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [syncProgress, setSyncProgress] = useState(0);
     const [filterTab, setFilterTab] = useState('all'); // 'all', 'attention', 'safe'
     const [showDetailModal, setShowDetailModal] = useState(false);
 
@@ -391,6 +392,14 @@ const AttendanceAnalytics = () => {
         }
 
         setIsSyncing(true);
+        setSyncProgress(15);
+        const progressInterval = setInterval(() => {
+            setSyncProgress((prev) => {
+                if (prev >= 92) return prev;
+                return prev + Math.floor(Math.random() * 8 + 4);
+            });
+        }, 250);
+
         const toastId = toast.loading("Syncing with institutional portal...");
         try {
             const response = await fetch(`${API_BASE}/portal/dashboard`, {
@@ -401,6 +410,8 @@ const AttendanceAnalytics = () => {
 
             if (response.ok) {
                 const data = await response.json();
+                clearInterval(progressInterval);
+                setSyncProgress(100);
                 const updatedProfile = {
                     ...(data.profile || {}),
                     prn: profile.prn,
@@ -416,12 +427,18 @@ const AttendanceAnalytics = () => {
                 }
                 toast.success("Synchronized with academic portal", { id: toastId });
             } else {
+                clearInterval(progressInterval);
                 toast.error("Cloud synchronization failed", { id: toastId });
             }
         } catch (err) {
+            clearInterval(progressInterval);
             toast.error("Network error during sync", { id: toastId });
         } finally {
-            setIsSyncing(false);
+            clearInterval(progressInterval);
+            setTimeout(() => {
+                setIsSyncing(false);
+                setSyncProgress(0);
+            }, 600);
         }
     };
 
@@ -1184,6 +1201,24 @@ const AttendanceAnalytics = () => {
                         )}
                     </div>
                 </section>
+
+                {isSyncing && (
+                    <div className="w-full bg-[#F2F7FC] border border-[#DEEDFC] rounded-xl p-3 my-2 animate-in fade-in duration-200 shadow-2xs">
+                        <div className="flex items-center justify-between text-xs font-semibold text-[#0073E6] mb-1.5">
+                            <span className="flex items-center gap-2">
+                                <RefreshIcon size={14} className="animate-spin text-[#0073E6]" />
+                                Syncing academic &amp; attendance records with portal...
+                            </span>
+                            <span className="font-mono tabular-nums">{syncProgress}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-[#DEEDFC] rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-[#0073E6] rounded-full transition-all duration-300 ease-out"
+                                style={{ width: `${syncProgress}%` }}
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* TopSummaryRibbon */}
                 {isTeacher ? (

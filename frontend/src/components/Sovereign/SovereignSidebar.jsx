@@ -39,6 +39,8 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
 
     const SovereignSidebar = ({ profile, attendance, mobileMenuOpen, setMobileMenuOpen, onLogout, collapsed = false, onOpenDeveloper }) => {
         const [showUserMenu, setShowUserMenu] = useState(false);
+        const [isSyncing, setIsSyncing] = useState(false);
+        const [syncProgress, setSyncProgress] = useState(0);
         const menuRef = useRef(null);
 
         useEffect(() => {
@@ -66,12 +68,25 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                 return;
             }
 
+            setShowUserMenu(false);
+            setIsSyncing(true);
+            setSyncProgress(15);
+
+            const progressInterval = setInterval(() => {
+                setSyncProgress((prev) => {
+                    if (prev >= 92) return prev;
+                    return prev + Math.floor(Math.random() * 8 + 4);
+                });
+            }, 300);
+
             const id = toast.loading('Syncing student portal...');
             try {
                 const resp = await axios.post(`${API_BASE}/portal/dashboard`, {
                     prn: profile.prn,
                     dob: profile.dob
                 });
+                clearInterval(progressInterval);
+                setSyncProgress(100);
                 if (resp.data) {
                     const updatedProfile = {
                         ...(resp.data.profile || {}),
@@ -84,11 +99,14 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                     localStorage.setItem('eduvault_last_synced', Date.now().toString());
                 }
                 toast.success('Sync complete', { id });
-                setShowUserMenu(false);
-                setTimeout(() => window.location.reload(), 500);
+                setTimeout(() => {
+                    setIsSyncing(false);
+                    window.location.reload();
+                }, 500);
             } catch {
+                clearInterval(progressInterval);
+                setIsSyncing(false);
                 toast.error('Failed to sync portal data', { id });
-                setShowUserMenu(false);
             }
         };
 
@@ -157,6 +175,15 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
         };
 
         return (
+            <>
+            {isSyncing && (
+                <div className="fixed top-0 left-0 right-0 z-[9999] h-1 bg-[#DEEDFC] overflow-hidden">
+                    <div
+                        className="h-full bg-[#0073E6] transition-all duration-300 ease-out"
+                        style={{ width: `${syncProgress}%` }}
+                    />
+                </div>
+            )}
             <aside className={cn(
                 "fixed left-0 top-0 h-full bg-white border-r border-[#E2E2E2] z-50 flex flex-col transition-all duration-300 select-none",
                 collapsed ? "w-16" : "w-64",
@@ -255,6 +282,23 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                 </div>
 
                 {/* Active Session User Dock */}
+                {isSyncing && (
+                    <div className="px-3 py-2 bg-[#F2F7FC] border-t border-[#E2E2E2] shrink-0 animate-in fade-in duration-200">
+                        <div className="flex items-center justify-between text-[11px] font-semibold text-[#0073E6] mb-1">
+                            <span className="flex items-center gap-1.5 truncate">
+                                <RefreshIcon size={12} className="animate-spin text-[#0073E6] shrink-0" />
+                                {!collapsed && "Syncing records..."}
+                            </span>
+                            <span className="font-mono tabular-nums">{syncProgress}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-[#DEEDFC] rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-[#0073E6] rounded-full transition-all duration-300 ease-out"
+                                style={{ width: `${syncProgress}%` }}
+                            />
+                        </div>
+                    </div>
+                )}
                 <div className={cn("border-t border-[#E2E2E2] relative shrink-0 bg-white", collapsed ? "p-2 flex justify-center" : "p-3")} ref={menuRef}>
                     {showUserMenu && (
                         <div className={cn(
@@ -338,6 +382,7 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                     )}
                 </div>
             </aside>
+            </>
         );
     };
 
