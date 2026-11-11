@@ -266,8 +266,8 @@ const UploadNotesView = ({ subjects, onSuccess, profile }) => {
       setFile(null);
       setTitle('');
       onSuccess();
-    } catch {
-      toast.error('Upload failed. Connection error.');
+    } catch (err) {
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Upload failed. Connection error.');
     } finally {
       setIsUploading(false);
       setUploadProgress(0);

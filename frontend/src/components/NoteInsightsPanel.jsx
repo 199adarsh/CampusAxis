@@ -49,11 +49,20 @@ const NoteInsightsPanel = ({ noteId, onClose, onDelete }) => {
   const handleDelete = async () => {
       if (window.confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
           try {
-              await axios.delete(`${API_BASE}/notes/${note.id}`);
+              let role = 'student';
+              try {
+                  const p = JSON.parse(localStorage.getItem('eduvault_profile') || 'null');
+                  if (p && (p.dob === 'TEACHER' || String(p.role || '').toUpperCase() === 'TEACHER')) {
+                      role = 'teacher';
+                  }
+              } catch { /* ignore */ }
+              await axios.delete(`${API_BASE}/notes/${note.id}`, {
+                  headers: { 'X-User-Role': role }
+              });
               toast.success("Note deleted successfully.");
               onDelete(); 
           } catch (err) {
-              toast.error("Failed to delete note.");
+              toast.error(err?.response?.status === 403 ? "Only faculty can delete notes." : "Failed to delete note.");
           }
       }
   };

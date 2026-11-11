@@ -28,8 +28,9 @@ const Settings = () => {
     const context = useOutletContext() || {};
     const { profile, catalogSubjects = [], refreshData } = context;
 
-    const userRole = localStorage.getItem('eduvault_user_role') || (profile?.dob === 'TEACHER' ? 'teacher' : 'student');
-    const isTeacher = userRole === 'teacher' || userRole === 'faculty' || userRole === 'admin' || profile?.dob === 'TEACHER';
+    const isTeacher = profile
+        ? (profile.dob === 'TEACHER' || String(profile.role || '').toUpperCase() === 'TEACHER')
+        : (localStorage.getItem('eduvault_user_role') === 'teacher');
 
     // --- Gemini API Key State ---
     const [geminiKey, setGeminiKey] = useState('');
@@ -39,14 +40,25 @@ const Settings = () => {
 
     // --- Teacher Subjects State ---
     const [allSubjects, setAllSubjects] = useState([]);
+    const [bucketFolderCount, setBucketFolderCount] = useState(0);
     const [subjectsLoading, setSubjectsLoading] = useState(false);
+    const [savingSubjects, setSavingSubjects] = useState(false);
     const [selectedSubjects, setSelectedSubjects] = useState([]);
     const [subjectSearch, setSubjectSearch] = useState('');
+    const [yearFilter, setYearFilter] = useState('ALL');
     const [semFilter, setSemFilter] = useState('ALL');
+
+    const getYearFromSem = (sem) => {
+        const m = (sem || '').match(/(\d+)/);
+        const num = m ? parseInt(m[1], 10) : 1;
+        if (num <= 2) return 'FY';
+        if (num <= 4) return 'SY';
+        if (num <= 6) return 'TY';
+        return 'Final Year';
+    };
 
     // Load initial settings on mount
     useEffect(() => {
-        // Load custom Gemini API key
         const savedKey = localStorage.getItem('eduvault_custom_gemini_key') || localStorage.getItem('eduvault_gemini_api_key') || '';
         setGeminiKey(savedKey);
         if (savedKey) {
@@ -57,7 +69,6 @@ const Settings = () => {
             setKeyStatusMsg('No custom key (using system default)');
         }
 
-        // Load teacher subjects
         const savedTeacherSubs = localStorage.getItem('eduvault_teacher_subjects');
         if (savedTeacherSubs) {
             try {
@@ -70,29 +81,62 @@ const Settings = () => {
             }
         }
 
-        // Fetch all available subjects
+        const savedFilter = localStorage.getItem('eduvault_teacher_filter');
+        if (savedFilter) {
+            try {
+                const f = JSON.parse(savedFilter);
+                if (f.year) setYearFilter(f.year);
+                if (f.semester) setSemFilter(f.semester);
+            } catch { /* ignore */ }
+        }
+
         fetchAllSubjects();
     }, []);
 
-    const fetchAllSubjects = async () => {
+    const getTeacherPrn = () => {
+        if (profile?.prn) return profile.prn;
+        try {
+            const p = JSON.parse(localStorage.getItem('eduvault_profile') || 'null');
+            if (p?.prn) return p.prn;
+        } catch { /* ignore */ }
+        return localStorage.getItem('eduvault_prn') || 'TEACHER';
+    };
+
+    const fetchAllSubjects = async (showToast = false) => {
         setSubjectsLoading(true);
         try {
-            const res = await axios.get(`${API_BASE}/subjects`);
-            const list = Array.isArray(res.data) ? res.data : [];
+            const prn = getTeacherPrn();
+            const [r2Res, mapRes] = await Promise.allSettled([
+                axios.get(`${API_BASE}/r2/subjects`),
+                axios.get(`${API_BASE}/teacher/mappings`, { params: { prn }, headers: { 'X-Student-PRN': prn } })
+            ]);
+
+            let list = [];
+            if (r2Res.status === 'fulfilled' && Array.isArray(r2Res.value?.data?.subjects)) {
+                list = r2Res.value.data.subjects;
+                setBucketFolderCount(Array.isArray(r2Res.value.data.bucketFolders) ? r2Res.value.data.bucketFolders.length : 0);
+            } else {
+                const res = await axios.get(`${API_BASE}/subjects`);
+                list = Array.isArray(res.data) ? res.data.map(s => ({ ...s, year: getYearFromSem(s.semester), inBucket: false })) : [];
+            }
             setAllSubjects(list);
-            
-            // If teacher had no subjects selected yet, initialize with their current department subjects or catalog
-            const savedTeacherSubs = localStorage.getItem('eduvault_teacher_subjects');
-            if (!savedTeacherSubs && isTeacher && list.length > 0) {
-                const initial = list.slice(0, 4).map(s => s.name);
-                setSelectedSubjects(initial);
-                localStorage.setItem('eduvault_teacher_subjects', JSON.stringify(initial));
+
+            if (mapRes.status === 'fulfilled' && mapRes.value?.data && Array.isArray(mapRes.value.data.selectedSubjects)) {
+                const serverData = mapRes.value.data;
+                setSelectedSubjects(serverData.selectedSubjects);
+                if (serverData.year) setYearFilter(serverData.year);
+                if (serverData.semester) setSemFilter(serverData.semester);
+                localStorage.setItem('eduvault_teacher_subjects', JSON.stringify(serverData.selectedSubjects));
+                localStorage.setItem('eduvault_teacher_filter', JSON.stringify({ year: serverData.year || 'ALL', semester: serverData.semester || 'ALL' }));
+            }
+
+            if (showToast) {
+                toast.success(`Detected ${list.filter(s => s.inBucket).length} bucket subjects (${list.length} total)`);
             }
         } catch (err) {
             console.error('Failed to fetch subjects list', err);
-            // Fallback to catalogSubjects from context if available
             if (catalogSubjects && catalogSubjects.length > 0) {
-                setAllSubjects(catalogSubjects);
+                setAllSubjects(catalogSubjects.map(s => ({ ...s, year: getYearFromSem(s.semester), inBucket: false })));
             }
         } finally {
             setSubjectsLoading(false);
@@ -229,17 +273,65 @@ const Settings = () => {
         setSelectedSubjects([]);
     };
 
-    const handleSaveTeacherSubjects = () => {
+    const handleSaveTeacherSubjects = async () => {
+        setSavingSubjects(true);
         localStorage.setItem('eduvault_teacher_subjects', JSON.stringify(selectedSubjects));
-        toast.success(`Saved ${selectedSubjects.length} assigned subjects!`);
-        if (refreshData) {
-            refreshData();
+        localStorage.setItem('eduvault_teacher_filter', JSON.stringify({ year: yearFilter, semester: semFilter }));
+
+        const folderMappings = {};
+        allSubjects.forEach(sub => {
+            if (selectedSubjects.includes(sub.name) || selectedSubjects.includes(sub.id)) {
+                folderMappings[sub.name] = {
+                    id: sub.id,
+                    code: sub.code || '',
+                    year: sub.year || getYearFromSem(sub.semester),
+                    semester: sub.semester || '',
+                    bucketFolder: sub.bucketFolder || sub.name
+                };
+            }
+        });
+
+        try {
+            const prn = getTeacherPrn();
+            await axios.put(`${API_BASE}/teacher/mappings`, {
+                year: yearFilter,
+                semester: semFilter,
+                selectedSubjects,
+                folderMappings
+            }, { params: { prn }, headers: { 'X-Student-PRN': prn } });
+            toast.success(`Saved ${selectedSubjects.length} subject(s) to JSON config!`);
+        } catch (err) {
+            console.warn('Could not persist mappings to backend JSON, saved locally', err);
+            toast.success(`Saved ${selectedSubjects.length} assigned subjects locally!`);
+        } finally {
+            setSavingSubjects(false);
+            if (refreshData) {
+                refreshData();
+            }
         }
     };
 
-    // Filter available subjects
+    const availableYears = ['FY', 'SY', 'TY', 'Final Year'];
+
+    // Unique semesters for selected year
+    const availableSemesters = useMemo(() => {
+        const set = new Set();
+        allSubjects.forEach(s => {
+            const yr = s.year || getYearFromSem(s.semester);
+            if ((yearFilter === 'ALL' || yr === yearFilter) && s.semester) {
+                set.add(s.semester);
+            }
+        });
+        return Array.from(set).sort();
+    }, [allSubjects, yearFilter]);
+
+    // Filter available subjects by Year -> Semester -> Search (Bucket-detected subjects first)
     const filteredSubjects = useMemo(() => {
         return allSubjects.filter(sub => {
+            const yr = sub.year || getYearFromSem(sub.semester);
+            if (yearFilter !== 'ALL' && yr !== yearFilter) {
+                return false;
+            }
             if (semFilter !== 'ALL' && sub.semester && !sub.semester.toLowerCase().includes(semFilter.toLowerCase())) {
                 return false;
             }
@@ -248,27 +340,12 @@ const Settings = () => {
                 const nameMatch = sub.name?.toLowerCase().includes(q);
                 const codeMatch = sub.code?.toLowerCase().includes(q);
                 const deptMatch = sub.department?.toLowerCase().includes(q);
-                return nameMatch || codeMatch || deptMatch;
+                const folderMatch = sub.bucketFolder?.toLowerCase().includes(q);
+                return nameMatch || codeMatch || deptMatch || folderMatch;
             }
             return true;
-        });
-    }, [allSubjects, semFilter, subjectSearch]);
-
-    // Unique semesters for filter
-    const availableSemesters = useMemo(() => {
-        const set = new Set();
-        allSubjects.forEach(s => {
-            if (s.semester) set.add(s.semester);
-        });
-        return Array.from(set).sort();
-    }, [allSubjects]);
-
-    // Role switcher helper for testing
-    const handleSwitchRole = (newRole) => {
-        localStorage.setItem('eduvault_user_role', newRole);
-        toast.info(`Switched active view to ${newRole.toUpperCase()}. Reloading...`);
-        setTimeout(() => window.location.reload(), 400);
-    };
+        }).sort((a, b) => Number(Boolean(b.inBucket)) - Number(Boolean(a.inBucket)));
+    }, [allSubjects, yearFilter, semFilter, subjectSearch]);
 
     return (
         <div className="flex-1 overflow-y-auto bg-background p-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-12 antialiased text-[#383838] font-sans min-h-screen">
@@ -292,8 +369,8 @@ const Settings = () => {
                         <span className="text-xs font-semibold text-[#727272]">Current Role:</span>
                         <span className={cn(
                             "px-2.5 py-1 rounded-full text-xs font-bold border",
-                            isTeacher 
-                                ? "bg-[#DEEDFC] text-[#174073] border-blue-200" 
+                            isTeacher
+                                ? "bg-[#DEEDFC] text-[#174073] border-blue-200"
                                 : "bg-emerald-50 text-emerald-700 border-emerald-200"
                         )}>
                             {isTeacher ? 'Teacher / Faculty' : 'Student'}
@@ -432,7 +509,8 @@ const Settings = () => {
                     </div>
                 </div>
 
-                {/* Section 2: Teacher Subject Selection */}
+                {/* Section 2: Teacher Subject Selection (Teachers only) */}
+                {isTeacher && (
                 <div className="bg-white border border-[#E2E2E2] rounded-2xl shadow-xs overflow-hidden">
                     <div className="p-5 sm:p-6 border-b border-[#E2E2E2] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
@@ -455,33 +533,26 @@ const Settings = () => {
                         <div className="flex items-center gap-2">
                             <button
                                 type="button"
+                                onClick={() => fetchAllSubjects(true)}
+                                disabled={subjectsLoading}
+                                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#383838] font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                                <RotateCcw className={cn("w-3.5 h-3.5", subjectsLoading && "animate-spin")} />
+                                <span>Detect Bucket ({bucketFolderCount})</span>
+                            </button>
+                            <button
+                                type="button"
                                 onClick={handleSaveTeacherSubjects}
-                                className="px-4 py-2 rounded-xl bg-[#0073E6] hover:bg-[#4A9AF0] active:bg-blue-800 text-white font-semibold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                                disabled={savingSubjects}
+                                className="px-4 py-2 rounded-xl bg-[#0073E6] hover:bg-[#4A9AF0] active:bg-blue-800 text-white font-semibold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                             >
                                 <Save className="w-3.5 h-3.5" />
-                                <span>Save Subjects</span>
+                                <span>{savingSubjects ? 'Saving...' : 'Save Subjects'}</span>
                             </button>
                         </div>
                     </div>
 
                     <div className="p-5 sm:p-6 space-y-4">
-                        {/* Notice for Students */}
-                        {!isTeacher && (
-                            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2">
-                                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                                    <span>You are currently in <strong>Student view</strong>. Subject selection applies to teachers. You can switch to Teacher view to manage class subjects.</span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => handleSwitchRole('teacher')}
-                                    className="px-2.5 py-1 rounded-lg bg-amber-600 text-white font-semibold text-[11px] shrink-0 hover:bg-amber-700 cursor-pointer"
-                                >
-                                    Switch to Teacher
-                                </button>
-                            </div>
-                        )}
-
                         {/* Search and filters toolbar */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-[#E2E2E2]/80">
                             <div className="flex items-center gap-2 flex-1">
@@ -495,6 +566,19 @@ const Settings = () => {
                                         className="w-full text-xs pl-8 pr-3 py-1.5 bg-white border border-[#E2E2E2] rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
                                     />
                                 </div>
+                                <select
+                                    value={yearFilter}
+                                    onChange={(e) => {
+                                        setYearFilter(e.target.value);
+                                        setSemFilter('ALL');
+                                    }}
+                                    className="text-xs bg-white border border-[#E2E2E2] rounded-lg px-2.5 py-1.5 font-medium text-[#383838] outline-none cursor-pointer"
+                                >
+                                    <option value="ALL">All Years</option>
+                                    {availableYears.map(yr => (
+                                        <option key={yr} value={yr}>{yr}</option>
+                                    ))}
+                                </select>
                                 {availableSemesters.length > 0 && (
                                     <select
                                         value={semFilter}
@@ -585,11 +669,18 @@ const Settings = () => {
                                                     </div>
                                                 </div>
 
-                                                {isChecked && (
-                                                    <span className="text-[10px] font-bold text-[#174073] bg-blue-100/70 px-2 py-0.5 rounded-full shrink-0">
-                                                        Assigned
-                                                    </span>
-                                                )}
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    {sub.inBucket && (
+                                                        <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                                            In Bucket
+                                                        </span>
+                                                    )}
+                                                    {isChecked && (
+                                                        <span className="text-[10px] font-bold text-[#174073] bg-blue-100/70 px-2 py-0.5 rounded-full">
+                                                            Assigned
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -613,6 +704,7 @@ const Settings = () => {
                         </div>
                     </div>
                 </div>
+                )}
 
                 {/* Section 3: User Profile & Role Overview */}
                 <div className="bg-white border border-[#E2E2E2] rounded-2xl p-5 sm:p-6 shadow-xs">
@@ -621,8 +713,8 @@ const Settings = () => {
                             <User className="w-5 h-5 text-[#383838]" />
                         </div>
                         <div>
-                            <h2 className="text-base font-bold text-[#383838]">User Identity &amp; Role Management</h2>
-                            <p className="text-xs text-[#727272]">Session details and testing controls</p>
+                            <h2 className="text-base font-bold text-[#383838]">User Identity &amp; Role Overview</h2>
+                            <p className="text-xs text-[#727272]">Authenticated session details</p>
                         </div>
                     </div>
 
@@ -644,27 +736,13 @@ const Settings = () => {
 
                         <div className="bg-slate-50 p-3 rounded-xl border border-[#E2E2E2]/80">
                             <span className="text-[10px] font-bold text-[#727272] uppercase">Active Role</span>
-                            <div className="flex items-center gap-2 mt-1">
-                                <button
-                                    type="button"
-                                    onClick={() => handleSwitchRole('student')}
-                                    className={cn(
-                                        "px-2 py-0.5 rounded text-[11px] font-bold transition cursor-pointer",
-                                        !isTeacher ? "bg-emerald-600 text-white" : "bg-white text-[#383838] border border-[#E2E2E2]"
-                                    )}
-                                >
-                                    Student
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleSwitchRole('teacher')}
-                                    className={cn(
-                                        "px-2 py-0.5 rounded text-[11px] font-bold transition cursor-pointer",
-                                        isTeacher ? "bg-[#0073E6] text-white" : "bg-white text-[#383838] border border-[#E2E2E2]"
-                                    )}
-                                >
-                                    Teacher
-                                </button>
+                            <div className="mt-1">
+                                <span className={cn(
+                                    "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold",
+                                    isTeacher ? "bg-[#0073E6] text-white" : "bg-emerald-600 text-white"
+                                )}>
+                                    {isTeacher ? 'Teacher / Faculty' : 'Student'}
+                                </span>
                             </div>
                         </div>
                     </div>

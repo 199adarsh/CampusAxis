@@ -255,9 +255,11 @@ const SovereignLayout = () => {
 
             // 3. Set enrolled subjects using canonical IDs from backend catalog
 
-            const role = localStorage.getItem('eduvault_user_role') || (currentProfile?.dob === 'TEACHER' ? 'teacher' : 'student');
+            const isTeacher = currentProfile
 
-            const isTeacher = role === 'teacher' || role === 'faculty' || role === 'admin';
+                ? (currentProfile.dob === 'TEACHER' || String(currentProfile.role || '').toUpperCase() === 'TEACHER')
+
+                : (localStorage.getItem('eduvault_user_role') === 'teacher');
 
             let enrolledSubjects = [];
 
@@ -265,39 +267,81 @@ const SovereignLayout = () => {
 
             if (isTeacher) {
 
-                const savedTeacherSubs = localStorage.getItem('eduvault_teacher_subjects');
+                let poolSubs = catalogSubs;
 
-                if (savedTeacherSubs) {
+                try {
 
-                    try {
+                    const r2Res = await axios.get(`${API_BASE}/r2/subjects`);
 
-                        const parsed = JSON.parse(savedTeacherSubs);
+                    if (Array.isArray(r2Res.data?.subjects) && r2Res.data.subjects.length > 0) {
 
-                        if (Array.isArray(parsed) && parsed.length > 0) {
+                        poolSubs = r2Res.data.subjects;
 
-                            const filtered = catalogSubs.filter(cs =>
-
-                                parsed.includes(cs.name) || parsed.includes(cs.id) || parsed.some(p => p === cs.name || p === cs.id)
-
-                            );
-
-                            enrolledSubjects = filtered.length > 0 ? filtered : catalogSubs;
-
-                        } else {
-
-                            enrolledSubjects = catalogSubs;
-
-                        }
-
-                    } catch (e) {
-
-                        enrolledSubjects = catalogSubs;
+                        setCatalogSubjects(poolSubs);
 
                     }
 
+                } catch { /* fallback to catalogSubs */ }
+
+                let savedList = null;
+
+                let hasSavedMapping = false;
+
+                try {
+
+                    const prn = currentProfile?.prn || localStorage.getItem('eduvault_prn') || 'TEACHER';
+
+                    const mapRes = await axios.get(`${API_BASE}/teacher/mappings`, { params: { prn }, headers: { 'X-Student-PRN': prn } });
+
+                    if (Array.isArray(mapRes.data?.selectedSubjects)) {
+
+                        savedList = mapRes.data.selectedSubjects;
+
+                        hasSavedMapping = true;
+
+                        localStorage.setItem('eduvault_teacher_subjects', JSON.stringify(savedList));
+
+                    }
+
+                } catch { /* fallback to localStorage */ }
+
+                if (!hasSavedMapping) {
+
+                    const savedTeacherSubs = localStorage.getItem('eduvault_teacher_subjects');
+
+                    if (savedTeacherSubs !== null) {
+
+                        try {
+
+                            const parsed = JSON.parse(savedTeacherSubs);
+
+                            if (Array.isArray(parsed)) {
+
+                                savedList = parsed;
+
+                                hasSavedMapping = true;
+
+                            }
+
+                        } catch { /* ignore */ }
+
+                    }
+
+                }
+
+                if (hasSavedMapping) {
+
+                    const filtered = poolSubs.filter(cs =>
+
+                        savedList.includes(cs.name) || savedList.includes(cs.id) || (cs.code && savedList.includes(cs.code)) || (cs.bucketFolder && savedList.includes(cs.bucketFolder))
+
+                    );
+
+                    enrolledSubjects = filtered;
+
                 } else {
 
-                    enrolledSubjects = catalogSubs;
+                    enrolledSubjects = poolSubs;
 
                 }
 
@@ -314,13 +358,17 @@ const SovereignLayout = () => {
                     let match = null;
 
                     if (ls.code && ls.code.trim()) {
-
                         const cleanCode = ls.code.trim().toUpperCase();
+                        let codeMatches = catalogSubs.filter(cs => cs.code && cs.code.trim().toUpperCase() === cleanCode);
 
-                        const codeMatches = catalogSubs.filter(cs => cs.code && cs.code.trim().toUpperCase() === cleanCode);
+                        // Cross-code alias matching (e.g. 01CS502 <-> 02ADL202 for Software Engineering)
+                        if (codeMatches.length === 0) {
+                            if (cleanCode.includes('CS502') || cleanCode.includes('ADL202')) {
+                                codeMatches = catalogSubs.filter(cs => cs.code && (cs.code.includes('ADL202') || cs.code.includes('CS502')));
+                            }
+                        }
 
                         if (codeMatches.length === 1) match = codeMatches[0];
-
                     }
 
                     if (!match && ls.id && ls.id.trim()) {
@@ -335,14 +383,15 @@ const SovereignLayout = () => {
 
                         const normLsName = ls.name.replace(/\s*\([^)]*\)\s*/g, ' ').replace(/[^a-zA-Z0-9\s]/g, ' ').trim().replace(/\s+/g, ' ').toLowerCase();
 
+                        // Strip department tags, years, and extra punctuation for normalized match
+                        const stripMeta = (str) => str.replace(/\b(cse|uad|aids|ai&ds|b\.tech|btech|engineering)\b/g, '').replace(/\s+/g, ' ').trim();
+                        const coreLs = stripMeta(normLsName);
+
                         const nameMatches = catalogSubs.filter(cs => {
-
                             if (!cs.name) return false;
-
                             const normCsName = cs.name.replace(/\s*\([^)]*\)\s*/g, ' ').replace(/[^a-zA-Z0-9\s]/g, ' ').trim().replace(/\s+/g, ' ').toLowerCase();
-
-                            return normLsName && normCsName && normLsName === normCsName;
-
+                            const coreCs = stripMeta(normCsName);
+                            return (normLsName && normCsName && normLsName === normCsName) || (coreLs && coreCs && coreLs === coreCs);
                         });
 
                         if (nameMatches.length === 1) {

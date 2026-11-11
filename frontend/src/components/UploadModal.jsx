@@ -126,7 +126,7 @@ const UploadModal = ({ onClose, subjects, onSuccess }) => {
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || err.message || 'Upload failed');
+      toast.error(err.response?.data?.error || err.response?.data?.message || err.message || 'Upload failed');
     } finally {
       setIsUploading(false);
     }

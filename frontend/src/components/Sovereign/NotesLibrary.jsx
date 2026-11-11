@@ -204,8 +204,9 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
     const [isPyqExamDropdownOpen, setIsPyqExamDropdownOpen] = useState(false);
     const [isPyqSubjectDropdownOpen, setIsPyqSubjectDropdownOpen] = useState(false);
 
-    const userRole = localStorage.getItem('eduvault_user_role') || (profile?.dob === 'TEACHER' ? 'teacher' : 'student');
-    const isTeacher = userRole === 'teacher' || userRole === 'faculty' || userRole === 'admin';
+    const isTeacher = profile
+        ? (profile.dob === 'TEACHER' || String(profile.role || '').toUpperCase() === 'TEACHER')
+        : (localStorage.getItem('eduvault_user_role') === 'teacher');
 
     const studentDept = normalizeDept(profile?.department);
     const studentSem = normalizeSem(profile?.semester);
@@ -250,8 +251,8 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
             );
             if (matchedSub) return matchedSub.id;
         }
-        if (note.b2ObjectKey) {
-            const folder = note.b2ObjectKey.split('/')[0];
+        if (note.r2ObjectKey) {
+            const folder = note.r2ObjectKey.split('/')[0];
             const matchedFolder = allKnownSubjects.find(s => {
                 if (s.code && s.code.length > 2 && folder.toUpperCase().includes(s.code.toUpperCase())) return true;
                 if (s.canonicalCode && s.canonicalCode.length > 2 && folder.toUpperCase().includes(s.canonicalCode.toUpperCase())) return true;
@@ -274,8 +275,8 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
             if (resolvedId && resolvedId === s.id) return true;
             if (note.subjectId && (note.subjectId === s.id || (s.code && s.code.length > 2 && note.subjectId.toLowerCase() === s.code.toLowerCase()))) return true;
             if (note.subjectName && s.name && isSubjectNameMatch(note.subjectName, s.name)) return true;
-            if (note.b2ObjectKey) {
-                const folder = note.b2ObjectKey.split('/')[0];
+            if (note.r2ObjectKey) {
+                const folder = note.r2ObjectKey.split('/')[0];
                 if (s.code && s.code.length > 2 && folder.toUpperCase().includes(s.code.toUpperCase())) return true;
                 if (s.canonicalCode && s.canonicalCode.length > 2 && folder.toUpperCase().includes(s.canonicalCode.toUpperCase())) return true;
                 if (s.name && isSubjectNameMatch(folder, s.name)) return true;
@@ -288,21 +289,22 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
     const availableSubjects = useMemo(() => {
         let baseList = [];
         if (isTeacher) {
+            let hasSaved = false;
             try {
                 const saved = localStorage.getItem('eduvault_teacher_subjects');
-                if (saved) {
+                if (saved !== null) {
                     const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        const matched = allKnownSubjects.filter(s =>
-                            parsed.includes(s.id) || parsed.includes(s.name) || parsed.includes(s.code)
+                    if (Array.isArray(parsed)) {
+                        hasSaved = true;
+                        baseList = allKnownSubjects.filter(s =>
+                            parsed.includes(s.id) || parsed.includes(s.name) || parsed.includes(s.code) || (s.bucketFolder && parsed.includes(s.bucketFolder))
                         );
-                        if (matched.length > 0) baseList = matched;
                     }
                 }
             } catch {
                 /* ignore */
             }
-            if (baseList.length === 0) baseList = allKnownSubjects;
+            if (!hasSaved) baseList = allKnownSubjects;
         } else {
             if (subjects && subjects.length > 0) {
                 baseList = subjects;
@@ -422,7 +424,8 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
     const pyqSubjectDropdownItems = useMemo(() => {
         let list = [];
         if (isTeacher) {
-            list = allKnownSubjects || subjects || [];
+            const hasSaved = localStorage.getItem('eduvault_teacher_subjects') !== null;
+            list = hasSaved ? (subjects || []) : (allKnownSubjects || subjects || []);
         } else {
             list = (subjects && subjects.length > 0) ? subjects : (availableSubjects || []);
             if (!list || list.length === 0) {
@@ -464,15 +467,15 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
             // 1. Strict match to selected subject
             const isMatch = resolvedId === activeSubjectId || note.subjectId === activeSubjectId ||
                 (activeSubjectObj && (
-                    (activeSubjectObj.code && activeSubjectObj.code.length > 2 && note.b2ObjectKey && (
-                        note.b2ObjectKey.toUpperCase().includes(activeSubjectObj.code.toUpperCase())
+                    (activeSubjectObj.code && activeSubjectObj.code.length > 2 && note.r2ObjectKey && (
+                        note.r2ObjectKey.toUpperCase().includes(activeSubjectObj.code.toUpperCase())
                     )) ||
-                    (activeSubjectObj.canonicalCode && activeSubjectObj.canonicalCode.length > 2 && note.b2ObjectKey && (
-                        note.b2ObjectKey.toUpperCase().includes(activeSubjectObj.canonicalCode.toUpperCase())
+                    (activeSubjectObj.canonicalCode && activeSubjectObj.canonicalCode.length > 2 && note.r2ObjectKey && (
+                        note.r2ObjectKey.toUpperCase().includes(activeSubjectObj.canonicalCode.toUpperCase())
                     )) ||
                     (activeSubjectObj.name && (
                         (note.subjectName && isSubjectNameMatch(note.subjectName, activeSubjectObj.name)) ||
-                        (note.b2ObjectKey && isSubjectNameMatch(note.b2ObjectKey.split('/')[0], activeSubjectObj.name))
+                        (note.r2ObjectKey && isSubjectNameMatch(note.r2ObjectKey.split('/')[0], activeSubjectObj.name))
                     ))
                 ));
             if (!isMatch) return false;
