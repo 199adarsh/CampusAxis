@@ -5,7 +5,7 @@ import com.eduvault.model.Note;
 import com.eduvault.model.StudentProfile;
 import com.eduvault.model.Subject;
 import com.eduvault.repository.LocalJsonDatabase;
-import com.eduvault.service.BackblazeStorageService;
+import com.eduvault.service.R2StorageService;
 import com.eduvault.service.FileStorageService;
 import com.eduvault.service.GeminiService;
 import com.eduvault.service.RAGService;
@@ -55,7 +55,7 @@ public class ApiController {
     private FileStorageService fileStorageService;
 
     @Autowired
-    private BackblazeStorageService backblazeStorageService;
+    private R2StorageService r2StorageService;
 
     @Autowired
     private com.eduvault.service.DocumentConversionService documentConversionService;
@@ -126,6 +126,146 @@ public class ApiController {
                 .collect(java.util.stream.Collectors.toList());
         }
         return ResponseEntity.ok(all);
+    }
+
+    private static final String TEACHER_MAPPINGS_KEY = "_config/teacher-mappings.json";
+
+    private String inferYearFromSem(String semester) {
+        int num = AcademicNormalizer.getSemesterNumber(semester);
+        if (num <= 2) return "FY";
+        if (num <= 4) return "SY";
+        if (num <= 6) return "TY";
+        return "Final Year";
+    }
+
+    private Map<String, Object> buildSubjectEntry(Subject sub, String bucketFolder, boolean inBucket) {
+        Map<String, Object> item = new java.util.LinkedHashMap<>();
+        item.put("id", sub.getId());
+        item.put("name", sub.getName());
+        item.put("code", sub.getCode() != null ? sub.getCode() : "");
+        item.put("department", sub.getDepartment() != null ? sub.getDepartment() : "B.Tech-UAD");
+        item.put("semester", sub.getSemester() != null ? sub.getSemester() : "SEM 01");
+        item.put("year", inferYearFromSem(sub.getSemester()));
+        item.put("bucketFolder", bucketFolder);
+        item.put("inBucket", inBucket);
+        return item;
+    }
+
+    private final Object teacherMappingsLock = new Object();
+
+    @GetMapping("/r2/subjects")
+    public ResponseEntity<Map<String, Object>> getR2BucketSubjects() {
+        List<Subject> catalog = new java.util.ArrayList<>(getStaticCatalog());
+        Set<String> seenCatalogIds = new HashSet<>();
+        catalog.forEach(s -> { if (s.getId() != null) seenCatalogIds.add(s.getId()); });
+        try {
+            List<Subject> dbSubs = database.getAllSubjects();
+            if (dbSubs != null) {
+                for (Subject ds : dbSubs) {
+                    if (ds.getId() != null && seenCatalogIds.add(ds.getId())) {
+                        catalog.add(ds);
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        List<String> folders = (r2StorageService != null) ? r2StorageService.listTopLevelFolders() : List.of();
+        List<Map<String, Object>> merged = new java.util.ArrayList<>();
+        Set<String> matchedIds = new HashSet<>();
+
+        for (String folder : folders) {
+            String cleanFolder = folder.trim();
+            String folderUpper = cleanFolder.toUpperCase();
+            String folderNamePart = AcademicNormalizer.cleanCourseName(cleanFolder);
+            Subject matched = null;
+            for (Subject s : catalog) {
+                boolean codeHit = s.getCode() != null && !s.getCode().isBlank() && folderUpper.startsWith(s.getCode().trim().toUpperCase());
+                boolean nameHit = s.getName() != null && AcademicNormalizer.normalizeSubjectName(s.getName()).equals(AcademicNormalizer.normalizeSubjectName(folderNamePart));
+                if (codeHit || nameHit) {
+                    matched = s;
+                    break;
+                }
+            }
+            if (matched != null) {
+                matchedIds.add(matched.getId());
+                merged.add(buildSubjectEntry(matched, cleanFolder, true));
+            } else {
+                String inferredCode = cleanFolder.contains(" ") ? cleanFolder.substring(0, cleanFolder.indexOf(' ')).trim() : "";
+                String inferredDept = AcademicNormalizer.inferDepartmentFromCourse(inferredCode, cleanFolder);
+                String inferredSem = AcademicNormalizer.inferSemesterFromCourse(inferredCode, cleanFolder);
+                Subject virtualSub = Subject.builder()
+                        .id("r2-" + cleanFolder.toLowerCase().replaceAll("[^a-z0-9]+", "-"))
+                        .name(folderNamePart)
+                        .code(inferredCode)
+                        .department(inferredDept)
+                        .semester(inferredSem)
+                        .build();
+                merged.add(buildSubjectEntry(virtualSub, cleanFolder, true));
+            }
+        }
+
+        for (Subject s : catalog) {
+            if (!matchedIds.contains(s.getId())) {
+                String prefix = (s.getCode() != null && !s.getCode().isBlank()) ? s.getCode().trim().toUpperCase() + " " : "";
+                merged.add(buildSubjectEntry(s, (prefix + (s.getName() != null ? s.getName() : "")).trim(), false));
+            }
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "bucketFolders", folders,
+                "subjects", merged
+        ));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, Object>> loadTeacherMappingsJson() {
+        try {
+            String raw = (r2StorageService != null) ? r2StorageService.readJsonConfig(TEACHER_MAPPINGS_KEY) : null;
+            if (raw != null && !raw.isBlank()) {
+                return mapper.readValue(raw, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Map<String, Object>>>() {});
+            }
+        } catch (Exception e) {
+            logger.warn("Could not parse teacher mappings JSON: {}", e.getMessage());
+        }
+        return new java.util.LinkedHashMap<>();
+    }
+
+    @GetMapping("/teacher/mappings")
+    public ResponseEntity<Map<String, Object>> getTeacherMappings(
+            @RequestParam(required = false) String prn,
+            @RequestHeader(value = "X-Student-PRN", required = false) String headerPrn) {
+        String key = (prn != null && !prn.isBlank()) ? prn.trim() : ((headerPrn != null && !headerPrn.isBlank()) ? headerPrn.trim() : "default");
+        synchronized (teacherMappingsLock) {
+            Map<String, Map<String, Object>> all = loadTeacherMappingsJson();
+            Map<String, Object> entry = all.getOrDefault(key, Map.of());
+            return ResponseEntity.ok(entry);
+        }
+    }
+
+    @PutMapping("/teacher/mappings")
+    public ResponseEntity<Map<String, Object>> saveTeacherMappings(
+            @RequestParam(required = false) String prn,
+            @RequestHeader(value = "X-Student-PRN", required = false) String headerPrn,
+            @RequestBody Map<String, Object> payload) {
+        String key = (prn != null && !prn.isBlank()) ? prn.trim() : ((headerPrn != null && !headerPrn.isBlank()) ? headerPrn.trim() : "default");
+        synchronized (teacherMappingsLock) {
+            Map<String, Map<String, Object>> all = loadTeacherMappingsJson();
+            Map<String, Object> record = new java.util.LinkedHashMap<>();
+            record.put("year", payload.getOrDefault("year", "ALL"));
+            record.put("semester", payload.getOrDefault("semester", "ALL"));
+            record.put("selectedSubjects", payload.getOrDefault("selectedSubjects", List.of()));
+            record.put("folderMappings", payload.getOrDefault("folderMappings", Map.of()));
+            record.put("updatedAt", java.time.Instant.now().toString());
+            all.put(key, record);
+            try {
+                String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(all);
+                if (r2StorageService != null) {
+                    r2StorageService.writeJsonConfig(TEACHER_MAPPINGS_KEY, json);
+                }
+            } catch (Exception e) {
+                return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+            }
+            return ResponseEntity.ok(record);
+        }
     }
 
     @GetMapping("/profile")
@@ -426,9 +566,9 @@ public class ApiController {
         return paginate(summaries, page, size);
     }
 
-    @RequestMapping(value = "/notes/sync-b2", method = {RequestMethod.GET, RequestMethod.POST})
-    public ResponseEntity<Map<String, Object>> syncB2Notes() {
-        int synced = database.syncNotesFromBackblaze();
+    @RequestMapping(value = "/notes/sync-r2", method = {RequestMethod.GET, RequestMethod.POST})
+    public ResponseEntity<Map<String, Object>> syncR2Notes() {
+        int synced = database.syncNotesFromR2();
         return ResponseEntity.ok(Map.of("syncedCount", synced, "totalNotes", database.getTotalNotesCount()));
     }
 
@@ -453,12 +593,22 @@ public class ApiController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    private boolean isPrivilegedRole(String roleHeader) {
+        return roleHeader != null && (roleHeader.equalsIgnoreCase("teacher")
+                || roleHeader.equalsIgnoreCase("faculty")
+                || roleHeader.equalsIgnoreCase("admin"));
+    }
+
     @DeleteMapping("/notes/{id}")
-    public ResponseEntity<Map<String, String>> deleteNote(@PathVariable String id) {
+    public ResponseEntity<Map<String, String>> deleteNote(
+            @PathVariable String id,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        if (!isPrivilegedRole(roleHeader)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Faculty or admin role required"));
+        }
         return database.getNoteById(id).map(note -> {
-            // Delete from B2 (primary) and also attempt local cleanup for legacy files
-            String b2Key = note.getB2ObjectKey() != null ? note.getB2ObjectKey() : note.getFileUrl();
-            backblazeStorageService.deleteFile(b2Key);
+            String r2Key = note.getR2ObjectKey() != null ? note.getR2ObjectKey() : note.getFileUrl();
+            r2StorageService.deleteFile(r2Key);
             fileStorageService.deleteFile(note.getFileUrl());
             database.deleteNote(id);
             return ResponseEntity.ok(Map.of("message", "Note deleted successfully"));
@@ -468,24 +618,27 @@ public class ApiController {
     @DeleteMapping("/notes")
     public ResponseEntity<Map<String, Object>> deleteAllNotes(
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        if (!isPrivilegedRole(roleHeader)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Faculty or admin role required"));
+        }
         List<Note> all = database.getAllNotes();
         int count = all.size();
-        Set<String> b2Keys = new HashSet<>();
+        Set<String> r2Keys = new HashSet<>();
         for (Note note : all) {
             try {
-                String b2Key = note.getB2ObjectKey() != null ? note.getB2ObjectKey() : note.getFileUrl();
-                if (b2Key != null && !b2Key.isBlank() && !b2Key.startsWith("http://") && !b2Key.startsWith("https://")) {
-                    b2Keys.add(b2Key.trim());
+                String r2Key = note.getR2ObjectKey() != null ? note.getR2ObjectKey() : note.getFileUrl();
+                if (r2Key != null && !r2Key.isBlank() && !r2Key.startsWith("http://") && !r2Key.startsWith("https://")) {
+                    r2Keys.add(r2Key.trim());
                 }
                 fileStorageService.deleteFile(note.getFileUrl());
             } catch (Exception ignored) {}
         }
-        if (!b2Keys.isEmpty() && backblazeStorageService != null) {
-            backblazeStorageService.deleteObjectsBatch(b2Keys);
+        if (!r2Keys.isEmpty() && r2StorageService != null) {
+            r2StorageService.deleteObjectsBatch(r2Keys);
         }
-        int purgedB2 = backblazeStorageService != null ? backblazeStorageService.purgeAllBucketObjects() : 0;
+        int purgedR2 = r2StorageService != null ? r2StorageService.purgeAllBucketObjects() : 0;
         database.deleteAllNotes();
-        return ResponseEntity.ok(Map.of("message", "All notes and B2 files deleted successfully", "deletedNotes", count, "purgedB2Objects", purgedB2));
+        return ResponseEntity.ok(Map.of("message", "All notes and R2 files deleted successfully", "deletedNotes", count, "purgedR2Objects", purgedR2));
     }
 
     @GetMapping("/files/{noteId}")
@@ -551,12 +704,12 @@ public class ApiController {
         boolean transientStorageError = false;
         Throwable lastStorageError = null;
 
-        if (backblazeStorageService != null) {
+        if (r2StorageService != null) {
             LinkedHashSet<String> candidates = new LinkedHashSet<>();
-            if (note.getB2ObjectKey() != null && !note.getB2ObjectKey().isBlank()) {
-                candidates.add(note.getB2ObjectKey().trim());
-                if (note.getB2ObjectKey().contains("/")) {
-                    candidates.add(note.getB2ObjectKey().substring(note.getB2ObjectKey().lastIndexOf('/') + 1).trim());
+            if (note.getR2ObjectKey() != null && !note.getR2ObjectKey().isBlank()) {
+                candidates.add(note.getR2ObjectKey().trim());
+                if (note.getR2ObjectKey().contains("/")) {
+                    candidates.add(note.getR2ObjectKey().substring(note.getR2ObjectKey().lastIndexOf('/') + 1).trim());
                 }
             }
             if (note.getFileUrl() != null && !note.getFileUrl().isBlank() && !note.getFileUrl().startsWith("http")) {
@@ -574,7 +727,7 @@ public class ApiController {
 
             for (String key : candidates) {
                 try {
-                    byte[] bytes = backblazeStorageService.getObjectBytes(key);
+                    byte[] bytes = r2StorageService.getObjectBytes(key);
                     if (bytes != null && bytes.length > 0) {
                         foundBytes = bytes;
                         break;
@@ -602,7 +755,7 @@ public class ApiController {
         if (transientStorageError) {
             HttpStatus status = HttpStatus.BAD_GATEWAY;
             if (lastStorageError != null) {
-                if (lastStorageError instanceof BackblazeStorageService.StorageUnavailableException sue && sue.getStatusCode() == 503) {
+                if (lastStorageError instanceof R2StorageService.StorageUnavailableException sue && sue.getStatusCode() == 503) {
                     status = HttpStatus.SERVICE_UNAVAILABLE;
                 } else if (lastStorageError instanceof S3Exception s3e && s3e.statusCode() == 503) {
                     status = HttpStatus.SERVICE_UNAVAILABLE;
@@ -674,10 +827,10 @@ public class ApiController {
                 } catch (Exception ignored) {}
             }
         }
-        if (fileBytes == null && backblazeStorageService != null) {
+        if (fileBytes == null && r2StorageService != null) {
             LinkedHashSet<String> candidates = new LinkedHashSet<>();
-            if (note.getB2ObjectKey() != null && !note.getB2ObjectKey().isBlank()) {
-                candidates.add(note.getB2ObjectKey().trim());
+            if (note.getR2ObjectKey() != null && !note.getR2ObjectKey().isBlank()) {
+                candidates.add(note.getR2ObjectKey().trim());
             }
             if (note.getFileUrl() != null && !note.getFileUrl().isBlank() && !note.getFileUrl().startsWith("http")) {
                 candidates.add(note.getFileUrl().trim());
@@ -687,7 +840,7 @@ public class ApiController {
             }
             for (String key : candidates) {
                 try {
-                    byte[] bytes = backblazeStorageService.getObjectBytes(key);
+                    byte[] bytes = r2StorageService.getObjectBytes(key);
                     if (bytes != null && bytes.length > 0) {
                         fileBytes = bytes;
                         break;
@@ -742,7 +895,7 @@ public class ApiController {
                 }
                 return true;
             }
-            if (current instanceof BackblazeStorageService.StorageUnavailableException) {
+            if (current instanceof R2StorageService.StorageUnavailableException) {
                 return true;
             }
             current = current.getCause();
@@ -765,7 +918,7 @@ public class ApiController {
             if (note.getFileUrl() != null && isBinaryDocument(null, note.getFileUrl())) {
                 return true;
             }
-            if (note.getB2ObjectKey() != null && isBinaryDocument(null, note.getB2ObjectKey())) {
+            if (note.getR2ObjectKey() != null && isBinaryDocument(null, note.getR2ObjectKey())) {
                 return true;
             }
         }
@@ -821,33 +974,26 @@ public class ApiController {
             }
         }
 
-        // Fallback: Stream directly from Backblaze B2 if available
+        // Fallback: Stream directly from Cloudflare R2 if available
         byte[] foundBytes = null;
         boolean transientStorageError = false;
         Throwable lastStorageError = null;
 
-        if (backblazeStorageService != null) {
-            LinkedHashSet<String> b2KeyCandidates = new LinkedHashSet<>();
-            b2KeyCandidates.add(fileName);
+        if (r2StorageService != null) {
+            LinkedHashSet<String> r2KeyCandidates = new LinkedHashSet<>();
+            r2KeyCandidates.add(fileName);
             if (fileName.contains("/")) {
-                b2KeyCandidates.add(fileName.substring(fileName.lastIndexOf('/') + 1));
+                r2KeyCandidates.add(fileName.substring(fileName.lastIndexOf('/') + 1));
             }
-            String finalName = fileName;
-            database.getAllNotes().stream()
-                    .filter(n -> finalName.equals(n.getFileUrl()) ||
-                            (n.getB2ObjectKey() != null && (n.getB2ObjectKey().equals(finalName) || n.getB2ObjectKey().endsWith("/" + finalName) || n.getB2ObjectKey().contains(finalName))) ||
-                            finalName.equals(n.getOriginalFilename()) ||
-                            (n.getOriginalFilename() != null && finalName.endsWith(n.getOriginalFilename())))
-                    .findFirst()
-                    .ifPresent(n -> {
-                        if (n.getB2ObjectKey() != null) b2KeyCandidates.add(n.getB2ObjectKey());
-                        if (n.getFileUrl() != null) b2KeyCandidates.add(n.getFileUrl());
-                        if (n.getOriginalFilename() != null) b2KeyCandidates.add(n.getOriginalFilename());
-                    });
+            database.findNoteByStorageKey(fileName).ifPresent(n -> {
+                if (n.getR2ObjectKey() != null) r2KeyCandidates.add(n.getR2ObjectKey());
+                if (n.getFileUrl() != null) r2KeyCandidates.add(n.getFileUrl());
+                if (n.getOriginalFilename() != null) r2KeyCandidates.add(n.getOriginalFilename());
+            });
 
-            for (String key : b2KeyCandidates) {
+            for (String key : r2KeyCandidates) {
                 try {
-                    byte[] bytes = backblazeStorageService.getObjectBytes(key);
+                    byte[] bytes = r2StorageService.getObjectBytes(key);
                     if (bytes != null && bytes.length > 0) {
                         foundBytes = bytes;
                         break;
@@ -863,9 +1009,11 @@ public class ApiController {
 
         if (foundBytes != null && foundBytes.length > 0) {
             String contentType = resolveContentType(fileName);
+            String baseName = (fileName.contains("/") ? fileName.substring(fileName.lastIndexOf('/') + 1) : fileName)
+                    .replaceAll("[\r\n\"]", "_");
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + baseName + "\"")
                     .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                     .header(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS")
                     .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
@@ -875,7 +1023,7 @@ public class ApiController {
         if (transientStorageError) {
             HttpStatus status = HttpStatus.BAD_GATEWAY;
             if (lastStorageError != null) {
-                if (lastStorageError instanceof BackblazeStorageService.StorageUnavailableException sue && sue.getStatusCode() == 503) {
+                if (lastStorageError instanceof R2StorageService.StorageUnavailableException sue && sue.getStatusCode() == 503) {
                     status = HttpStatus.SERVICE_UNAVAILABLE;
                 } else if (lastStorageError instanceof S3Exception s3e && s3e.statusCode() == 503) {
                     status = HttpStatus.SERVICE_UNAVAILABLE;
@@ -900,11 +1048,7 @@ public class ApiController {
 
         // Fallback: If not found in storage and not a binary document, check database for extracted text
         final String lookupTarget = fileName;
-        Optional<Note> matchingNote = database.getAllNotes().stream()
-                .filter(n -> lookupTarget.equals(n.getFileUrl()) ||
-                        (n.getB2ObjectKey() != null && (n.getB2ObjectKey().equals(lookupTarget) || n.getB2ObjectKey().endsWith("/" + lookupTarget))) ||
-                        lookupTarget.equals(n.getOriginalFilename()))
-                .findFirst();
+        Optional<Note> matchingNote = database.findNoteByStorageKey(lookupTarget);
         if (matchingNote.isPresent() && matchingNote.get().getExtractedText() != null && !matchingNote.get().getExtractedText().isBlank()) {
             byte[] textBytes = matchingNote.get().getExtractedText().getBytes(java.nio.charset.StandardCharsets.UTF_8);
             return ResponseEntity.ok()
@@ -929,7 +1073,7 @@ public class ApiController {
     @GetMapping("/files/{noteId}/presigned")
     public ResponseEntity<Map<String, String>> getPresignedUrl(@PathVariable String noteId) {
         return database.getNoteById(noteId).map(note -> {
-            // Return same-origin proxy to ensure browser fetches, pdfjs, and mobile views never hit B2 CORS
+            // Return same-origin proxy to ensure browser fetches, pdfjs, and mobile views never hit R2 CORS
             return ResponseEntity.ok(Map.of(
                     "noteId", noteId,
                     "url", "/api/files/" + noteId + "/raw"
@@ -950,8 +1094,18 @@ public class ApiController {
             @RequestParam(value = "tags", required = false) String tagsJson,
             @RequestParam(value = "uploaderName", required = false, defaultValue = "Anonymous") String uploaderName) {
 
-        // 0. Validate Subject
+        // 0. Validate Subject across DB and static catalog
         Optional<Subject> subjectOpt = database.getSubjectById(subjectId);
+        if (subjectOpt.isEmpty()) {
+            subjectOpt = getStaticCatalog().stream()
+                    .filter(s -> subjectId.equals(s.getId()))
+                    .findFirst();
+            if (subjectOpt.isPresent()) {
+                try {
+                    subjectOpt = Optional.of(database.addSubject(subjectOpt.get()));
+                } catch (Exception ignored) {}
+            }
+        }
         if (subjectOpt.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid subject. Please select a subject from your dashboard."));
         }
@@ -975,10 +1129,10 @@ public class ApiController {
                 ? targetSubject.getSemester()
                 : ((semesterParam != null && !semesterParam.isBlank()) ? semesterParam.trim() : "General");
         
-        // 2. Extract text from the in-memory file BEFORE uploading (avoids re-downloading from B2)
+        // 2. Extract text from the in-memory file BEFORE uploading (avoids re-downloading from R2)
         String extractedText = fileStorageService.extractTextFromMultipartFile(file);
 
-        // 3. Construct deterministic B2 key: [CourseCode] [SubjectName]/[Unit]/[filename]
+        // 3. Construct deterministic R2 key: [CourseCode] [SubjectName]/[Unit]/[filename]
         String safeSubject = targetSubject != null && targetSubject.getName() != null
                 ? targetSubject.getName().replaceAll("[\\\\/:*?\"<>|]", "_").trim()
                 : "General";
@@ -989,9 +1143,15 @@ public class ApiController {
         String courseFolder = (coursePrefix + safeSubject).trim();
         String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "document.pdf";
         String safeOriginalName = originalName.replaceAll("[\\\\/:*?\"<>|#%&{}^~`\\[\\]]", "_").trim();
-        String b2Key = courseFolder + "/" + safeUnit + "/" + safeOriginalName;
+        String r2Key = courseFolder + "/" + safeUnit + "/" + safeOriginalName;
+        if (database.existsNoteByR2ObjectKey(r2Key)) {
+            r2Key = courseFolder + "/" + safeUnit + "/" + System.currentTimeMillis() + "_" + safeOriginalName;
+        }
 
-        String savedFileName = backblazeStorageService.uploadFile(file, b2Key);
+        String savedFileName = r2StorageService.uploadFile(file, r2Key);
+        if (savedFileName == null || savedFileName.isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of("error", "Failed to upload file to R2 storage"));
+        }
         
         // 4. Create Note Record
         Note note = Note.builder()
@@ -1002,9 +1162,8 @@ public class ApiController {
                 .semester(semester) // Auto-filled from profile
                 .unit(unit)
                 .examType(examType)
-                .fileUrl(b2Key)
-                .b2ObjectKey(b2Key)
-                .b2ObjectKey(savedFileName)
+                .fileUrl(savedFileName)
+                .r2ObjectKey(savedFileName)
                 .originalFilename(file.getOriginalFilename())
                 .uploadedBy(uploaderName)
                 .createdAt(LocalDate.now().format(DateTimeFormatter.ISO_DATE))

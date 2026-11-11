@@ -49,7 +49,7 @@ public class LmsScraperService {
     private FileStorageService fileStorageService;
 
     @Autowired
-    private BackblazeStorageService backblazeStorageService;
+    private R2StorageService r2StorageService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -594,11 +594,11 @@ public class LmsScraperService {
                     boolean imported = importActivity(session, href, moodleId, title, category, unit, subject, courseInfo.getCode(), batchId);
                     if (imported) {
                         result.importedCount++;
-                        updateProgress(username, "SYNCING", "Saved to B2: " + title,
+                        updateProgress(username, "SYNCING", "Saved to R2: " + title,
                                 courseInfo.getFullname(), courseIdx, totalCourses, title,
                                 initialFound + result.materialsFound, initialImported + result.importedCount,
                                 initialSkipped + result.skippedCount, initialFailed + result.failureCount,
-                                currentPct, "Saved to B2 & DB: " + title);
+                                currentPct, "Saved to R2 & DB: " + title);
                     } else {
                         result.skippedCount++;
                     }
@@ -693,15 +693,19 @@ public class LmsScraperService {
                     : "";
             String courseFolder = (coursePrefix + safeSubject).trim();
 
-            String b2Folder = courseFolder + "/" + safeUnit;
-            String b2Key = b2Folder + "/" + safeOriginalName;
-
-            String uploadedKey = backblazeStorageService.uploadBytes(bytes, b2Key);
-            if (uploadedKey == null) {
-                b2Key = safeOriginalName;
-            } else {
-                b2Key = uploadedKey;
+            String r2Folder = courseFolder + "/" + safeUnit;
+            String r2Key = r2Folder + "/" + safeOriginalName;
+            if (database.existsNoteByR2ObjectKey(r2Key)) {
+                String disambig = (moodleId != null && !moodleId.isBlank()) ? moodleId : UUID.randomUUID().toString().substring(0, 6);
+                r2Key = r2Folder + "/" + disambig + "_" + safeOriginalName;
             }
+
+            String uploadedKey = r2StorageService.uploadBytes(bytes, r2Key);
+            if (uploadedKey == null) {
+                logger.warn("Aborting DB save for '{}' because R2 upload failed for key {}", title, r2Key);
+                return false;
+            }
+            r2Key = uploadedKey;
 
             // Extract text for AI
             String extractedText = fileStorageService.extractTextFromBytes(bytes, filename);
@@ -726,8 +730,8 @@ public class LmsScraperService {
                     .unit(unit)
                     .category(category)
                     .examType(category.equalsIgnoreCase("Question Papers") ? "end-sem" : "mid-sem")
-                    .fileUrl(b2Key)
-                    .b2ObjectKey(b2Key)
+                    .fileUrl(r2Key)
+                    .r2ObjectKey(r2Key)
                     .uploadedBy("LMS Sync (" + session.username + ")")
                     .createdAt(LocalDate.now().format(DateTimeFormatter.ISO_DATE))
                     .status("ready")
@@ -750,7 +754,7 @@ public class LmsScraperService {
                             .year(String.valueOf(LocalDate.now().getYear()))
                             .examType("ESE")
                             .tags("LMS, Question Paper, " + title)
-                            .fileUrl(b2Key)
+                            .fileUrl(r2Key)
                             .uploadedBy("LMS Sync (" + session.username + ")")
                             .createdAt(LocalDate.now().format(DateTimeFormatter.ISO_DATE))
                             .build();
@@ -808,7 +812,7 @@ public class LmsScraperService {
                         .category(category)
                         .examType("mid-sem")
                         .fileUrl(externalLink)
-                        .b2ObjectKey(null)
+                        .r2ObjectKey(null)
                         .uploadedBy("LMS Sync (" + session.username + ")")
                         .createdAt(LocalDate.now().format(DateTimeFormatter.ISO_DATE))
                         .status("ready")
