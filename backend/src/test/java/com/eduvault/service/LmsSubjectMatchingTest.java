@@ -89,4 +89,21 @@ public class LmsSubjectMatchingTest {
         assertNotNull(mlLabNoCode);
         assertEquals("sub-ml-lab", mlLabNoCode.getId());
     }
+
+    @Test
+    void testLogsAreNeverTruncatedPastFortyEntries() {
+        for (int i = 1; i <= 55; i++) {
+            org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                    scraperService,
+                    "updateProgress",
+                    "24uad022", "SYNCING", "Stage " + i, "Course A", 1, 2,
+                    "Note " + i, i, i, 0, 0, 50, "Log entry " + i
+            );
+        }
+        var progress = scraperService.getProgress("24uad022");
+        assertNotNull(progress);
+        assertEquals(55, progress.getLogs().size());
+        assertTrue(progress.getLogs().get(0).contains("Log entry 1"));
+        assertTrue(progress.getLogs().get(54).contains("Log entry 55"));
+    }
 }

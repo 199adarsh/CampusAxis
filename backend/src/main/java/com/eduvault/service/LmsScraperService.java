@@ -32,10 +32,20 @@ public class LmsScraperService {
 
     private static final Logger logger = LoggerFactory.getLogger(LmsScraperService.class);
 
-    private static final String BASE_URL = "http://150.129.156.169";
-    private static final String LOGIN_URL = BASE_URL + "/login/index.php";
-    private static final String COURSES_URL = BASE_URL + "/my/courses.php";
-    private static final String AJAX_SERVICE_URL = BASE_URL + "/lib/ajax/service.php";
+    @org.springframework.beans.factory.annotation.Value("${app.lms.base-url:http://150.129.156.169}")
+    private String baseUrl = "http://150.129.156.169";
+
+    private String loginUrl() {
+        return baseUrl + "/login/index.php";
+    }
+
+    private String coursesUrl() {
+        return baseUrl + "/my/courses.php";
+    }
+
+    private String ajaxServiceUrl() {
+        return baseUrl + "/lib/ajax/service.php";
+    }
 
     private static final Duration TIMEOUT = Duration.ofSeconds(90);
     private static final Pattern COURSE_CODE_PATTERN = Pattern.compile("(?i)\\b([0-9]{2}[A-Z]{2,6}[0-9]{3,4}[A-Z]?)\\b");
@@ -70,7 +80,6 @@ public class LmsScraperService {
         List<String> logs = (prev != null && prev.getLogs() != null) ? new ArrayList<>(prev.getLogs()) : new ArrayList<>();
         if (logLine != null && !logLine.isBlank()) {
             logs.add("[" + java.time.LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "] " + logLine);
-            if (logs.size() > 40) logs.remove(0);
         }
         LmsProgress p = LmsProgress.builder()
                 .status(status)
@@ -113,7 +122,7 @@ public class LmsScraperService {
 
         // 1. Fetch login page for CSRF logintoken
         HttpRequest getLoginReq = HttpRequest.newBuilder()
-                .uri(URI.create(LOGIN_URL))
+                .uri(URI.create(loginUrl()))
                 .timeout(TIMEOUT)
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
                 .GET()
@@ -134,11 +143,11 @@ public class LmsScraperService {
                 + "&password=" + URLEncoder.encode(password, StandardCharsets.UTF_8);
 
         HttpRequest postLoginReq = HttpRequest.newBuilder()
-                .uri(URI.create(LOGIN_URL))
+                .uri(URI.create(loginUrl()))
                 .timeout(TIMEOUT)
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                .header("Referer", LOGIN_URL)
+                .header("Referer", loginUrl())
                 .POST(HttpRequest.BodyPublishers.ofString(postData))
                 .build();
 
@@ -150,7 +159,7 @@ public class LmsScraperService {
 
         // 3. Fetch courses page to retrieve sesskey
         HttpRequest getCoursesReq = HttpRequest.newBuilder()
-                .uri(URI.create(COURSES_URL))
+                .uri(URI.create(coursesUrl()))
                 .timeout(TIMEOUT)
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
                 .GET()
@@ -185,12 +194,25 @@ public class LmsScraperService {
      * Discovers all courses available to the authorized LMS account
      */
     public List<LmsSyncResponse.DiscoveredCourseInfo> discoverCourses(String username, String password) throws Exception {
-        LmsSession session = login(username, password);
-        return fetchDiscoveredCourses(session);
+        updateProgress(username, "AUTHENTICATING", "Logging in to Moodle portal...", null, 0, 0, null, 0, 0, 0, 0, 10,
+                "Logging in to Moodle as " + username + "...");
+        try {
+            LmsSession session = login(username, password);
+            updateProgress(username, "DISCOVERING", "Loading enrolled Moodle courses...", null, 0, 0, null, 0, 0, 0, 0, 50,
+                    "Login succeeded. Fetching enrolled subjects from Moodle...");
+            List<LmsSyncResponse.DiscoveredCourseInfo> courses = fetchDiscoveredCourses(session);
+            updateProgress(username, "DISCOVERED", "Found " + courses.size() + " subjects", null, 0, courses.size(), null, 0, 0, 0, 0, 100,
+                    "Discovered " + courses.size() + " subjects ready to fetch.");
+            return courses;
+        } catch (Exception e) {
+            updateProgress(username, "FAILED", "Login/discovery failed: " + e.getMessage(), null, 0, 0, null, 0, 0, 0, 0, 100,
+                    "Discovery error: " + e.getMessage());
+            throw e;
+        }
     }
 
     private List<LmsSyncResponse.DiscoveredCourseInfo> fetchDiscoveredCourses(LmsSession session) throws Exception {
-        String ajaxUrl = AJAX_SERVICE_URL + "?sesskey=" + session.sesskey + "&info=core_course_get_enrolled_courses_by_timeline_classification";
+        String ajaxUrl = ajaxServiceUrl() + "?sesskey=" + session.sesskey + "&info=core_course_get_enrolled_courses_by_timeline_classification";
         String payload = "[{\"index\":0,\"methodname\":\"core_course_get_enrolled_courses_by_timeline_classification\",\"args\":{\"offset\":0,\"limit\":0,\"classification\":\"all\",\"sort\":\"fullname\"}}]";
 
         HttpRequest req = HttpRequest.newBuilder()
@@ -220,7 +242,7 @@ public class LmsScraperService {
             String id = cNode.path("id").asText();
             String fullname = cNode.path("fullname").asText();
             String shortname = cNode.path("shortname").asText();
-            String viewurl = cNode.path("viewurl").asText(BASE_URL + "/course/view.php?id=" + id);
+            String viewurl = cNode.path("viewurl").asText(baseUrl + "/course/view.php?id=" + id);
 
             String courseCode = extractCourseCode(fullname, shortname);
             String codeUpper = (courseCode != null ? courseCode : "").toUpperCase();
@@ -274,7 +296,7 @@ public class LmsScraperService {
     public LmsSyncResponse syncNotes(LmsCredentials credentials) throws Exception {
         String username = credentials.getUsername() != null ? credentials.getUsername().trim() : "anonymous";
         logger.info("Starting LMS notes synchronization for user: {}", username);
-        updateProgress(username, "AUTHENTICATING", "Connecting to Moodle LMS portal...", null, 0, 0, null, 0, 0, 0, 0, 5, "Connecting to portal at " + BASE_URL);
+        updateProgress(username, "AUTHENTICATING", "Connecting to Moodle LMS portal...", null, 0, 0, null, 0, 0, 0, 0, 5, "Connecting to portal at " + baseUrl);
 
         LmsSession session;
         try {
@@ -303,11 +325,16 @@ public class LmsScraperService {
         // Filter courses if testImport or specific courseIds requested
         List<LmsSyncResponse.DiscoveredCourseInfo> coursesToProcess = new ArrayList<>();
         if (credentials.getCourseIds() != null && !credentials.getCourseIds().isEmpty()) {
+            Set<String> seenIds = new LinkedHashSet<>();
             for (LmsSyncResponse.DiscoveredCourseInfo c : discovered) {
-                boolean idMatch = credentials.getCourseIds().stream().anyMatch(cid -> cid != null && cid.equalsIgnoreCase(c.getId()));
-                boolean codeMatch = c.getCode() != null && credentials.getCourseIds().stream().anyMatch(cid -> cid != null && cid.equalsIgnoreCase(c.getCode()));
-                boolean nameMatch = c.getFullname() != null && credentials.getCourseIds().stream().anyMatch(cid -> cid != null && (c.getFullname().equalsIgnoreCase(cid) || c.getFullname().toLowerCase().contains(cid.toLowerCase())));
-                if (idMatch || codeMatch || nameMatch) {
+                boolean idMatch = credentials.getCourseIds().stream()
+                        .anyMatch(cid -> cid != null && !cid.isBlank() && cid.trim().equalsIgnoreCase(c.getId()));
+                boolean codeMatch = c.getCode() != null && credentials.getCourseIds().stream()
+                        .anyMatch(cid -> cid != null && !cid.isBlank() && !cid.trim().matches("\\d+") && cid.trim().equalsIgnoreCase(c.getCode()));
+                boolean nameMatch = c.getFullname() != null && credentials.getCourseIds().stream()
+                        .anyMatch(cid -> cid != null && !cid.isBlank() && !cid.trim().matches("\\d+")
+                                && (c.getFullname().equalsIgnoreCase(cid.trim()) || c.getFullname().toLowerCase().contains(cid.trim().toLowerCase())));
+                if ((idMatch || codeMatch || nameMatch) && seenIds.add(c.getId())) {
                     coursesToProcess.add(c);
                 }
             }
@@ -315,9 +342,11 @@ public class LmsScraperService {
                 for (LmsSyncResponse.DiscoveredCourseInfo c : discovered) {
                     Subject sub = matchSubject(c.getCode(), c.getFullname(), allSubjects);
                     if (sub != null && credentials.getCourseIds().stream().anyMatch(cid ->
-                            (sub.getId() != null && cid.equalsIgnoreCase(sub.getId())) ||
-                            (sub.getCode() != null && cid.equalsIgnoreCase(sub.getCode())) ||
-                            (sub.getName() != null && cid.equalsIgnoreCase(sub.getName())))) {
+                            cid != null && (
+                                (sub.getId() != null && cid.equalsIgnoreCase(sub.getId())) ||
+                                (sub.getCode() != null && cid.equalsIgnoreCase(sub.getCode())) ||
+                                (sub.getName() != null && cid.equalsIgnoreCase(sub.getName()))
+                            )) && seenIds.add(c.getId())) {
                         coursesToProcess.add(c);
                     }
                 }
@@ -512,7 +541,7 @@ public class LmsScraperService {
                                                     int initialSkipped,
                                                     int initialFailed) throws Exception {
         CourseScrapeResult result = new CourseScrapeResult();
-        String courseUrl = BASE_URL + "/course/view.php?id=" + courseInfo.getId();
+        String courseUrl = baseUrl + "/course/view.php?id=" + courseInfo.getId();
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(courseUrl))
@@ -559,7 +588,7 @@ public class LmsScraperService {
 
                 result.materialsFound++;
 
-                String targetUrl = href.startsWith("/") ? BASE_URL + href : href;
+                String targetUrl = href.startsWith("/") ? baseUrl + href : href;
 
                 int currentPct = 20 + (int) (((double) (courseIdx - 1) / Math.max(1, totalCourses)) * 75)
                         + (int) (((double) activityCounter / Math.max(1, totalActivities)) * (75.0 / Math.max(1, totalCourses)));
@@ -584,7 +613,7 @@ public class LmsScraperService {
                     continue;
                 }
 
-                updateProgress(username, "SYNCING", "Uploding: " + title,
+                updateProgress(username, "SYNCING", "Uploading: " + title,
                         courseInfo.getFullname(), courseIdx, totalCourses, title,
                         initialFound + result.materialsFound, initialImported + result.importedCount,
                         initialSkipped + result.skippedCount, initialFailed + result.failureCount,
@@ -601,6 +630,11 @@ public class LmsScraperService {
                                 currentPct, "Saved to R2 & DB: " + title);
                     } else {
                         result.skippedCount++;
+                        updateProgress(username, "SYNCING", "Skipped: " + title,
+                                courseInfo.getFullname(), courseIdx, totalCourses, title,
+                                initialFound + result.materialsFound, initialImported + result.importedCount,
+                                initialSkipped + result.skippedCount, initialFailed + result.failureCount,
+                                currentPct, "Skipped unsupported or empty activity: " + title);
                     }
                 } catch (Exception e) {
                     logger.warn("Failed importing activity '{}' ({}): {}", title, href, e.getMessage());
@@ -632,7 +666,7 @@ public class LmsScraperService {
                                     String courseCode,
                                     String batchId) throws Exception {
 
-        String targetUrl = href.startsWith("/") ? BASE_URL + href : href;
+        String targetUrl = href.startsWith("/") ? baseUrl + href : href;
 
         if (targetUrl.contains("/mod/resource/view.php") || targetUrl.contains("/pluginfile.php")) {
             // Download the file
@@ -665,7 +699,7 @@ public class LmsScraperService {
                     realFileUrl = link.hasAttr("href") ? link.attr("href") : (link.hasAttr("data") ? link.attr("data") : link.attr("src"));
                 }
                 if (realFileUrl != null && !realFileUrl.isBlank()) {
-                    if (realFileUrl.startsWith("/")) realFileUrl = BASE_URL + realFileUrl;
+                    if (realFileUrl.startsWith("/")) realFileUrl = baseUrl + realFileUrl;
                     HttpRequest realReq = HttpRequest.newBuilder()
                             .uri(URI.create(realFileUrl))
                             .timeout(TIMEOUT)
