@@ -21,23 +21,23 @@ import java.util.UUID;
 
 /**
  * Dedicated storage service for NC (Absence Consideration) proof documents.
- * Isolates NC proof files into a separate Backblaze B2 bucket.
+ * Isolates NC proof files into a separate Cloudflare R2 bucket.
  */
 @Service
-public class NcBackblazeStorageService {
+public class NcR2StorageService {
 
-    private static final Logger logger = LoggerFactory.getLogger(NcBackblazeStorageService.class);
+    private static final Logger logger = LoggerFactory.getLogger(NcR2StorageService.class);
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
 
-    @Value("${app.b2.bucket-name:eduvault-storage-a8f3}")
+    @Value("${app.r2.bucket-name:${R2_BUCKET_NAME:${R2_BUCKET_NAME:campusaxis-notes}}}")
     private String primaryBucketName;
 
-    @Value("${app.b2.nc-bucket-name:eduvault-nc-proofs}")
+    @Value("${app.r2.nc-bucket-name:${R2_NC_BUCKET_NAME:${R2_NC_BUCKET_NAME:campusaxis-notes}}}")
     private String ncBucketName;
 
-    @Value("${app.b2.presigned-url-expiry-minutes:60}")
+    @Value("${app.r2.presigned-url-expiry-minutes:60}")
     private long presignedExpiryMinutes;
 
     @Value("${app.storage.local-dir:./data}")
@@ -45,7 +45,7 @@ public class NcBackblazeStorageService {
 
     private volatile String effectiveBucket = null;
 
-    public NcBackblazeStorageService(S3Client s3Client, S3Presigner s3Presigner) {
+    public NcR2StorageService(S3Client s3Client, S3Presigner s3Presigner) {
         this.s3Client = s3Client;
         this.s3Presigner = s3Presigner;
     }
@@ -57,7 +57,7 @@ public class NcBackblazeStorageService {
     private synchronized String resolveEffectiveBucket() {
         if (effectiveBucket != null) return effectiveBucket;
 
-        String candidate = ncBucketName != null && !ncBucketName.isBlank() ? ncBucketName.toLowerCase() : "eduvault-nc-proofs";
+        String candidate = ncBucketName != null && !ncBucketName.isBlank() ? ncBucketName.toLowerCase() : "campusaxis-notes";
         try {
             s3Client.headBucket(HeadBucketRequest.builder().bucket(candidate).build());
             effectiveBucket = candidate;
@@ -78,7 +78,7 @@ public class NcBackblazeStorageService {
     }
 
     /**
-     * Uploads proof document to the dedicated NC Backblaze B2 bucket (with primary/local fallback).
+     * Uploads proof document to the dedicated NC Cloudflare R2 bucket (with primary/local fallback).
      */
     public String uploadNcProof(MultipartFile file) {
         String originalName = file.getOriginalFilename();
@@ -113,14 +113,14 @@ public class NcBackblazeStorageService {
                     targetBucket, key, file.getSize());
             return key;
         } catch (Exception e) {
-            logger.warn("Direct B2 upload to bucket '{}' failed: {}. Retained in local fallback cache.",
+            logger.warn("Direct R2 upload to bucket '{}' failed: {}. Retained in local fallback cache.",
                     targetBucket, e.getMessage());
             return key;
         }
     }
 
     /**
-     * Generates a presigned URL if object is present on B2, otherwise provides backend proxy stream URL.
+     * Generates a presigned URL if object is present on R2, otherwise provides backend proxy stream URL.
      */
     public String generatePresignedUrl(String key) {
         if (key == null || key.isBlank()) return null;
@@ -152,7 +152,7 @@ public class NcBackblazeStorageService {
     }
 
     /**
-     * Retrieves raw file bytes either from B2 or local backup cache.
+     * Retrieves raw file bytes either from R2 or local backup cache.
      */
     public byte[] getProofBytes(String key) {
         String targetBucket = resolveEffectiveBucket();

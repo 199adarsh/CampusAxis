@@ -33,7 +33,7 @@ public class OkfGeneratorService {
     private FileStorageService fileStorageService;
 
     @Autowired(required = false)
-    private BackblazeStorageService backblazeStorageService;
+    private R2StorageService r2StorageService;
 
     @Autowired(required = false)
     private GitHubStorageService gitHubStorageService;
@@ -459,12 +459,12 @@ public class OkfGeneratorService {
             } catch (Exception ignored) {}
         }
 
-        // Lazy B2 recovery
-        if (note.getB2ObjectKey() != null && backblazeStorageService != null && fileStorageService != null) {
+        // Lazy R2 recovery
+        if (note.getR2ObjectKey() != null && r2StorageService != null && fileStorageService != null) {
             try {
-                byte[] bytes = backblazeStorageService.getObjectBytes(note.getB2ObjectKey());
+                byte[] bytes = r2StorageService.getObjectBytes(note.getR2ObjectKey());
                 if (bytes != null && bytes.length > 0) {
-                    String recovered = fileStorageService.extractTextFromBytes(bytes, note.getOriginalFilename() != null ? note.getOriginalFilename() : note.getB2ObjectKey());
+                    String recovered = fileStorageService.extractTextFromBytes(bytes, note.getOriginalFilename() != null ? note.getOriginalFilename() : note.getR2ObjectKey());
                     if (recovered != null && recovered.trim().length() > 100) {
                         note.setExtractedText(recovered.trim());
                         if (database != null) {

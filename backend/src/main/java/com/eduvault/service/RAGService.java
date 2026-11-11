@@ -52,7 +52,7 @@ public class RAGService {
     private FileStorageService fileStorageService;
 
     @Autowired(required = false)
-    private BackblazeStorageService backblazeStorageService;
+    private R2StorageService r2StorageService;
 
     @Autowired(required = false)
     private PgVectorService pgVectorService;
@@ -111,14 +111,14 @@ public class RAGService {
                 text = fileStorageService.extractText(note.getFileUrl());
             }
             if ((text == null || text.isBlank() || text.startsWith("File not found") || text.startsWith("Failed to extract"))
-                    && note.getB2ObjectKey() != null && backblazeStorageService != null && fileStorageService != null) {
+                    && note.getR2ObjectKey() != null && r2StorageService != null && fileStorageService != null) {
                 try {
-                    byte[] bytes = backblazeStorageService.getObjectBytes(note.getB2ObjectKey());
+                    byte[] bytes = r2StorageService.getObjectBytes(note.getR2ObjectKey());
                     if (bytes != null && bytes.length > 0) {
-                        text = fileStorageService.extractTextFromBytes(bytes, note.getOriginalFilename() != null ? note.getOriginalFilename() : note.getB2ObjectKey());
+                        text = fileStorageService.extractTextFromBytes(bytes, note.getOriginalFilename() != null ? note.getOriginalFilename() : note.getR2ObjectKey());
                     }
                 } catch (Exception e) {
-                    logger.warn("RAG: Lazy B2 fetch failed for key {}: {}", note.getB2ObjectKey(), e.getMessage());
+                    logger.warn("RAG: Lazy R2 fetch failed for key {}: {}", note.getR2ObjectKey(), e.getMessage());
                 }
             }
             if (text != null && !text.isBlank() && !text.startsWith("File not found") && !text.startsWith("Failed to extract")) {

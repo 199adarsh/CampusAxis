@@ -315,7 +315,7 @@ const NoteDetail = () => {
                 }
             }
 
-            // 1. Persistent IndexedDB Cache (0 KB B2 Bandwidth)
+            // 1. Persistent IndexedDB Cache (0 KB R2 Bandwidth)
             if (!blob) {
                 try {
                     const idbBlob = await getCachedNoteBlob(noteId);
@@ -327,7 +327,7 @@ const NoteDetail = () => {
                 }
             }
 
-            // 2. Direct Backend Note Raw Proxy (Guaranteed same-origin, bypasses B2 CORS)
+            // 2. Direct Backend Note Raw Proxy (Guaranteed same-origin, bypasses R2 CORS)
             if (!blob && noteId) {
                 try {
                     const res = await fetch(`${API_BASE}/files/${noteId}/raw`);
@@ -346,7 +346,7 @@ const NoteDetail = () => {
                 }
             }
 
-            // 2. Fetch from presigned URL (use backend proxy if presigned is external to avoid B2 CORS error)
+            // 2. Fetch from presigned URL (use backend proxy if presigned is external to avoid R2 CORS error)
             if (!blob && presignedUrl) {
                 try {
                     const fetchUrl = (presignedUrl.startsWith('http://') || presignedUrl.startsWith('https://')) &&
@@ -565,9 +565,9 @@ const NoteDetail = () => {
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                toast.warning('B2 storage daily cap reached. Downloaded extracted note text.');
+                toast.warning('R2 storage daily cap reached. Downloaded extracted note text.');
             } else {
-                toast.error('Backblaze B2 daily download cap exceeded.');
+                toast.error('Cloudflare R2 daily download cap exceeded.');
             }
         } finally {
             setDownloading(false);

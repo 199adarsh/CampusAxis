@@ -3,7 +3,7 @@ package com.eduvault.performance;
 import com.eduvault.controller.ApiController;
 import com.eduvault.model.Note;
 import com.eduvault.repository.LocalJsonDatabase;
-import com.eduvault.service.BackblazeStorageService;
+import com.eduvault.service.R2StorageService;
 import com.eduvault.service.FileStorageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ public class S3BatchDeletionPerformanceTest {
     private LocalJsonDatabase database;
 
     @Mock
-    private BackblazeStorageService backblazeStorageService;
+    private R2StorageService r2StorageService;
 
     @Mock
     private FileStorageService fileStorageService;
@@ -206,31 +206,31 @@ public class S3BatchDeletionPerformanceTest {
     @DisplayName("M-8: ApiController.deleteAllNotes purges bucket and deletes database notes successfully")
     void testApiControllerDeleteAllNotesCoordination() {
         ReflectionTestUtils.setField(apiController, "database", database);
-        ReflectionTestUtils.setField(apiController, "backblazeStorageService", backblazeStorageService);
+        ReflectionTestUtils.setField(apiController, "r2StorageService", r2StorageService);
         ReflectionTestUtils.setField(apiController, "fileStorageService", fileStorageService);
 
-        Note n1 = Note.builder().id("note-1").fileUrl("uploads/file1.pdf").b2ObjectKey("b2/file1.pdf").build();
-        Note n2 = Note.builder().id("note-2").fileUrl("uploads/file2.pdf").b2ObjectKey("b2/file2.pdf").build();
+        Note n1 = Note.builder().id("note-1").fileUrl("uploads/file1.pdf").r2ObjectKey("r2/file1.pdf").build();
+        Note n2 = Note.builder().id("note-2").fileUrl("uploads/file2.pdf").r2ObjectKey("r2/file2.pdf").build();
 
         when(database.getAllNotes()).thenReturn(List.of(n1, n2));
-        when(backblazeStorageService.purgeAllBucketObjects()).thenReturn(2);
+        when(r2StorageService.purgeAllBucketObjects()).thenReturn(2);
 
         ResponseEntity<Map<String, Object>> response = apiController.deleteAllNotes("ADMIN");
 
         assertEquals(200, response.getStatusCode().value());
         assertNotNull(response.getBody());
         assertEquals(2, response.getBody().get("deletedNotes"));
-        assertEquals(2, response.getBody().get("purgedB2Objects"));
+        assertEquals(2, response.getBody().get("purgedR2Objects"));
 
-        verify(backblazeStorageService, times(1)).purgeAllBucketObjects();
+        verify(r2StorageService, times(1)).purgeAllBucketObjects();
         verify(database, times(1)).deleteAllNotes();
     }
 
     @Test
-    @DisplayName("M-8: BackblazeStorageService reflection check for deleteObjectsBatch implementation")
-    void testBackblazeStorageServiceMethodContract() {
-        // Inspect BackblazeStorageService for batch deletion capability
-        Method[] methods = BackblazeStorageService.class.getDeclaredMethods();
+    @DisplayName("M-8: R2StorageService reflection check for deleteObjectsBatch implementation")
+    void testR2StorageServiceMethodContract() {
+        // Inspect R2StorageService for batch deletion capability
+        Method[] methods = R2StorageService.class.getDeclaredMethods();
         boolean hasBatchDelete = Arrays.stream(methods)
                 .anyMatch(m -> m.getName().toLowerCase().contains("batch")
                         || (m.getName().startsWith("delete") && Collection.class.isAssignableFrom(m.getParameterTypes().length > 0 ? m.getParameterTypes()[0] : Object.class)));

@@ -21,39 +21,39 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Handles all file operations against Backblaze B2 via the
+ * Handles all file operations against Cloudflare R2 via the
  * AWS SDK v2 S3-compatible API.
  *
  * Upload stores the object with ContentType and ContentLength metadata.
  * generatePresignedUrl returns a time-limited URL for private-bucket access.
  */
 @Service
-public class BackblazeStorageService {
+public class R2StorageService {
 
-    private static final Logger logger = LoggerFactory.getLogger(BackblazeStorageService.class);
+    private static final Logger logger = LoggerFactory.getLogger(R2StorageService.class);
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
 
-    @Value("${app.b2.bucket-name:${B2_BUCKET_NAME:eduvault-storage-a8f3}}")
+    @Value("${app.r2.bucket-name:${R2_BUCKET_NAME:${R2_BUCKET_NAME:campusaxis-notes}}}")
     private String bucketName;
 
-    @Value("${app.b2.presigned-url-expiry-minutes:60}")
+    @Value("${app.r2.presigned-url-expiry-minutes:60}")
     private long presignedExpiryMinutes;
 
     @Value("${app.storage.local-dir:./data}")
     private String localDir;
 
-    public BackblazeStorageService(S3Client s3Client, S3Presigner s3Presigner) {
+    public R2StorageService(S3Client s3Client, S3Presigner s3Presigner) {
         this.s3Client = s3Client;
         this.s3Presigner = s3Presigner;
     }
 
     /**
-     * Uploads a {@link MultipartFile} to B2.
+     * Uploads a {@link MultipartFile} to R2.
      *
      * @param file the uploaded file
-     * @return the object key (UUID + original extension) stored in B2
+     * @return the object key (UUID + original extension) stored in R2
      */
     public String uploadFile(MultipartFile file) {
         return uploadFile(file, null);
@@ -77,38 +77,38 @@ public class BackblazeStorageService {
             s3Client.putObject(request,
                     RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
-            logger.info("Uploaded file to B2: bucket={} key={} size={}", bucketName, key, file.getSize());
+            logger.info("Uploaded file to R2: bucket={} key={} size={}", bucketName, key, file.getSize());
             return key;
         } catch (IOException e) {
-            throw new RuntimeException("Failed to upload file to Backblaze B2: " + key, e);
+            throw new RuntimeException("Failed to upload file to Cloudflare R2: " + key, e);
         } catch (S3Exception e) {
-            throw new RuntimeException("B2 S3 error during upload: " + e.awsErrorDetails().errorMessage(), e);
+            throw new RuntimeException("R2 S3 error during upload: " + e.awsErrorDetails().errorMessage(), e);
         }
     }
 
-    public boolean checkB2Availability() {
+    public boolean checkR2Availability() {
         try {
             s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
             return true;
         } catch (S3Exception e) {
             if (e.statusCode() == 403) {
-                logger.warn("B2 HTTP 403: Transaction/bandwidth cap or permissions issue detected: {}", e.awsErrorDetails().errorMessage());
+                logger.warn("R2 HTTP 403: Transaction/bandwidth cap or permissions issue detected: {}", e.awsErrorDetails().errorMessage());
             } else {
-                logger.warn("B2 S3 check returned status {}: {}", e.statusCode(), e.awsErrorDetails().errorMessage());
+                logger.warn("R2 S3 check returned status {}: {}", e.statusCode(), e.awsErrorDetails().errorMessage());
             }
             return false;
         } catch (Exception e) {
-            logger.warn("B2 check failed: {}", e.getMessage());
+            logger.warn("R2 check failed: {}", e.getMessage());
             return false;
         }
     }
 
     /**
-     * Uploads raw bytes to B2 using the specified key.
+     * Uploads raw bytes to R2 using the specified key.
      *
      * @param bytes the byte array to upload
-     * @param key the object key (filename) to use in B2
-     * @return object key in B2
+     * @param key the object key (filename) to use in R2
+     * @return object key in R2
      */
     public String uploadBytes(byte[] bytes, String key) {
         String ext = (key != null && key.contains("."))
@@ -124,23 +124,23 @@ public class BackblazeStorageService {
                     .build();
 
             s3Client.putObject(request, RequestBody.fromBytes(bytes));
-            logger.info("Uploaded raw bytes to B2: bucket={} key={} size={}", bucketName, key, bytes.length);
+            logger.info("Uploaded raw bytes to R2: bucket={} key={} size={}", bucketName, key, bytes.length);
             return key;
         } catch (S3Exception e) {
             if (e.statusCode() == 403) {
-                logger.warn("B2 upload blocked (HTTP 403): {}", e.awsErrorDetails().errorMessage());
+                logger.warn("R2 upload blocked (HTTP 403): {}", e.awsErrorDetails().errorMessage());
             } else {
-                logger.warn("B2 S3 upload failed with code {}: {}", e.statusCode(), e.awsErrorDetails().errorMessage());
+                logger.warn("R2 S3 upload failed with code {}: {}", e.statusCode(), e.awsErrorDetails().errorMessage());
             }
             return null;
         } catch (Exception e) {
-            logger.warn("B2 uploadBytes failed: {}. Continuing with local fallback.", e.getMessage());
+            logger.warn("R2 uploadBytes failed: {}. Continuing with local fallback.", e.getMessage());
             return null;
         }
     }
 
     /**
-     * Verifies that the file exists in B2; if missing, searches local storage and uploads it.
+     * Verifies that the file exists in R2; if missing, searches local storage and uploads it.
      */
     public void ensureUploaded(String key) {
         if (key == null || key.isEmpty() || key.startsWith("http")) return;
@@ -166,26 +166,122 @@ public class BackblazeStorageService {
                             .build();
 
                     s3Client.putObject(request, RequestBody.fromFile(localPath));
-                    logger.info("Auto-synced local file to B2: key={} path={}", key, localPath);
+                    logger.info("Auto-synced local file to R2: key={} path={}", key, localPath);
                 }
             } catch (Exception ex) {
-                logger.warn("Failed to auto-sync local file {} to B2: {}", key, ex.getMessage());
+                logger.warn("Failed to auto-sync local file {} to R2: {}", key, ex.getMessage());
             }
         }
     }
 
     public List<S3Object> listAllObjects() {
+        List<S3Object> all = new java.util.ArrayList<>();
         try {
-            ListObjectsV2Request request = ListObjectsV2Request.builder()
-                    .bucket(bucketName)
-                    .maxKeys(1000)
-                    .build();
-            ListObjectsV2Response response = s3Client.listObjectsV2(request);
-            logger.info("Found {} objects in B2 bucket {}", response.contents().size(), bucketName);
-            return response.contents();
+            String token = null;
+            do {
+                ListObjectsV2Request.Builder builder = ListObjectsV2Request.builder()
+                        .bucket(bucketName)
+                        .maxKeys(1000);
+                if (token != null) {
+                    builder.continuationToken(token);
+                }
+                ListObjectsV2Response response = s3Client.listObjectsV2(builder.build());
+                if (response.contents() != null) {
+                    for (S3Object obj : response.contents()) {
+                        if (obj.key() != null && !obj.key().startsWith("_config/")) {
+                            all.add(obj);
+                        }
+                    }
+                }
+                token = Boolean.TRUE.equals(response.isTruncated()) ? response.nextContinuationToken() : null;
+            } while (token != null);
+            logger.info("Found {} objects in R2 bucket {}", all.size(), bucketName);
+            return all;
         } catch (Exception e) {
-            logger.error("Failed to list B2 objects: {}", e.getMessage(), e);
-            return List.of();
+            logger.error("Failed to list R2 objects: {}", e.getMessage(), e);
+            return all;
+        }
+    }
+
+    public List<String> listTopLevelFolders() {
+        java.util.Set<String> folders = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        try {
+            String token = null;
+            do {
+                ListObjectsV2Request.Builder builder = ListObjectsV2Request.builder()
+                        .bucket(bucketName)
+                        .delimiter("/")
+                        .maxKeys(1000);
+                if (token != null) {
+                    builder.continuationToken(token);
+                }
+                ListObjectsV2Response response = s3Client.listObjectsV2(builder.build());
+                if (response.commonPrefixes() != null) {
+                    for (CommonPrefix cp : response.commonPrefixes()) {
+                        String prefix = cp.prefix();
+                        if (prefix != null && prefix.endsWith("/")) {
+                            prefix = prefix.substring(0, prefix.length() - 1);
+                        }
+                        if (prefix != null && !prefix.isBlank() && !prefix.startsWith("_config")) {
+                            folders.add(prefix);
+                        }
+                    }
+                }
+                token = Boolean.TRUE.equals(response.isTruncated()) ? response.nextContinuationToken() : null;
+            } while (token != null);
+        } catch (Exception e) {
+            logger.warn("Failed to list top-level R2 folders: {}", e.getMessage());
+        }
+        return new java.util.ArrayList<>(folders);
+    }
+
+    public String readJsonConfig(String key) {
+        try {
+            byte[] bytes = getObjectBytes(key);
+            if (bytes != null && bytes.length > 0) {
+                return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception e) {
+            logger.debug("R2 config read skipped for {}: {}", key, e.getMessage());
+        }
+        try {
+            Path localPath = Paths.get(localDir).resolve(key).normalize();
+            if (!Files.exists(localPath)) {
+                localPath = Paths.get("data").resolve(key).normalize();
+            }
+            if (Files.exists(localPath) && Files.isRegularFile(localPath)) {
+                return Files.readString(localPath, java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    public boolean writeJsonConfig(String key, String jsonContent) {
+        byte[] bytes = jsonContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        boolean localOk = false;
+        try {
+            Path localPath = Paths.get("data").resolve(key).normalize();
+            if (!Files.exists(Paths.get("data")) && Files.exists(Paths.get("backend", "data"))) {
+                localPath = Paths.get("backend", "data").resolve(key).normalize();
+            }
+            Files.createDirectories(localPath.getParent());
+            Files.write(localPath, bytes);
+            localOk = true;
+        } catch (Exception e) {
+            logger.warn("Failed to write local config {}: {}", key, e.getMessage());
+        }
+        try {
+            PutObjectRequest request = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .contentType("application/json")
+                    .contentLength((long) bytes.length)
+                    .build();
+            s3Client.putObject(request, RequestBody.fromBytes(bytes));
+            return true;
+        } catch (Exception e) {
+            logger.warn("Failed to write R2 config {}: {}", key, e.getMessage());
+            return localOk;
         }
     }
 
@@ -219,15 +315,15 @@ public class BackblazeStorageService {
                         .build();
                 return s3Client.getObjectAsBytes(request).asByteArray();
             } catch (NoSuchKeyException e) {
-                logger.debug("B2 object {} not found (NoSuchKey)", key);
+                logger.debug("R2 object {} not found (NoSuchKey)", key);
                 return null;
             } catch (S3Exception e) {
                 if (e.statusCode() == 404) {
-                    logger.debug("B2 object {} not found (404)", key);
+                    logger.debug("R2 object {} not found (404)", key);
                     return null;
                 }
                 if (attempt < maxAttempts && (e.statusCode() >= 500 || e.statusCode() == 429)) {
-                    logger.warn("Transient B2 S3 error on attempt {} for key {}: status={} msg={}. Retrying...",
+                    logger.warn("Transient R2 S3 error on attempt {} for key {}: status={} msg={}. Retrying...",
                             attempt, key, e.statusCode(), e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage());
                     try {
                         Thread.sleep(100);
@@ -236,13 +332,13 @@ public class BackblazeStorageService {
                     }
                     continue;
                 }
-                logger.error("B2 S3 error downloading object {}: status={} msg={}", key, e.statusCode(),
+                logger.error("R2 S3 error downloading object {}: status={} msg={}", key, e.statusCode(),
                         e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage());
                 int status = e.statusCode() == 503 ? 503 : (e.statusCode() == 429 ? 429 : 502);
-                throw new StorageUnavailableException("B2 S3 storage error (" + e.statusCode() + "): " + e.getMessage(), e, status);
+                throw new StorageUnavailableException("R2 S3 storage error (" + e.statusCode() + "): " + e.getMessage(), e, status);
             } catch (Exception e) {
                 if (attempt < maxAttempts) {
-                    logger.warn("Transient B2 error on attempt {} for key {}: {}. Retrying...", attempt, key, e.getMessage());
+                    logger.warn("Transient R2 error on attempt {} for key {}: {}. Retrying...", attempt, key, e.getMessage());
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException ie) {
@@ -250,15 +346,15 @@ public class BackblazeStorageService {
                     }
                     continue;
                 }
-                logger.error("Failed to download B2 object {}: {}", key, e.getMessage());
-                throw new StorageUnavailableException("Transient B2 failure downloading object " + key + ": " + e.getMessage(), e, 502);
+                logger.error("Failed to download R2 object {}: {}", key, e.getMessage());
+                throw new StorageUnavailableException("Transient R2 failure downloading object " + key + ": " + e.getMessage(), e, 502);
             }
         }
         return null;
     }
 
     /**
-     * Deletes an object from B2 by key.
+     * Deletes an object from R2 by key.
      *
      * @param key the object key to delete
      */
@@ -271,14 +367,14 @@ public class BackblazeStorageService {
                     .bucket(bucketName)
                     .key(key)
                     .build());
-            logger.info("Deleted file from B2: bucket={} key={}", bucketName, key);
+            logger.info("Deleted file from R2: bucket={} key={}", bucketName, key);
         } catch (S3Exception e) {
-            logger.error("B2 S3 error during delete for key {}: {}", key, e.awsErrorDetails().errorMessage(), e);
+            logger.error("R2 S3 error during delete for key {}: {}", key, e.awsErrorDetails().errorMessage(), e);
         }
     }
 
     /**
-     * Batch deletes objects from B2 by keys using chunking of up to 1,000 objects per S3 request.
+     * Batch deletes objects from R2 by keys using chunking of up to 1,000 objects per S3 request.
      *
      * @param keys the collection of object keys to delete
      * @return the total number of objects deleted
@@ -310,14 +406,14 @@ public class BackblazeStorageService {
                 DeleteObjectsResponse response = s3Client.deleteObjects(request);
                 int deletedCount = (response != null && response.hasDeleted()) ? response.deleted().size() : chunk.size();
                 totalDeleted += deletedCount;
-                logger.info("Batch deleted {} objects from B2 bucket {}", deletedCount, bucketName);
+                logger.info("Batch deleted {} objects from R2 bucket {}", deletedCount, bucketName);
                 if (response != null && response.hasErrors() && !response.errors().isEmpty()) {
                     response.errors().forEach(err ->
                             logger.warn("Failed to delete key {}: {} ({})", err.key(), err.message(), err.code())
                     );
                 }
             } catch (Exception e) {
-                logger.error("Failed batch deleting chunk from B2 bucket {}: {}", bucketName, e.getMessage(), e);
+                logger.error("Failed batch deleting chunk from R2 bucket {}: {}", bucketName, e.getMessage(), e);
             }
         }
         return totalDeleted;
@@ -330,13 +426,13 @@ public class BackblazeStorageService {
         }
         List<String> keys = objects.stream().map(S3Object::key).toList();
         int count = deleteObjectsBatch(keys);
-        logger.info("Purged {} total objects from B2 bucket {}", count, bucketName);
+        logger.info("Purged {} total objects from R2 bucket {}", count, bucketName);
         return count;
     }
 
     /**
-     * Generates a presigned GET URL for a private B2 object.
-     * Ensures the object is in B2 first.
+     * Generates a presigned GET URL for a private R2 object.
+     * Ensures the object is in R2 first.
      *
      * @param key the object key
      * @return time-limited presigned URL string

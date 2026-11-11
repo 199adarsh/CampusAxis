@@ -1,4 +1,4 @@
-// Persistent Client-Side IndexedDB Storage to eliminate repeat B2 downloads and stay within 1GB daily cap
+// Persistent Client-Side IndexedDB Storage to eliminate repeat R2 downloads and stay within 1GB daily cap
 
 const DB_NAME = 'eduvault_offline_vault';
 const STORE_NAME = 'note_files';

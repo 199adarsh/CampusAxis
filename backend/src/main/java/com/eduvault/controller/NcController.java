@@ -5,7 +5,7 @@ import com.eduvault.model.NcRequest;
 import com.eduvault.model.StudentProfile;
 import com.eduvault.model.Subject;
 import com.eduvault.repository.LocalJsonDatabase;
-import com.eduvault.service.NcBackblazeStorageService;
+import com.eduvault.service.NcR2StorageService;
 import com.eduvault.util.TeacherSubjectMatcher;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +32,7 @@ public class NcController {
     private LocalJsonDatabase database;
 
     @Autowired
-    private NcBackblazeStorageService ncStorageService;
+    private NcR2StorageService ncStorageService;
 
     @Autowired
     private ObjectMapper mapper;
@@ -121,7 +121,7 @@ public class NcController {
                 missedSubjects = mapper.readValue(missedSubjectsJson, new TypeReference<List<NcRequest.NcMissedSubject>>() {});
             }
 
-            // Upload proof document to dedicated B2 bucket
+            // Upload proof document to dedicated R2 bucket
             String proofFileKey = null;
             String proofFileName = null;
             String proofFileType = null;
@@ -280,7 +280,7 @@ public class NcController {
                     .collect(Collectors.toList());
         }
 
-        // Refresh presigned URLs from dedicated B2 bucket
+        // Refresh presigned URLs from dedicated R2 bucket
         all.forEach(req -> {
             if (req.getProofFileKey() != null) {
                 req.setProofPresignedUrl(ncStorageService.generatePresignedUrl(req.getProofFileKey()));

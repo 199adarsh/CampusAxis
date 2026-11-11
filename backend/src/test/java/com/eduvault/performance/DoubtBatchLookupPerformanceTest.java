@@ -139,7 +139,7 @@ public class DoubtBatchLookupPerformanceTest {
     void testGetAllDoubtsNonTeacherSingleQuery() {
         List<Doubt> allMockDoubts = List.of(
                 Doubt.builder().id("d1").noteId("n1").question("How does indexing work?").build(),
-                Doubt.builder().id("d2").noteId("n2").question("What is B2 storage?").build()
+                Doubt.builder().id("d2").noteId("n2").question("What is R2 storage?").build()
         );
         when(database.getAllDoubts()).thenReturn(allMockDoubts);
 

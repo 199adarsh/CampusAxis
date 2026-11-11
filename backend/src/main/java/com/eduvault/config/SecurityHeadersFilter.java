@@ -89,7 +89,7 @@ public class SecurityHeadersFilter implements Filter {
         if (path.startsWith("/api/ai")) {
             return ApiTier.AI;
         }
-        if (path.startsWith("/api/notes/upload") || path.startsWith("/api/notes/sync-b2") || path.startsWith("/api/notes/repair") || path.startsWith("/api/batch")) {
+        if (path.startsWith("/api/notes/upload") || path.startsWith("/api/notes/sync-r2") || path.startsWith("/api/notes/repair") || path.startsWith("/api/batch")) {
             return ApiTier.HEAVY_OPERATION;
         }
         return ApiTier.GENERAL;

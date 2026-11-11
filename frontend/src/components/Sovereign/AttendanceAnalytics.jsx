@@ -2211,7 +2211,7 @@ const AttendanceAnalytics = () => {
                                                     />
                                                 </div>
 
-                                                {/* 4. Upload Proof File to Backblaze B2 */}
+                                                {/* 4. Upload Proof File to Cloudflare R2 */}
                                                 <div className="space-y-1.5">
                                                     <label className="text-xs font-bold text-[#383838]">
                                                         4. Supporting Document (PDF, PNG, JPG)

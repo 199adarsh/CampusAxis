@@ -15,16 +15,16 @@ services:
         sync: false
       - key: NEON_DB_PASSWORD
         sync: false
-      - key: B2_ACCESS_KEY_ID
+      - key: R2_ACCESS_KEY_ID
         sync: false
-      - key: B2_SECRET_ACCESS_KEY
+      - key: R2_SECRET_ACCESS_KEY
         sync: false
-      - key: B2_ENDPOINT
-        value: s3.ca-east-006.backblazeb2.com
-      - key: B2_BUCKET_NAME
-        value: eduvault-storage-a8f3
-      - key: B2_REGION
-        value: ca-east-006
+      - key: R2_ENDPOINT
+        value: https://ed699a622be1d0fe280023629e3e007e.r2.cloudflarestorage.com
+      - key: R2_BUCKET_NAME
+        value: campusaxis-notes
+      - key: R2_REGION
+        value: auto
       - key: DDL_AUTO
         value: update
       - key: GROQ_API_KEY

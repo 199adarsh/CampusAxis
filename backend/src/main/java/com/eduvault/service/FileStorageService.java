@@ -146,7 +146,7 @@ public class FileStorageService {
 
     /**
      * Extracts text directly from a {@link MultipartFile}'s input stream.
-     * Used when the file is uploaded to Backblaze B2 and no local copy exists.
+     * Used when the file is uploaded to Cloudflare R2 and no local copy exists.
      *
      * @param file the multipart file received in the HTTP request
      * @return extracted plain text, or an appropriate message if extraction is not supported/failed

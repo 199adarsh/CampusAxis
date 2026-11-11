@@ -18,7 +18,7 @@
   - `NotesLibrary.jsx`: Deep-link button to AI Assistant with pre-selected subject.
 - **Storage Layer**:
   - Filesystem: `${app.storage.local-dir}/okf/{subjectId}/{noteId}.md` and `index.md`.
-  - Optional B2 Sync: `okf/{subjectId}/{noteId}.md`.
+  - Optional R2 Sync: `okf/{subjectId}/{noteId}.md`.
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |

@@ -19,11 +19,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
         "spring.datasource.driver-class-name=org.h2.Driver",
-        "app.b2.access-key-id=test-access-key",
-        "app.b2.secret-access-key=test-secret-key",
-        "app.b2.bucket-name=test-bucket",
-        "app.b2.endpoint=https://s3.ca-east-006.backblazeb2.com",
-        "app.b2.region=ca-east-006"
+        "app.r2.access-key-id=test-access-key",
+        "app.r2.secret-access-key=test-secret-key",
+        "app.r2.bucket-name=test-bucket",
+        "app.r2.endpoint=https://test.r2.cloudflarestorage.com",
+        "app.r2.region=auto"
 })
 @AutoConfigureMockMvc
 class McpAuthFlowIntegrationTest {
