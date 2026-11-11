@@ -55,5 +55,23 @@ public class LmsSyncResponse {
         private boolean matched;
         private String matchedSubjectName;
         private String matchedSubjectId;
+        @Builder.Default
+        private int moodleCount = -1;
+        private int vaultCount;
+        private int extraNotesCount;
+        private boolean hasNewNotes;
+        private String availabilityCheckedAt;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LmsAvailabilityReport {
+        private String checkedAt;
+        private String username;
+        private int totalCourses;
+        private int subjectsWithNewNotes;
+        private List<DiscoveredCourseInfo> courses;
     }
 }

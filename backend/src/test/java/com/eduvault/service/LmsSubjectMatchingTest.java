@@ -106,4 +106,67 @@ public class LmsSubjectMatchingTest {
         assertTrue(progress.getLogs().get(0).contains("Log entry 1"));
         assertTrue(progress.getLogs().get(54).contains("Log entry 55"));
     }
+
+    @Test
+    void testAvailabilityReportDetectsMoreNotesThanVaultNoteCount() throws Exception {
+        var server = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+        try {
+            server.createContext("/login/index.php", ex -> {
+                byte[] b = ("POST".equalsIgnoreCase(ex.getRequestMethod())
+                        ? "<html>OK</html>"
+                        : "<html><form><input name=\"logintoken\" value=\"t1\"/></form></html>")
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                ex.sendResponseHeaders(200, b.length);
+                try (var os = ex.getResponseBody()) { os.write(b); }
+            });
+            server.createContext("/my/courses.php", ex -> {
+                byte[] b = "<script>{\"sesskey\":\"sk1\"}</script>".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                ex.sendResponseHeaders(200, b.length);
+                try (var os = ex.getResponseBody()) { os.write(b); }
+            });
+            server.createContext("/lib/ajax/service.php", ex -> {
+                byte[] b = "[{\"data\":{\"courses\":[{\"id\":2,\"fullname\":\"01ADL301 Database Engineering\",\"shortname\":\"01ADL301\"},{\"id\":12,\"fullname\":\"01ADL302 Machine Learning\",\"shortname\":\"01ADL302\"}]}}]"
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                ex.sendResponseHeaders(200, b.length);
+                try (var os = ex.getResponseBody()) { os.write(b); }
+            });
+            server.createContext("/course/view.php", ex -> {
+                String q = ex.getRequestURI().getQuery();
+                String html = q.contains("id=2")
+                        ? "<ul><li class=\"section\"><ul><li class=\"activity\"><a href=\"/mod/resource/view.php?id=1\">A</a></li><li class=\"activity\"><a href=\"/mod/resource/view.php?id=2\">B</a></li><li class=\"activity\"><a href=\"/mod/resource/view.php?id=3\">C</a></li></ul></li></ul>"
+                        : "<ul><li class=\"section\"><ul><li class=\"activity\"><a href=\"/mod/resource/view.php?id=4\">D</a></li></ul></li></ul>";
+                byte[] b = html.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                ex.sendResponseHeaders(200, b.length);
+                try (var os = ex.getResponseBody()) { os.write(b); }
+            });
+            server.start();
+
+            var db = org.mockito.Mockito.mock(com.eduvault.repository.LocalJsonDatabase.class);
+            var dbSub1 = Subject.builder().id("sub-db-theory").name("Database Engineering").code("01ADL301").department("B.Tech-UAD").noteCount(1).build();
+            var dbSub2 = Subject.builder().id("sub-ml-theory").name("Machine Learning").code("01ADL302").department("B.Tech-UAD").noteCount(1).build();
+            org.mockito.Mockito.when(db.getAllSubjects()).thenReturn(List.of(dbSub1, dbSub2));
+
+            org.springframework.test.util.ReflectionTestUtils.setField(scraperService, "database", db);
+            org.springframework.test.util.ReflectionTestUtils.setField(scraperService, "objectMapper", new com.fasterxml.jackson.databind.ObjectMapper());
+            org.springframework.test.util.ReflectionTestUtils.setField(scraperService, "baseUrl", "http://127.0.0.1:" + server.getAddress().getPort());
+
+            var report = scraperService.checkMoodleAvailability("24UAD022", "Dkte@123");
+            assertEquals(2, report.getTotalCourses());
+            assertEquals(1, report.getSubjectsWithNewNotes());
+
+            var dbCourse = report.getCourses().stream().filter(c -> "2".equals(c.getId())).findFirst().orElseThrow();
+            assertEquals(3, dbCourse.getMoodleCount());
+            assertEquals(1, dbCourse.getVaultCount());
+            assertEquals(2, dbCourse.getExtraNotesCount());
+            assertTrue(dbCourse.isHasNewNotes());
+
+            var mlCourse = report.getCourses().stream().filter(c -> "12".equals(c.getId())).findFirst().orElseThrow();
+            assertEquals(1, mlCourse.getMoodleCount());
+            assertEquals(1, mlCourse.getVaultCount());
+            assertEquals(0, mlCourse.getExtraNotesCount());
+            assertFalse(mlCourse.isHasNewNotes());
+        } finally {
+            server.stop(0);
+        }
+    }
 }

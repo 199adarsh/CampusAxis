@@ -12,6 +12,8 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -21,9 +23,11 @@ import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpClient.Version;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,8 +36,21 @@ public class LmsScraperService {
 
     private static final Logger logger = LoggerFactory.getLogger(LmsScraperService.class);
 
-    @org.springframework.beans.factory.annotation.Value("${app.lms.base-url:http://150.129.156.169}")
+    private static final String LMS_AVAILABILITY_KEY = "_config/lms-availability.json";
+
+    @Value("${app.lms.base-url:http://150.129.156.169}")
     private String baseUrl = "http://150.129.156.169";
+
+    @Value("${app.lms.audit.enabled:true}")
+    private boolean auditEnabled = true;
+
+    @Value("${app.lms.audit.username:24UAD022}")
+    private String auditUsername = "24UAD022";
+
+    @Value("${app.lms.audit.password:Dkte@123}")
+    private String auditPassword = "Dkte@123";
+
+    private final AtomicReference<LmsSyncResponse.LmsAvailabilityReport> cachedAvailability = new AtomicReference<>();
 
     private String loginUrl() {
         return baseUrl + "/login/index.php";
@@ -259,6 +276,7 @@ public class LmsScraperService {
                 continue;
             }
             String displayName = matchedSubject != null ? matchedSubject.getName() : AcademicNormalizer.cleanCourseName(fullname);
+            int vaultCount = (matchedSubject != null && matchedSubject.getNoteCount() != null) ? matchedSubject.getNoteCount() : 0;
 
             result.add(LmsSyncResponse.DiscoveredCourseInfo.builder()
                     .id(id)
@@ -269,10 +287,262 @@ public class LmsScraperService {
                     .matched(true)
                     .matchedSubjectName(displayName)
                     .matchedSubjectId(matchedSubject != null ? matchedSubject.getId() : null)
+                    .moodleCount(-1)
+                    .vaultCount(vaultCount)
+                    .extraNotesCount(0)
+                    .hasNewNotes(false)
                     .build());
         }
 
-        return result;
+        return enrichWithAvailability(result, existingSubjects);
+    }
+
+    @Scheduled(cron = "${app.lms.audit.cron:0 0 3 * * ?}", zone = "${app.lms.audit.zone:Asia/Kolkata}")
+    public void runNightlyMoodleAvailabilityAudit() {
+        if (!auditEnabled || auditUsername == null || auditUsername.isBlank() || auditPassword == null || auditPassword.isBlank()) {
+            return;
+        }
+        try {
+            logger.info("Starting scheduled Moodle availability check for user: {}", auditUsername);
+            LmsSyncResponse.LmsAvailabilityReport report = checkMoodleAvailability(auditUsername.trim(), auditPassword.trim());
+            logger.info("Nightly Moodle availability check complete: {} subjects checked, {} have more notes than noteCount",
+                    report.getTotalCourses(), report.getSubjectsWithNewNotes());
+        } catch (Exception e) {
+            logger.warn("Nightly Moodle availability check failed: {}", e.getMessage());
+        }
+    }
+
+    public LmsSyncResponse.LmsAvailabilityReport checkDefaultMoodleAvailability() throws Exception {
+        if (auditUsername == null || auditUsername.isBlank() || auditPassword == null || auditPassword.isBlank()) {
+            throw new IllegalStateException("Nightly LMS audit credentials are not configured.");
+        }
+        return checkMoodleAvailability(auditUsername.trim(), auditPassword.trim());
+    }
+
+    public LmsSyncResponse.LmsAvailabilityReport checkMoodleAvailability(String username, String password) throws Exception {
+        String user = username != null ? username.trim() : "";
+        updateProgress(user, "AUTHENTICATING", "Checking Moodle availability...", null, 0, 0, null, 0, 0, 0, 0, 10,
+                "Logging in as " + user + " to compare Moodle notes vs EduVault noteCount...");
+        try {
+            LmsSession session = login(user, password);
+            List<LmsSyncResponse.DiscoveredCourseInfo> discovered = fetchDiscoveredCourses(session);
+            List<Subject> allSubjects = database.getAllSubjects();
+            String checkedAt = Instant.now().toString();
+
+            List<LmsSyncResponse.DiscoveredCourseInfo> checkedCourses = new ArrayList<>();
+            int withUpdates = 0;
+
+            for (int i = 0; i < discovered.size(); i++) {
+                LmsSyncResponse.DiscoveredCourseInfo c = discovered.get(i);
+                int moodleCount = countImportableMaterials(session, c.getId());
+                int vaultCount = resolveVaultCount(c, allSubjects);
+                int extra = moodleCount >= 0 ? Math.max(0, moodleCount - vaultCount) : 0;
+                boolean hasNew = moodleCount > vaultCount;
+                if (hasNew) withUpdates++;
+
+                checkedCourses.add(LmsSyncResponse.DiscoveredCourseInfo.builder()
+                        .id(c.getId())
+                        .code(c.getCode())
+                        .fullname(c.getFullname())
+                        .shortname(c.getShortname())
+                        .viewurl(c.getViewurl())
+                        .matched(c.isMatched())
+                        .matchedSubjectName(c.getMatchedSubjectName())
+                        .matchedSubjectId(c.getMatchedSubjectId())
+                        .moodleCount(moodleCount)
+                        .vaultCount(vaultCount)
+                        .extraNotesCount(extra)
+                        .hasNewNotes(hasNew)
+                        .availabilityCheckedAt(checkedAt)
+                        .build());
+
+                int pct = 20 + (int) (((double) (i + 1) / Math.max(1, discovered.size())) * 75);
+                String statusNote = hasNew
+                        ? String.format("%s: %d new note(s) on Moodle (Moodle %d > Vault %d)", c.getMatchedSubjectName(), extra, moodleCount, vaultCount)
+                        : String.format("%s: Up to date (Moodle %d, Vault %d)", c.getMatchedSubjectName(), moodleCount, vaultCount);
+                updateProgress(user, "AUDITING", "Checked " + (i + 1) + "/" + discovered.size() + ": " + c.getMatchedSubjectName(),
+                        c.getFullname(), i + 1, discovered.size(), null, moodleCount, 0, 0, 0, pct, statusNote);
+            }
+
+            LmsSyncResponse.LmsAvailabilityReport report = LmsSyncResponse.LmsAvailabilityReport.builder()
+                    .checkedAt(checkedAt)
+                    .username(user)
+                    .totalCourses(checkedCourses.size())
+                    .subjectsWithNewNotes(withUpdates)
+                    .courses(checkedCourses)
+                    .build();
+
+            cachedAvailability.set(report);
+            saveAvailabilityReportToR2(report);
+            updateProgress(user, "DISCOVERED", "Availability check complete", null, checkedCourses.size(), checkedCourses.size(),
+                    null, 0, 0, 0, 0, 100,
+                    "Availability check complete: " + withUpdates + " of " + checkedCourses.size() + " subjects have new notes available.");
+            return report;
+        } catch (Exception e) {
+            updateProgress(user, "FAILED", "Availability check failed: " + e.getMessage(), null, 0, 0, null, 0, 0, 0, 0, 100,
+                    "Availability check error: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    public LmsSyncResponse.LmsAvailabilityReport getLatestAvailabilityReport() {
+        LmsSyncResponse.LmsAvailabilityReport report = cachedAvailability.get();
+        if (report == null && r2StorageService != null && objectMapper != null) {
+            try {
+                String raw = r2StorageService.readJsonConfig(LMS_AVAILABILITY_KEY);
+                if (raw != null && !raw.isBlank()) {
+                    report = objectMapper.readValue(raw, LmsSyncResponse.LmsAvailabilityReport.class);
+                    cachedAvailability.set(report);
+                }
+            } catch (Exception e) {
+                logger.warn("Could not read cached LMS availability JSON from R2: {}", e.getMessage());
+            }
+        }
+        if (report == null) {
+            return LmsSyncResponse.LmsAvailabilityReport.builder()
+                    .checkedAt(null)
+                    .username(auditUsername)
+                    .totalCourses(0)
+                    .subjectsWithNewNotes(0)
+                    .courses(List.of())
+                    .build();
+        }
+        List<Subject> allSubjects = database != null ? database.getAllSubjects() : List.of();
+        List<LmsSyncResponse.DiscoveredCourseInfo> refreshed = new ArrayList<>();
+        int withUpdates = 0;
+        if (report.getCourses() != null) {
+            for (LmsSyncResponse.DiscoveredCourseInfo c : report.getCourses()) {
+                int vaultCount = resolveVaultCount(c, allSubjects);
+                int moodleCount = c.getMoodleCount();
+                int extra = moodleCount >= 0 ? Math.max(0, moodleCount - vaultCount) : 0;
+                boolean hasNew = moodleCount > vaultCount;
+                if (hasNew) withUpdates++;
+                refreshed.add(LmsSyncResponse.DiscoveredCourseInfo.builder()
+                        .id(c.getId())
+                        .code(c.getCode())
+                        .fullname(c.getFullname())
+                        .shortname(c.getShortname())
+                        .viewurl(c.getViewurl())
+                        .matched(c.isMatched())
+                        .matchedSubjectName(c.getMatchedSubjectName())
+                        .matchedSubjectId(c.getMatchedSubjectId())
+                        .moodleCount(moodleCount)
+                        .vaultCount(vaultCount)
+                        .extraNotesCount(extra)
+                        .hasNewNotes(hasNew)
+                        .availabilityCheckedAt(c.getAvailabilityCheckedAt() != null ? c.getAvailabilityCheckedAt() : report.getCheckedAt())
+                        .build());
+            }
+        }
+        return LmsSyncResponse.LmsAvailabilityReport.builder()
+                .checkedAt(report.getCheckedAt())
+                .username(report.getUsername())
+                .totalCourses(refreshed.size())
+                .subjectsWithNewNotes(withUpdates)
+                .courses(refreshed)
+                .build();
+    }
+
+    private List<LmsSyncResponse.DiscoveredCourseInfo> enrichWithAvailability(List<LmsSyncResponse.DiscoveredCourseInfo> courses, List<Subject> subjects) {
+        LmsSyncResponse.LmsAvailabilityReport report = cachedAvailability.get();
+        if (report == null && r2StorageService != null && objectMapper != null) {
+            try {
+                String raw = r2StorageService.readJsonConfig(LMS_AVAILABILITY_KEY);
+                if (raw != null && !raw.isBlank()) {
+                    report = objectMapper.readValue(raw, LmsSyncResponse.LmsAvailabilityReport.class);
+                    cachedAvailability.set(report);
+                }
+            } catch (Exception ignored) {}
+        }
+        Map<String, LmsSyncResponse.DiscoveredCourseInfo> prevById = new HashMap<>();
+        if (report != null && report.getCourses() != null) {
+            for (LmsSyncResponse.DiscoveredCourseInfo prev : report.getCourses()) {
+                if (prev.getId() != null) prevById.put(prev.getId(), prev);
+            }
+        }
+        List<LmsSyncResponse.DiscoveredCourseInfo> out = new ArrayList<>();
+        for (LmsSyncResponse.DiscoveredCourseInfo c : courses) {
+            int vaultCount = resolveVaultCount(c, subjects);
+            LmsSyncResponse.DiscoveredCourseInfo prev = prevById.get(c.getId());
+            int moodleCount = prev != null ? prev.getMoodleCount() : -1;
+            int extra = moodleCount >= 0 ? Math.max(0, moodleCount - vaultCount) : 0;
+            boolean hasNew = moodleCount > vaultCount;
+            out.add(LmsSyncResponse.DiscoveredCourseInfo.builder()
+                    .id(c.getId())
+                    .code(c.getCode())
+                    .fullname(c.getFullname())
+                    .shortname(c.getShortname())
+                    .viewurl(c.getViewurl())
+                    .matched(c.isMatched())
+                    .matchedSubjectName(c.getMatchedSubjectName())
+                    .matchedSubjectId(c.getMatchedSubjectId())
+                    .moodleCount(moodleCount)
+                    .vaultCount(vaultCount)
+                    .extraNotesCount(extra)
+                    .hasNewNotes(hasNew)
+                    .availabilityCheckedAt(prev != null ? prev.getAvailabilityCheckedAt() : (report != null ? report.getCheckedAt() : null))
+                    .build());
+        }
+        return out;
+    }
+
+    private int resolveVaultCount(LmsSyncResponse.DiscoveredCourseInfo c, List<Subject> subjects) {
+        if (subjects == null || subjects.isEmpty()) return c.getVaultCount();
+        if (c.getMatchedSubjectId() != null) {
+            for (Subject s : subjects) {
+                if (c.getMatchedSubjectId().equals(s.getId())) {
+                    return s.getNoteCount() != null ? s.getNoteCount() : 0;
+                }
+            }
+        }
+        Subject matched = matchSubject(c.getCode(), c.getFullname(), subjects);
+        if (matched != null && matched.getNoteCount() != null) {
+            return matched.getNoteCount();
+        }
+        return c.getVaultCount();
+    }
+
+    private int countImportableMaterials(LmsSession session, String courseId) {
+        try {
+            String courseUrl = baseUrl + "/course/view.php?id=" + courseId;
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(courseUrl))
+                    .timeout(TIMEOUT)
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = session.client.send(req, HttpResponse.BodyHandlers.ofString());
+            Document doc = Jsoup.parse(resp.body());
+            Elements sectionEls = doc.select("li.section");
+            if (sectionEls.isEmpty()) {
+                sectionEls = doc.select(".section");
+            }
+            int count = 0;
+            for (Element secEl : sectionEls) {
+                for (Element actEl : secEl.select("li.activity")) {
+                    Element linkEl = actEl.selectFirst("a[href]");
+                    if (linkEl == null) continue;
+                    String href = linkEl.attr("href");
+                    if (href.contains("/mod/resource/view.php") || href.contains("/pluginfile.php") || href.contains("/mod/url/view.php")) {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        } catch (Exception e) {
+            logger.warn("Failed counting Moodle materials for course {}: {}", courseId, e.getMessage());
+            return -1;
+        }
+    }
+
+    private void saveAvailabilityReportToR2(LmsSyncResponse.LmsAvailabilityReport report) {
+        if (r2StorageService == null || objectMapper == null) return;
+        try {
+            String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(report);
+            r2StorageService.writeJsonConfig(LMS_AVAILABILITY_KEY, json);
+        } catch (Exception e) {
+            logger.warn("Could not persist LMS availability JSON to R2: {}", e.getMessage());
+        }
     }
 
     private List<Subject> getCurrentStudentSubjects() {
@@ -499,6 +769,12 @@ public class LmsScraperService {
             sleep(300);
         }
 
+        if (cachedAvailability.get() != null) {
+            LmsSyncResponse.LmsAvailabilityReport refreshedReport = getLatestAvailabilityReport();
+            cachedAvailability.set(refreshedReport);
+            saveAvailabilityReportToR2(refreshedReport);
+        }
+
         updateProgress(username, "COMPLETED", "Synchronization Complete!", null, totalToProcess, totalToProcess, null,
                 totalMaterialsFound, totalImported, totalSkipped, totalFailed, 100,
                 "Ingestion complete: " + totalImported + " imported, " + totalSkipped + " duplicates skipped.");
@@ -512,7 +788,7 @@ public class LmsScraperService {
                 .skippedDuplicatesCount(totalSkipped)
                 .failureCount(totalFailed)
                 .courses(courseSummaries)
-                .allDiscoveredCourses(discovered)
+                .allDiscoveredCourses(enrichWithAvailability(discovered, database.getAllSubjects()))
                 .unmatchedCourses(unmatchedCourses)
                 .errors(errors)
                 .build();

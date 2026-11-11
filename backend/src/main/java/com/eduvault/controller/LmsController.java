@@ -39,6 +39,37 @@ public class LmsController {
         return ResponseEntity.ok(lmsScraperService.getProgress(username));
     }
 
+    @GetMapping("/availability")
+    public ResponseEntity<LmsSyncResponse.LmsAvailabilityReport> getAvailabilityReport() {
+        return ResponseEntity.ok(lmsScraperService.getLatestAvailabilityReport());
+    }
+
+    @PostMapping("/availability/check")
+    public ResponseEntity<?> checkAvailabilityNow(
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
+            @RequestBody(required = false) LmsCredentials credentials) {
+        if (roleHeader != null && !roleHeader.equalsIgnoreCase("teacher") && !roleHeader.equalsIgnoreCase("faculty") && !roleHeader.equalsIgnoreCase("admin")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Access Denied: Only teachers/faculty can run LMS availability check"));
+        }
+        try {
+            LmsSyncResponse.LmsAvailabilityReport report;
+            if (credentials != null && credentials.getUsername() != null && !credentials.getUsername().isBlank()
+                    && credentials.getPassword() != null && !credentials.getPassword().isBlank()) {
+                report = lmsScraperService.checkMoodleAvailability(credentials.getUsername().trim(), credentials.getPassword().trim());
+            } else {
+                report = lmsScraperService.checkDefaultMoodleAvailability();
+            }
+            return ResponseEntity.ok(report);
+        } catch (Exception e) {
+            logger.error("LMS Availability check error: {}", e.getMessage(), e);
+            if (e.getMessage() != null && e.getMessage().contains("Invalid LMS credentials")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "LMS Availability check failed: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/discover")
     public ResponseEntity<?> discoverCourses(
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
