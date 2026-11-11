@@ -498,7 +498,7 @@ const SovereignLayout = () => {
 
                 headers: {
 
-                    'X-User-Role': role,
+                    'X-User-Role': isTeacher ? 'teacher' : 'student',
 
                     'X-Student-PRN': currentProfile?.prn || '',
 
