@@ -1,9 +1,13 @@
 package com.eduvault.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -22,23 +26,28 @@ import java.net.URI;
 @Configuration
 public class R2StorageConfig {
 
-    @Value("${app.r2.access-key-id:${R2_ACCESS_KEY_ID:${R2_ACCESS_KEY_ID:}}}")
+    private static final Logger log = LoggerFactory.getLogger(R2StorageConfig.class);
+
+    @Value("${app.r2.access-key-id:${R2_ACCESS_KEY_ID:}}")
     private String accessKeyId;
 
-    @Value("${app.r2.secret-access-key:${R2_SECRET_ACCESS_KEY:${R2_SECRET_ACCESS_KEY:}}}")
+    @Value("${app.r2.secret-access-key:${R2_SECRET_ACCESS_KEY:}}")
     private String secretAccessKey;
 
-    @Value("${app.r2.endpoint:${R2_ENDPOINT:${R2_ENDPOINT:https://ed699a622be1d0fe280023629e3e007e.r2.cloudflarestorage.com}}}")
+    @Value("${app.r2.endpoint:${R2_ENDPOINT:https://ed699a622be1d0fe280023629e3e007e.r2.cloudflarestorage.com}}")
     private String endpoint;
 
-    @Value("${app.r2.region:${R2_REGION:${R2_REGION:auto}}}")
+    @Value("${app.r2.region:${R2_REGION:auto}}")
     private String region;
 
-    private StaticCredentialsProvider credentialsProvider() {
-        return StaticCredentialsProvider.create(
-                AwsBasicCredentials.create(
-                        accessKeyId != null ? accessKeyId.trim() : "",
-                        secretAccessKey != null ? secretAccessKey.trim() : ""));
+    private AwsCredentialsProvider credentialsProvider() {
+        String id = accessKeyId != null ? accessKeyId.trim() : "";
+        String secret = secretAccessKey != null ? secretAccessKey.trim() : "";
+        if (id.isEmpty() || secret.isEmpty()) {
+            log.error("R2_ACCESS_KEY_ID or R2_SECRET_ACCESS_KEY is not configured; using anonymous credentials — R2 storage operations will fail until configured.");
+            return AnonymousCredentialsProvider.create();
+        }
+        return StaticCredentialsProvider.create(AwsBasicCredentials.create(id, secret));
     }
 
     private URI getCleanEndpoint() {

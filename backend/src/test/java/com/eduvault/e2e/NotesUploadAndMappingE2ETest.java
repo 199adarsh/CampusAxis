@@ -1,5 +1,6 @@
 package com.eduvault.e2e;
 
+import com.eduvault.config.R2StorageConfig;
 import com.eduvault.controller.ApiController;
 import com.eduvault.model.Note;
 import com.eduvault.model.Subject;
@@ -231,6 +232,34 @@ class NotesUploadAndMappingE2ETest {
         assertEquals(HttpStatus.OK, teacherDel.getStatusCode());
         verify(r2StorageService, times(1)).deleteFile("k/f.pdf");
         verify(database, times(1)).deleteNote("n1");
+    }
+
+    @Test
+    @DisplayName("R2StorageConfig creates S3Client and S3Presigner even when credentials are blank")
+    void r2StorageConfigHandlesBlankAndPresentCredentials() {
+        R2StorageConfig blankConfig = new R2StorageConfig();
+        ReflectionTestUtils.setField(blankConfig, "accessKeyId", "   ");
+        ReflectionTestUtils.setField(blankConfig, "secretAccessKey", "");
+        ReflectionTestUtils.setField(blankConfig, "endpoint", "https://ed699a622be1d0fe280023629e3e007e.r2.cloudflarestorage.com");
+        ReflectionTestUtils.setField(blankConfig, "region", "auto");
+
+        try (var client = assertDoesNotThrow(blankConfig::s3Client);
+             var presigner = assertDoesNotThrow(blankConfig::s3Presigner)) {
+            assertNotNull(client);
+            assertNotNull(presigner);
+        }
+
+        R2StorageConfig validConfig = new R2StorageConfig();
+        ReflectionTestUtils.setField(validConfig, "accessKeyId", "test-key");
+        ReflectionTestUtils.setField(validConfig, "secretAccessKey", "test-secret");
+        ReflectionTestUtils.setField(validConfig, "endpoint", "https://ed699a622be1d0fe280023629e3e007e.r2.cloudflarestorage.com");
+        ReflectionTestUtils.setField(validConfig, "region", "auto");
+
+        try (var client = assertDoesNotThrow(validConfig::s3Client);
+             var presigner = assertDoesNotThrow(validConfig::s3Presigner)) {
+            assertNotNull(client);
+            assertNotNull(presigner);
+        }
     }
 }
 
