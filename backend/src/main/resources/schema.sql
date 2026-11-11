@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS notes (
     unit VARCHAR(255),
     exam_type VARCHAR(255),
     file_url TEXT,
-    b2_object_key VARCHAR(255),
+    r2_object_key VARCHAR(255),
     original_filename VARCHAR(255),
     import_batch_id VARCHAR(255),
     uploaded_by VARCHAR(255),
@@ -147,7 +147,7 @@ CREATE INDEX IF NOT EXISTS idx_notes_okf_status ON notes(okf_status);
 CREATE INDEX IF NOT EXISTS idx_notes_moodle_id ON notes(moodle_id);
 CREATE INDEX IF NOT EXISTS idx_notes_source_url ON notes(source_url);
 CREATE INDEX IF NOT EXISTS idx_notes_file_url ON notes(file_url);
-CREATE INDEX IF NOT EXISTS idx_notes_b2_key ON notes(b2_object_key);
+CREATE INDEX IF NOT EXISTS idx_notes_r2_key ON notes(r2_object_key);
 CREATE INDEX IF NOT EXISTS idx_notes_uploaded_by ON notes(uploaded_by);
 CREATE INDEX IF NOT EXISTS idx_notes_import_batch ON notes(import_batch_id);
 CREATE INDEX IF NOT EXISTS idx_pyqs_subject_exam ON pyqs(subject_id, exam_type);

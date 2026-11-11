@@ -24,23 +24,24 @@ public class Subject {
     @Column(name = "note_count")
     private Integer noteCount = 0; 
     
+    @Transient
     private String attendance; 
+    @Transient
     private String cie; 
     
-    @Column(name = "total_conducted")
+    @Transient
     private Integer totalConducted = 0;
     
-    @Column(name = "total_attended")
+    @Transient
     private Integer totalAttended = 0;
     
-    @Column(name = "total_scheduled")
+    @Transient
     private Integer totalScheduled = 0;
     
-    @Column(name = "still_to_go")
+    @Transient
     private Integer stillToGo = 0;
     
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "detailed_attendance", columnDefinition = "jsonb")
+    @Transient
     private List<DashboardSubject.AttendanceRecord> detailedAttendance;
 
     public Subject() {

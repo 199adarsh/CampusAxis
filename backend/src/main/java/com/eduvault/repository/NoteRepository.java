@@ -35,17 +35,16 @@ public interface NoteRepository extends JpaRepository<Note, String> {
 
     boolean existsBySourceUrl(String sourceUrl);
 
-    boolean existsByFileUrl(String fileUrl);
+    boolean existsByR2ObjectKey(String r2ObjectKey);
 
-    boolean existsByB2ObjectKey(String b2ObjectKey);
+    @Query("SELECT n FROM Note n WHERE n.r2ObjectKey = :key OR n.r2ObjectKey LIKE CONCAT('%/', :key) OR n.originalFilename = :key")
+    java.util.Optional<Note> findByR2ObjectKeyEndingWith(@Param("key") String key);
 
     java.util.Optional<Note> findByMoodleId(String moodleId);
 
     java.util.Optional<Note> findBySourceUrl(String sourceUrl);
 
     List<Note> findByUploadedBy(String uploadedBy);
-
-    List<Note> findByImportBatchId(String importBatchId);
 
     void deleteByUploadedBy(String uploadedBy);
 

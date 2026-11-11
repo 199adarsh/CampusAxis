@@ -27,6 +27,19 @@ public class EduVaultApplication {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
+                String[] patterns = allowedOriginPatterns != null && !allowedOriginPatterns.isBlank()
+                        ? allowedOriginPatterns.split(",")
+                        : new String[]{"http://localhost:*", "https://*.vercel.app", "https://*.onrender.com"};
+                for (int i = 0; i < patterns.length; i++) {
+                    patterns[i] = patterns[i].trim();
+                }
+
+                registry.addMapping("/api/**")
+                        .allowedOriginPatterns(patterns)
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
+
                 registry.addMapping("/**")
                         .allowedOriginPatterns("*")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")

@@ -59,7 +59,7 @@ public class NcRequest {
     @Column(name = "proof_file_type")
     private String proofFileType;
 
-    @Column(name = "proof_presigned_url", columnDefinition = "TEXT")
+    @Transient
     private String proofPresignedUrl;
 
     @Column(length = 32)

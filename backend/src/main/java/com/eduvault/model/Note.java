@@ -26,7 +26,7 @@ public class Note {
     @Column(name = "exam_type")
     private String examType;
     
-    @Column(name = "file_url")
+    @Transient
     private String fileUrl;
     
     @Column(name = "uploaded_by")
@@ -58,13 +58,13 @@ public class Note {
     @Column(name = "ai_generated_questions", columnDefinition = "jsonb")
     private List<Question> aiGeneratedQuestions;
     
-    @Column(name = "b2_object_key")
-    private String b2ObjectKey;
+    @Column(name = "r2_object_key")
+    private String r2ObjectKey;
 
     @Column(name = "original_filename")
     private String originalFilename;
 
-    @Column(name = "import_batch_id")
+    @Transient
     private String importBatchId;
 
     @Column(name = "extracted_text", columnDefinition = "TEXT")
@@ -73,24 +73,31 @@ public class Note {
     @Column(name = "okf_status")
     private String okfStatus = "PENDING";
 
-    @Column(name = "okf_file_path")
+    @Transient
     private String okfFilePath;
 
-    @Column(name = "okf_compiled_at")
+    @Transient
     private String okfCompiledAt;
+
+    public String getFileUrl() {
+        if (this.fileUrl != null && !this.fileUrl.isBlank()) {
+            return this.fileUrl;
+        }
+        return (this.r2ObjectKey != null && !this.r2ObjectKey.isBlank()) ? this.r2ObjectKey : this.sourceUrl;
+    }
 
     public Note() {
     }
 
-    public Note(String id, String title, String subjectId, String department, String semester, String unit, String examType, String fileUrl, String b2ObjectKey, String originalFilename, String importBatchId, String uploadedBy, String createdAt, String status, String category, String moodleId, String sourceUrl, List<String> tags, List<String> aiImportantTopics, List<Question> aiGeneratedQuestions, String extractedText) {
-        this(id, title, subjectId, department, semester, unit, examType, fileUrl, b2ObjectKey, originalFilename, importBatchId, uploadedBy, createdAt, status, category, moodleId, sourceUrl, tags, aiImportantTopics, aiGeneratedQuestions, extractedText, "PENDING", null, null);
+    public Note(String id, String title, String subjectId, String department, String semester, String unit, String examType, String fileUrl, String r2ObjectKey, String originalFilename, String importBatchId, String uploadedBy, String createdAt, String status, String category, String moodleId, String sourceUrl, List<String> tags, List<String> aiImportantTopics, List<Question> aiGeneratedQuestions, String extractedText) {
+        this(id, title, subjectId, department, semester, unit, examType, fileUrl, r2ObjectKey, originalFilename, importBatchId, uploadedBy, createdAt, status, category, moodleId, sourceUrl, tags, aiImportantTopics, aiGeneratedQuestions, extractedText, "PENDING", null, null);
     }
 
-    public Note(String id, String title, String subjectId, String department, String semester, String unit, String examType, String fileUrl, String b2ObjectKey, String originalFilename, String importBatchId, String uploadedBy, String createdAt, String status, String category, String moodleId, String sourceUrl, List<String> tags, List<String> aiImportantTopics, List<Question> aiGeneratedQuestions, String okfStatus, String okfFilePath, String okfCompiledAt) {
-        this(id, title, subjectId, department, semester, unit, examType, fileUrl, b2ObjectKey, originalFilename, importBatchId, uploadedBy, createdAt, status, category, moodleId, sourceUrl, tags, aiImportantTopics, aiGeneratedQuestions, null, okfStatus, okfFilePath, okfCompiledAt);
+    public Note(String id, String title, String subjectId, String department, String semester, String unit, String examType, String fileUrl, String r2ObjectKey, String originalFilename, String importBatchId, String uploadedBy, String createdAt, String status, String category, String moodleId, String sourceUrl, List<String> tags, List<String> aiImportantTopics, List<Question> aiGeneratedQuestions, String okfStatus, String okfFilePath, String okfCompiledAt) {
+        this(id, title, subjectId, department, semester, unit, examType, fileUrl, r2ObjectKey, originalFilename, importBatchId, uploadedBy, createdAt, status, category, moodleId, sourceUrl, tags, aiImportantTopics, aiGeneratedQuestions, null, okfStatus, okfFilePath, okfCompiledAt);
     }
 
-    public Note(String id, String title, String subjectId, String department, String semester, String unit, String examType, String fileUrl, String b2ObjectKey, String originalFilename, String importBatchId, String uploadedBy, String createdAt, String status, String category, String moodleId, String sourceUrl, List<String> tags, List<String> aiImportantTopics, List<Question> aiGeneratedQuestions, String extractedText, String okfStatus, String okfFilePath, String okfCompiledAt) {
+    public Note(String id, String title, String subjectId, String department, String semester, String unit, String examType, String fileUrl, String r2ObjectKey, String originalFilename, String importBatchId, String uploadedBy, String createdAt, String status, String category, String moodleId, String sourceUrl, List<String> tags, List<String> aiImportantTopics, List<Question> aiGeneratedQuestions, String extractedText, String okfStatus, String okfFilePath, String okfCompiledAt) {
         this.id = id;
         this.title = title;
         this.subjectId = subjectId;
@@ -99,7 +106,7 @@ public class Note {
         this.unit = unit;
         this.examType = examType;
         this.fileUrl = fileUrl;
-        this.b2ObjectKey = b2ObjectKey;
+        this.r2ObjectKey = r2ObjectKey;
         this.originalFilename = originalFilename;
         this.importBatchId = importBatchId;
         this.uploadedBy = uploadedBy;
@@ -141,7 +148,7 @@ public class Note {
         }
         return new Note(
             this.id, this.title, this.subjectId, this.department, this.semester,
-            this.unit, this.examType, this.fileUrl, this.b2ObjectKey, this.originalFilename,
+            this.unit, this.examType, this.fileUrl, this.r2ObjectKey, this.originalFilename,
             this.importBatchId, this.uploadedBy, this.createdAt, this.status, this.category,
             this.moodleId, this.sourceUrl, this.tags, this.aiImportantTopics,
             this.aiGeneratedQuestions, this.okfStatus, this.okfFilePath, this.okfCompiledAt
@@ -161,7 +168,7 @@ public class Note {
         private String unit;
         private String examType;
         private String fileUrl;
-        private String b2ObjectKey;
+        private String r2ObjectKey;
         private String originalFilename;
         private String importBatchId;
         private String uploadedBy;
@@ -186,7 +193,7 @@ public class Note {
         public NoteBuilder unit(String unit) { this.unit = unit; return this; }
         public NoteBuilder examType(String examType) { this.examType = examType; return this; }
         public NoteBuilder fileUrl(String fileUrl) { this.fileUrl = fileUrl; return this; }
-        public NoteBuilder b2ObjectKey(String b2ObjectKey) { this.b2ObjectKey = b2ObjectKey; return this; }
+        public NoteBuilder r2ObjectKey(String r2ObjectKey) { this.r2ObjectKey = r2ObjectKey; return this; }
         public NoteBuilder originalFilename(String originalFilename) { this.originalFilename = originalFilename; return this; }
         public NoteBuilder importBatchId(String importBatchId) { this.importBatchId = importBatchId; return this; }
         public NoteBuilder uploadedBy(String uploadedBy) { this.uploadedBy = uploadedBy; return this; }
@@ -207,7 +214,7 @@ public class Note {
         public NoteBuilder okfCompiledAt(String okfCompiledAt) { this.okfCompiledAt = okfCompiledAt; return this; }
 
         public Note build() {
-            return new Note(id, title, subjectId, department, semester, unit, examType, fileUrl, b2ObjectKey, originalFilename, importBatchId, uploadedBy, createdAt, status, category, moodleId, sourceUrl, tags, aiImportantTopics, aiGeneratedQuestions, extractedText, okfStatus, okfFilePath, okfCompiledAt);
+            return new Note(id, title, subjectId, department, semester, unit, examType, fileUrl, r2ObjectKey, originalFilename, importBatchId, uploadedBy, createdAt, status, category, moodleId, sourceUrl, tags, aiImportantTopics, aiGeneratedQuestions, extractedText, okfStatus, okfFilePath, okfCompiledAt);
         }
     }
 

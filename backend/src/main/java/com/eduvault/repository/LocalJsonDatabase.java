@@ -59,7 +59,7 @@ public class LocalJsonDatabase {
 
     @Autowired
     @org.springframework.context.annotation.Lazy
-    private com.eduvault.service.BackblazeStorageService backblazeStorageService;
+    private com.eduvault.service.R2StorageService r2StorageService;
 
     @Autowired
     @org.springframework.context.annotation.Lazy
@@ -105,8 +105,6 @@ public class LocalJsonDatabase {
             try (java.sql.Connection conn = dataSource.getConnection();
                  java.sql.Statement stmt = conn.createStatement()) {
                 stmt.execute("ALTER TABLE notes ADD COLUMN IF NOT EXISTS okf_status VARCHAR(50) DEFAULT 'PENDING'");
-                stmt.execute("ALTER TABLE notes ADD COLUMN IF NOT EXISTS okf_file_path VARCHAR(500)");
-                stmt.execute("ALTER TABLE notes ADD COLUMN IF NOT EXISTS okf_compiled_at VARCHAR(50)");
                 stmt.execute("UPDATE notes SET okf_status = 'PENDING' WHERE okf_status IS NULL");
             } catch (Exception e) {
                 logger.warn("Could not alter notes table for OKF columns: {}", e.getMessage());
@@ -121,10 +119,9 @@ public class LocalJsonDatabase {
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_okf_status ON notes(okf_status)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_moodle_id ON notes(moodle_id)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_source_url ON notes(source_url)");
-                stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_file_url ON notes(file_url)");
-                stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_b2_key ON notes(b2_object_key)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_r2_key ON notes(r2_object_key)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_uploaded_by ON notes(uploaded_by)");
-                stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_import_batch ON notes(import_batch_id)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_notes_subject_unit ON notes(subject_id, unit)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_pyqs_subject_exam ON pyqs(subject_id, exam_type)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_nc_requests_student ON nc_requests(student_prn, created_at DESC)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_nc_requests_status ON nc_requests(status)");
@@ -211,14 +208,14 @@ public class LocalJsonDatabase {
             int repaired = 0;
 
             for (Note note : allNotes) {
-                if (note.getB2ObjectKey() == null && note.getFileUrl() != null) {
-                    note.setB2ObjectKey(note.getFileUrl());
+                if (note.getR2ObjectKey() == null && note.getFileUrl() != null) {
+                    note.setR2ObjectKey(note.getFileUrl());
                 }
 
                 boolean validSubject = note.getSubjectId() != null && subjects.stream().anyMatch(s -> s.getId().equals(note.getSubjectId()));
                 if (!validSubject || "PENDING_MAPPING".equalsIgnoreCase(note.getStatus())) {
-                    FolderInfo info = extractFolderInfoFromKey(note.getB2ObjectKey() != null ? note.getB2ObjectKey() : note.getFileUrl());
-                    Subject matched = findSubjectFromFolderOrKey(info.subject, note.getB2ObjectKey(), subjects);
+                    FolderInfo info = extractFolderInfoFromKey(note.getR2ObjectKey() != null ? note.getR2ObjectKey() : note.getFileUrl());
+                    Subject matched = findSubjectFromFolderOrKey(info.subject, note.getR2ObjectKey(), subjects);
                     if (matched == null) {
                         matched = findSubjectFromContent(note.getExtractedText(), subjects);
                     }
@@ -256,19 +253,19 @@ public class LocalJsonDatabase {
         }
     }
 
-    public int syncNotesFromBackblaze() {
-        if (backblazeStorageService == null) return 0;
+    public int syncNotesFromR2() {
+        if (r2StorageService == null) return 0;
         syncLock.lock();
         try {
-            logger.info("Checking notes from Backblaze B2 bucket...");
+            logger.info("Checking notes from Cloudflare R2 bucket...");
 
-            List<software.amazon.awssdk.services.s3.model.S3Object> objects = backblazeStorageService.listAllObjects();
+            List<software.amazon.awssdk.services.s3.model.S3Object> objects = r2StorageService.listAllObjects();
             if (objects.isEmpty()) return 0;
 
             java.util.Map<String, Note> existingByB2Key = new java.util.HashMap<>();
             java.util.Map<String, Note> existingByFileUrl = new java.util.HashMap<>();
             for (Note n : noteRepository.findAll()) {
-                if (n.getB2ObjectKey() != null) existingByB2Key.put(n.getB2ObjectKey(), n);
+                if (n.getR2ObjectKey() != null) existingByB2Key.put(n.getR2ObjectKey(), n);
                 if (n.getFileUrl() != null) existingByFileUrl.put(n.getFileUrl(), n);
             }
 
@@ -303,13 +300,7 @@ public class LocalJsonDatabase {
 
             for (software.amazon.awssdk.services.s3.model.S3Object obj : objects) {
                 String key = obj.key();
-                if (key.endsWith(".json") || key.endsWith("/") || key.startsWith(".")) continue;
-
-                String keyUpper = key.toUpperCase();
-                if (keyUpper.contains("01MEL") || keyUpper.contains("01MEP") || keyUpper.contains("01CEP")
-                        || keyUpper.contains("MECH") || keyUpper.contains("CIVIL") || keyUpper.contains("TEXTILE")) {
-                    continue;
-                }
+                if (key.endsWith(".json") || key.endsWith("/") || key.startsWith(".") || key.startsWith("_config/")) continue;
 
                 String filenameOnly = key.contains("/") ? key.substring(key.lastIndexOf('/') + 1) : key;
                 String ext = key.contains(".") ? key.substring(key.lastIndexOf('.')) : "";
@@ -329,13 +320,13 @@ public class LocalJsonDatabase {
                 if (isNew) {
                     note = Note.builder()
                             .id(java.util.UUID.randomUUID().toString())
-                            .uploadedBy("Backblaze B2")
+                            .uploadedBy("Cloudflare R2")
                             .createdAt(java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ISO_DATE))
                             .build();
                 }
 
                 note.setFileUrl(filenameOnly);
-                note.setB2ObjectKey(key);
+                note.setR2ObjectKey(key);
 
                 String extractedText = note.getExtractedText();
                 if (extractedText == null || extractedText.isBlank()) {
@@ -395,9 +386,9 @@ public class LocalJsonDatabase {
                                 .subjectName(matched.getName())
                                 .year(String.valueOf(java.time.LocalDate.now().getYear()))
                                 .examType(examType)
-                                .tags("B2, PYQ, " + title)
+                                .tags("R2, PYQ, " + title)
                                 .fileUrl(key)
-                                .uploadedBy("Backblaze B2")
+                                .uploadedBy("Cloudflare R2")
                                 .createdAt(java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ISO_DATE))
                                 .build();
                         pyqRepository.save(pyq);
@@ -418,7 +409,7 @@ public class LocalJsonDatabase {
             }
             return countNewOrUpdated;
         } catch (Exception e) {
-            logger.error("Error during Backblaze B2 note synchronization: {}", e.getMessage(), e);
+            logger.error("Error during Cloudflare R2 note synchronization: {}", e.getMessage(), e);
         } finally {
             syncLock.unlock();
             evictNoteCaches();
@@ -429,21 +420,21 @@ public class LocalJsonDatabase {
     public int deleteDisposableTestImportNotes() {
         syncLock.lock();
         try {
-            List<Note> testNotes = noteRepository.findByUploadedBy("Backblaze B2");
+            List<Note> testNotes = noteRepository.findByUploadedBy("Cloudflare R2");
             int deleted = 0;
             for (Note n : testNotes) {
-                if (n.getFileUrl() != null && backblazeStorageService != null) {
+                if (n.getFileUrl() != null && r2StorageService != null) {
                     try {
-                        backblazeStorageService.deleteFile(n.getFileUrl());
+                        r2StorageService.deleteFile(n.getFileUrl());
                     } catch (Exception ex) {
-                        logger.warn("Could not delete B2 file {}: {}", n.getFileUrl(), ex.getMessage());
+                        logger.warn("Could not delete R2 file {}: {}", n.getFileUrl(), ex.getMessage());
                     }
                 }
                 noteRepository.delete(n);
                 deleted++;
             }
             updateSubjectCounts();
-            logger.info("Safely deleted {} disposable test-import notes and associated B2 files", deleted);
+            logger.info("Safely deleted {} disposable test-import notes and associated R2 files", deleted);
             return deleted;
         } catch (Exception e) {
             logger.error("Error deleting disposable test import notes: {}", e.getMessage(), e);
@@ -900,7 +891,7 @@ public class LocalJsonDatabase {
     }
 
     private Subject matchSubjectForNote(Note note, List<Subject> subjects) {
-        String keyToInspect = note.getB2ObjectKey() != null ? note.getB2ObjectKey() : note.getFileUrl();
+        String keyToInspect = note.getR2ObjectKey() != null ? note.getR2ObjectKey() : note.getFileUrl();
         if (keyToInspect != null && keyToInspect.contains("/")) {
             FolderInfo folderInfo = extractFolderInfoFromKey(keyToInspect);
             Subject fromKey = findSubjectFromFolderOrKey(folderInfo.subject, keyToInspect, subjects);
@@ -989,6 +980,11 @@ public class LocalJsonDatabase {
                 .collect(Collectors.toList());
     }
 
+    public Optional<Note> findNoteByStorageKey(String key) {
+        if (key == null || key.isBlank()) return Optional.empty();
+        return noteRepository.findByR2ObjectKeyEndingWith(key);
+    }
+
     public long getTotalNotesCount() {
         return noteRepository.count();
     }
@@ -1045,9 +1041,9 @@ public class LocalJsonDatabase {
         return noteRepository.existsBySourceUrl(sourceUrl);
     }
 
-    public boolean existsNoteByB2ObjectKey(String b2ObjectKey) {
-        if (b2ObjectKey == null || b2ObjectKey.trim().isEmpty()) return false;
-        return noteRepository.existsByB2ObjectKey(b2ObjectKey);
+    public boolean existsNoteByR2ObjectKey(String r2ObjectKey) {
+        if (r2ObjectKey == null || r2ObjectKey.trim().isEmpty()) return false;
+        return noteRepository.existsByR2ObjectKey(r2ObjectKey);
     }
     
     public Subject addSubject(Subject subject) {
