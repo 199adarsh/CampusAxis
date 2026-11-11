@@ -358,26 +358,10 @@ public class LmsScraperService {
             String courseCodeUpper = (courseInfo.getCode() != null ? courseInfo.getCode() : "").toUpperCase();
             String courseNameUpper = (courseInfo.getFullname() != null ? courseInfo.getFullname() : "").toUpperCase();
 
-            // Strict Filter: Skip any Mech, Civil, Textile, or non-B.Tech-UAD courses
-            if (courseCodeUpper.contains("01MEL") || courseCodeUpper.contains("01MEP") || courseCodeUpper.contains("01CEP")
-                    || courseNameUpper.contains("MECHANICAL") || courseNameUpper.contains("CIVIL") || courseNameUpper.contains("TEXTILE")) {
-                logger.info("Ignoring non-B.Tech-UAD course from sync: {} ({})", courseInfo.getFullname(), courseInfo.getCode());
-                continue;
-            }
-
             Subject matchedSubject = matchSubject(courseInfo.getCode(), courseInfo.getFullname(), allSubjects);
-            if (matchedSubject != null && !"B.Tech-UAD".equalsIgnoreCase(matchedSubject.getDepartment())) {
-                logger.info("Ignoring non-B.Tech-UAD matched subject: {}", matchedSubject.getName());
-                continue;
-            }
 
             if (matchedSubject == null) {
-                // Auto-register newly discovered course ONLY if B.Tech-UAD
                 String dept = com.eduvault.util.AcademicNormalizer.inferDepartmentFromCourse(courseInfo.getCode(), courseInfo.getFullname());
-                if (!"B.Tech-UAD".equalsIgnoreCase(dept) && !"UAD".equalsIgnoreCase(dept)) {
-                    logger.info("Skipping auto-registration for non-UAD dept {}: {}", dept, courseInfo.getFullname());
-                    continue;
-                }
                 String sem = com.eduvault.util.AcademicNormalizer.inferSemesterFromCourse(courseInfo.getCode(), courseInfo.getFullname());
                 String cleanName = com.eduvault.util.AcademicNormalizer.cleanCourseName(courseInfo.getFullname());
 
@@ -385,15 +369,15 @@ public class LmsScraperService {
                         .id(UUID.randomUUID().toString())
                         .name(cleanName)
                         .code(courseInfo.getCode() != null && !courseInfo.getCode().isBlank() ? courseInfo.getCode().trim().toUpperCase() : "")
-                        .department("B.Tech-UAD")
-                        .semester(sem)
+                        .department(dept != null && !dept.isBlank() ? dept : "B.Tech-UAD")
+                        .semester(sem != null && !sem.isBlank() ? sem : "Current")
                         .createdAt(LocalDate.now().toString())
                         .noteCount(0)
                         .build();
                 try {
                     matchedSubject = database.addSubject(autoSub);
                     allSubjects.add(matchedSubject);
-                    logger.info("Auto-registered new curriculum course: {} ({}, {})", cleanName, dept, sem);
+                    logger.info("Auto-registered new course: {} ({}, {})", cleanName, dept, sem);
                 } catch (Exception ex) {
                     logger.warn("Could not auto-register course {}: {}", cleanName, ex.getMessage());
                 }
@@ -699,11 +683,9 @@ public class LmsScraperService {
 
             // Determine original filename
             String filename = extractFilenameFromResponse(fileResp, targetUrl, title);
+            String safeOriginalName = filename.replaceAll("[\\\\/:*?\"<>|#%&{}^~`\\[\\]]", "_").trim();
 
-            // Store file locally and upload to B2 organized folder-by-folder
-            String savedFileName = fileStorageService.storeFile(bytes, filename);
-
-            // Compute deterministic Course Folder: [CourseCode] [SubjectName]/[Unit]
+            // Compute deterministic Course Folder: [CourseCode] [SubjectName]/[Unit]/[CleanFileName]
             String safeSubject = subject.getName() != null ? subject.getName().replaceAll("[\\\\/:*?\"<>|]", "_").trim() : "Subject";
             String safeUnit = (unit != null && !unit.isBlank()) ? unit.replaceAll("[\\\\/:*?\"<>|]", "_").trim() : "General";
             String coursePrefix = (subject.getCode() != null && !subject.getCode().isBlank())
@@ -712,11 +694,11 @@ public class LmsScraperService {
             String courseFolder = (coursePrefix + safeSubject).trim();
 
             String b2Folder = courseFolder + "/" + safeUnit;
-            String b2Key = b2Folder + "/" + savedFileName;
+            String b2Key = b2Folder + "/" + safeOriginalName;
 
             String uploadedKey = backblazeStorageService.uploadBytes(bytes, b2Key);
             if (uploadedKey == null) {
-                b2Key = savedFileName;
+                b2Key = safeOriginalName;
             } else {
                 b2Key = uploadedKey;
             }
@@ -744,7 +726,7 @@ public class LmsScraperService {
                     .unit(unit)
                     .category(category)
                     .examType(category.equalsIgnoreCase("Question Papers") ? "end-sem" : "mid-sem")
-                    .fileUrl(savedFileName)
+                    .fileUrl(b2Key)
                     .b2ObjectKey(b2Key)
                     .uploadedBy("LMS Sync (" + session.username + ")")
                     .createdAt(LocalDate.now().format(DateTimeFormatter.ISO_DATE))
@@ -768,7 +750,7 @@ public class LmsScraperService {
                             .year(String.valueOf(LocalDate.now().getYear()))
                             .examType("ESE")
                             .tags("LMS, Question Paper, " + title)
-                            .fileUrl(savedFileName)
+                            .fileUrl(b2Key)
                             .uploadedBy("LMS Sync (" + session.username + ")")
                             .createdAt(LocalDate.now().format(DateTimeFormatter.ISO_DATE))
                             .build();
@@ -893,12 +875,24 @@ public class LmsScraperService {
     Subject matchSubject(String courseCode, String courseFullname, List<Subject> subjects) {
         if (subjects == null || subjects.isEmpty()) return null;
 
-        // 1. Match verified course codes first
+        // 1. Direct code match
         if (courseCode != null && !courseCode.isBlank()) {
             String cleanCode = courseCode.trim().toUpperCase();
             for (Subject s : subjects) {
                 if (s.getCode() != null && s.getCode().trim().equalsIgnoreCase(cleanCode)) {
                     return s;
+                }
+            }
+        }
+
+        // 1b. Cross-code aliases (e.g. 01CS502 <-> 02ADL202)
+        if (courseCode != null && !courseCode.isBlank()) {
+            String cleanCode = courseCode.trim().toUpperCase();
+            if (cleanCode.contains("CS502") || cleanCode.contains("ADL202")) {
+                for (Subject s : subjects) {
+                    if (s.getCode() != null && (s.getCode().contains("ADL202") || s.getCode().contains("CS502"))) {
+                        return s;
+                    }
                 }
             }
         }
@@ -922,7 +916,21 @@ public class LmsScraperService {
             }
         }
 
-        // 3. Substring match prioritizing longer names
+        // 3. Normalized core name match (strips departments and degrees)
+        String coreCourse = cleanCourse.replaceAll("\\b(cse|uad|aids|ai&ds|b\\.tech|btech|engineering)\\b", "").replaceAll("\\s+", " ").trim();
+        for (Subject s : subjects) {
+            if (s.getName() == null) continue;
+            String cleanSubject = s.getName().trim().toLowerCase();
+            boolean subIsLab = cleanSubject.contains("lab") || (s.getCode() != null && s.getCode().toUpperCase().contains("P"));
+            if (subIsLab != courseIsLab) continue;
+
+            String coreSubject = cleanSubject.replaceAll("\\b(cse|uad|aids|ai&ds|b\\.tech|btech|engineering)\\b", "").replaceAll("\\s+", " ").trim();
+            if (!coreCourse.isEmpty() && coreCourse.equals(coreSubject)) {
+                return s;
+            }
+        }
+
+        // 4. Substring match prioritizing longer names
         List<Subject> sortedByLength = subjects.stream()
                 .filter(s -> s.getName() != null && !s.getName().isBlank())
                 .sorted((a, b) -> Integer.compare(b.getName().trim().length(), a.getName().trim().length()))
@@ -943,7 +951,6 @@ public class LmsScraperService {
             }
         }
 
-        // Never force incorrect mappings
         return null;
     }
 

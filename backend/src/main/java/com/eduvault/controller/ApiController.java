@@ -69,14 +69,39 @@ public class ApiController {
     @Autowired
     private ObjectMapper mapper;
 
+    private final java.util.concurrent.atomic.AtomicReference<List<Subject>> cachedStaticSubjects = new java.util.concurrent.atomic.AtomicReference<>(null);
+
+    private List<Subject> getStaticCatalog() {
+        List<Subject> cached = cachedStaticSubjects.get();
+        if (cached != null) return cached;
+        synchronized (cachedStaticSubjects) {
+            if (cachedStaticSubjects.get() != null) return cachedStaticSubjects.get();
+            try {
+                Path jsonPath = Paths.get("data", "subjects.json");
+                if (!Files.exists(jsonPath)) {
+                    jsonPath = Paths.get("backend", "data", "subjects.json");
+                }
+                if (Files.exists(jsonPath)) {
+                    List<Subject> loaded = mapper.readValue(Files.readAllBytes(jsonPath), new com.fasterxml.jackson.core.type.TypeReference<List<Subject>>() {});
+                    cachedStaticSubjects.set(loaded);
+                    return loaded;
+                }
+            } catch (Exception e) {
+                logger.warn("Could not read static subjects.json: {}", e.getMessage());
+            }
+            List<Subject> dbFallback = database.getAllSubjects();
+            cachedStaticSubjects.set(dbFallback);
+            return dbFallback;
+        }
+    }
+
     @GetMapping("/subjects")
     public ResponseEntity<List<Subject>> getSubjects(
             @RequestParam(required = false) String department,
             @RequestParam(required = false) String semester,
             @RequestParam(required = false) String prn) {
-        List<Subject> all = database.getAllSubjects();
+        List<Subject> all = getStaticCatalog();
         
-        // Scope to department and semester if provided
         String targetDept = department;
         String targetSem = semester;
         if (targetDept == null && prn != null && !prn.isBlank()) {
@@ -92,7 +117,9 @@ public class ApiController {
             final String finalSem = targetSem;
             all = all.stream()
                 .filter(s -> {
-                    boolean deptMatch = finalDept == null || AcademicNormalizer.isDepartmentMatch(s.getDepartment(), finalDept);
+                    boolean deptMatch = finalDept == null 
+                            || AcademicNormalizer.isDepartmentMatch(s.getDepartment(), finalDept)
+                            || AcademicNormalizer.isAlliedDepartment(s.getDepartment(), finalDept);
                     boolean semMatch = finalSem == null || AcademicNormalizer.isSemesterMatch(s.getSemester(), finalSem);
                     return deptMatch && semMatch;
                 })
@@ -962,7 +989,7 @@ public class ApiController {
         String courseFolder = (coursePrefix + safeSubject).trim();
         String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "document.pdf";
         String safeOriginalName = originalName.replaceAll("[\\\\/:*?\"<>|#%&{}^~`\\[\\]]", "_").trim();
-        String b2Key = courseFolder + "/" + safeUnit + "/" + UUID.randomUUID() + "-" + safeOriginalName;
+        String b2Key = courseFolder + "/" + safeUnit + "/" + safeOriginalName;
 
         String savedFileName = backblazeStorageService.uploadFile(file, b2Key);
         
@@ -975,7 +1002,8 @@ public class ApiController {
                 .semester(semester) // Auto-filled from profile
                 .unit(unit)
                 .examType(examType)
-                .fileUrl(savedFileName)
+                .fileUrl(b2Key)
+                .b2ObjectKey(b2Key)
                 .b2ObjectKey(savedFileName)
                 .originalFilename(file.getOriginalFilename())
                 .uploadedBy(uploaderName)

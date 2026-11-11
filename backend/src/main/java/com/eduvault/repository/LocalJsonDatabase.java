@@ -782,6 +782,17 @@ public class LocalJsonDatabase {
                     .noteCount(0)
                     .build());
         }
+        if (!existingIds.contains("adl202-uad-softeng")) {
+            toSave.add(Subject.builder()
+                    .id("adl202-uad-softeng")
+                    .name("Software Engineering")
+                    .code("02ADL202")
+                    .department("B.Tech-UAD")
+                    .semester("SEM 04")
+                    .createdAt("2026-05-01")
+                    .noteCount(0)
+                    .build());
+        }
         if (!existingIds.contains("c503-cse-ai")) {
             toSave.add(Subject.builder()
                     .id("c503-cse-ai")
