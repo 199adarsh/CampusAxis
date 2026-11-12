@@ -22,7 +22,7 @@ import {
     SparklesIcon,
     ArrowUp02Icon
 } from 'hugeicons-react';
-import { Maximize2 } from 'lucide-react';
+import { Maximize2, Trash2 } from 'lucide-react';
 import DocumentLoadingBar from './DocumentLoadingBar';
 import PdfViewer from './PdfViewer';
 import DocxViewer from './DocxViewer';
@@ -151,6 +151,35 @@ const NoteDetail = () => {
             (noteTitle && (noteTitle.includes(s) || s.includes(noteTitle)))
         ));
     }, [isTeacher, teacherSubjects, note, catalogSubjects, notes]);
+
+    const canDeleteNote = Boolean(
+        isTeacher ||
+        (note?.uploadedBy && (
+            (profile?.name && note.uploadedBy.trim().toLowerCase() === profile.name.trim().toLowerCase()) ||
+            (profile?.prn && note.uploadedBy.trim().toLowerCase() === profile.prn.trim().toLowerCase())
+        ))
+    );
+
+    const handleDeleteNote = async () => {
+        if (!note?.id) return;
+        if (!window.confirm(`Are you sure you want to delete "${note.title}"? This action cannot be undone.`)) {
+            return;
+        }
+        try {
+            await axios.delete(`${API_BASE}/notes/${note.id}`, {
+                headers: {
+                    'X-User-Role': isTeacher ? 'teacher' : 'student',
+                    'X-User-Name': profile?.name || '',
+                    'X-User-PRN': profile?.prn || ''
+                }
+            });
+            toast.success("Note deleted successfully.");
+            navigate('/notes');
+        } catch (err) {
+            toast.error(err?.response?.data?.error || "Failed to delete note.");
+        }
+    };
+
     const [aiQuery, setAiQuery] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -735,6 +764,17 @@ const NoteDetail = () => {
                         <Download01Icon size={16} />
                         <span className="hidden sm:inline">Download</span>
                     </button>
+
+                    {canDeleteNote && (
+                        <button
+                            onClick={handleDeleteNote}
+                            className="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 rounded-xl transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer active:scale-95"
+                            title="Delete Document"
+                        >
+                            <Trash2 size={15} />
+                            <span className="hidden sm:inline">Delete</span>
+                        </button>
+                    )}
                 </div>
             </header>
 

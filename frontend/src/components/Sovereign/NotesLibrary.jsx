@@ -1,5 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { Trash2 } from 'lucide-react';
 import {
     Search01Icon,
     Upload01Icon,
@@ -22,6 +25,8 @@ import PYQsDatabase from './PYQsDatabase';
 import { FluidTabs } from '../fluid-tabs';
 import { DropdownDisclosure } from '../dropdown-disclosure';
 import { isLinkNote, getNoteBadge, isSubjectNameMatch, getCleanTitle } from '../../lib/noteUtils';
+
+const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 const normalizeDept = (dept) => {
     if (!dept) return 'GENERAL';
@@ -95,7 +100,7 @@ const matchesCategory = (note, cat) => {
     return false;
 };
 
-const NoteCard = React.memo(function NoteCard({ note, subject, subjectName, onOpen, onDownload, showSubject = false }) {
+const NoteCard = React.memo(function NoteCard({ note, subject, subjectName, onOpen, onDownload, onDelete, canDelete = false, showSubject = false }) {
     const displayTitle = getCleanTitle(note.title);
     const resolvedSubjectName = subjectName || (typeof subject === 'object' ? subject?.name : subject) || 'Study Material';
 
@@ -173,14 +178,26 @@ const NoteCard = React.memo(function NoteCard({ note, subject, subjectName, onOp
                         : 'Recent'}
                 </span>
 
-                <button
-                    onClick={(e) => onDownload(e, note)}
-                    className="p-1 rounded-md text-[#8E8E93] hover:text-[#0071E3] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                    title="Download Document"
-                    type="button"
-                >
-                    <Download01Icon size={13} className="sm:size-[14px]" />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                    {canDelete && (
+                        <button
+                            onClick={(e) => onDelete(e, note)}
+                            className="p-1 rounded-md text-[#8E8E93] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                            title="Delete Note"
+                            type="button"
+                        >
+                            <Trash2 size={13} className="sm:size-[14px]" />
+                        </button>
+                    )}
+                    <button
+                        onClick={(e) => onDownload(e, note)}
+                        className="p-1 rounded-md text-[#8E8E93] hover:text-[#0071E3] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                        title="Download Document"
+                        type="button"
+                    >
+                        <Download01Icon size={13} className="sm:size-[14px]" />
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -374,6 +391,37 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
             }, 500);
         }, 650);
     }, [handleOpenNote]);
+
+    const canDeleteNote = useCallback((note) => {
+        if (!note) return false;
+        if (isTeacher) return true;
+        if (!note.uploadedBy) return false;
+        const uploader = note.uploadedBy.trim().toLowerCase();
+        if (profile?.name && uploader === profile.name.trim().toLowerCase()) return true;
+        if (profile?.prn && uploader === profile.prn.trim().toLowerCase()) return true;
+        return false;
+    }, [isTeacher, profile]);
+
+    const handleDeleteNote = useCallback(async (e, note) => {
+        e.stopPropagation();
+        if (!note?.id) return;
+        if (!window.confirm(`Are you sure you want to delete "${note.title}"? This action cannot be undone.`)) {
+            return;
+        }
+        try {
+            await axios.delete(`${API_BASE}/notes/${note.id}`, {
+                headers: {
+                    'X-User-Role': isTeacher ? 'teacher' : 'student',
+                    'X-User-Name': profile?.name || '',
+                    'X-User-PRN': profile?.prn || ''
+                }
+            });
+            toast.success("Note deleted successfully.");
+            if (refreshData) refreshData();
+        } catch (err) {
+            toast.error(err?.response?.data?.error || "Failed to delete note.");
+        }
+    }, [isTeacher, profile, refreshData]);
 
     // Subject selection state
     const [selectedSubject, setSelectedSubject] = useState(() => {
@@ -722,6 +770,8 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
                                             showSubject={!activeSubjectId || activeSubjectId === 'all'}
                                             onOpen={handleOpenNote}
                                             onDownload={handleDownloadNote}
+                                            onDelete={handleDeleteNote}
+                                            canDelete={canDeleteNote(note)}
                                         />
                                     );
                                 })}

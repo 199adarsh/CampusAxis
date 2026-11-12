@@ -46,23 +46,43 @@ const NoteInsightsPanel = ({ noteId, onClose, onDelete }) => {
     }
   };
 
+  const profile = React.useMemo(() => {
+      try {
+          return JSON.parse(localStorage.getItem('eduvault_profile') || 'null');
+      } catch {
+          return null;
+      }
+  }, []);
+
+  const isTeacher = Boolean(
+      profile && (profile.dob === 'TEACHER' || String(profile.role || '').toUpperCase() === 'TEACHER')
+  );
+
+  const canDelete = Boolean(
+      note && (
+          isTeacher ||
+          (note.uploadedBy && (
+              (profile?.name && note.uploadedBy.trim().toLowerCase() === profile.name.trim().toLowerCase()) ||
+              (profile?.prn && note.uploadedBy.trim().toLowerCase() === profile.prn.trim().toLowerCase())
+          ))
+      )
+  );
+
   const handleDelete = async () => {
+      if (!note?.id) return;
       if (window.confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
           try {
-              let role = 'student';
-              try {
-                  const p = JSON.parse(localStorage.getItem('eduvault_profile') || 'null');
-                  if (p && (p.dob === 'TEACHER' || String(p.role || '').toUpperCase() === 'TEACHER')) {
-                      role = 'teacher';
-                  }
-              } catch { /* ignore */ }
               await axios.delete(`${API_BASE}/notes/${note.id}`, {
-                  headers: { 'X-User-Role': role }
+                  headers: {
+                      'X-User-Role': isTeacher ? 'teacher' : 'student',
+                      'X-User-Name': profile?.name || '',
+                      'X-User-PRN': profile?.prn || ''
+                  }
               });
               toast.success("Note deleted successfully.");
               onDelete(); 
           } catch (err) {
-              toast.error(err?.response?.status === 403 ? "Only faculty can delete notes." : "Failed to delete note.");
+              toast.error(err?.response?.data?.error || "Failed to delete note.");
           }
       }
   };
@@ -117,7 +137,7 @@ const NoteInsightsPanel = ({ noteId, onClose, onDelete }) => {
             <FileText className="w-5 h-5 text-muted-foreground" />
             Note Insights
           </SheetTitle>
-          {note && (
+          {canDelete && (
              <Button variant="ghost" size="icon" onClick={handleDelete} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" title="Delete Note">
                <Trash2 className="w-4 h-4" />
              </Button>

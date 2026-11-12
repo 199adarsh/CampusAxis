@@ -599,20 +599,56 @@ public class ApiController {
                 || roleHeader.equalsIgnoreCase("admin"));
     }
 
+    private boolean isNoteUploader(Note note, String userNameHeader, String userPrnHeader) {
+        if (note == null || note.getUploadedBy() == null || note.getUploadedBy().isBlank()) {
+            return false;
+        }
+        String uploader = note.getUploadedBy().trim();
+        if (userNameHeader != null && !userNameHeader.isBlank() && uploader.equalsIgnoreCase(userNameHeader.trim())) {
+            return true;
+        }
+        if (userPrnHeader != null && !userPrnHeader.isBlank() && uploader.equalsIgnoreCase(userPrnHeader.trim())) {
+            return true;
+        }
+        return false;
+    }
+
     @DeleteMapping("/notes/{id}")
     public ResponseEntity<Map<String, String>> deleteNote(
             @PathVariable String id,
-            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
-        if (!isPrivilegedRole(roleHeader)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Faculty or admin role required"));
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
+            @RequestHeader(value = "X-User-Name", required = false) String userNameHeader,
+            @RequestHeader(value = "X-User-PRN", required = false) String userPrnHeader) {
+
+        boolean isTeacher = isPrivilegedRole(roleHeader);
+
+        Optional<Note> noteOpt = database.getNoteById(id);
+        if (noteOpt.isEmpty()) {
+            if (!isTeacher) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Faculty or uploader permission required"));
+            }
+            return ResponseEntity.notFound().build();
         }
-        return database.getNoteById(id).map(note -> {
-            String r2Key = note.getR2ObjectKey() != null ? note.getR2ObjectKey() : note.getFileUrl();
+
+        Note note = noteOpt.get();
+        boolean isUploader = isNoteUploader(note, userNameHeader, userPrnHeader);
+
+        if (!isTeacher && !isUploader) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Permission denied: only the note uploader or faculty can delete notes."));
+        }
+
+        String r2Key = note.getR2ObjectKey() != null ? note.getR2ObjectKey() : note.getFileUrl();
+        if (r2StorageService != null) {
             r2StorageService.deleteFile(r2Key);
-            fileStorageService.deleteFile(note.getFileUrl());
-            database.deleteNote(id);
-            return ResponseEntity.ok(Map.of("message", "Note deleted successfully"));
-        }).orElse(ResponseEntity.notFound().build());
+        }
+        fileStorageService.deleteFile(note.getFileUrl());
+        database.deleteNote(id);
+        return ResponseEntity.ok(Map.of("message", "Note deleted successfully"));
+    }
+
+    public ResponseEntity<Map<String, String>> deleteNote(String id, String roleHeader) {
+        return deleteNote(id, roleHeader, null, null);
     }
 
     @DeleteMapping("/notes")
