@@ -42,6 +42,12 @@ public class GeminiService {
     @Autowired
     private LocalJsonDatabase database;
 
+    @Autowired(required = false)
+    private R2StorageService r2StorageService;
+
+    @Autowired(required = false)
+    private FileStorageService fileStorageService;
+
     private final RestTemplate restTemplate;
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -124,6 +130,27 @@ public class GeminiService {
         Note note = optionalNote.get();
 
         String text = note.getExtractedText();
+        if (text == null || text.trim().isEmpty()) {
+            // Asynchronously extract text from storage in the background without blocking the upload endpoint
+            try {
+                if (note.getR2ObjectKey() != null && !note.getR2ObjectKey().isBlank() && r2StorageService != null) {
+                    byte[] bytes = r2StorageService.getObjectBytes(note.getR2ObjectKey());
+                    if (bytes != null && bytes.length > 0 && fileStorageService != null) {
+                        text = fileStorageService.extractTextFromBytes(bytes, note.getOriginalFilename() != null ? note.getOriginalFilename() : note.getR2ObjectKey());
+                    }
+                }
+                if ((text == null || text.trim().isEmpty()) && note.getFileUrl() != null && fileStorageService != null) {
+                    text = fileStorageService.extractText(note.getFileUrl());
+                }
+                if (text != null && !text.isBlank()) {
+                    note.setExtractedText(text);
+                    database.updateNote(note);
+                }
+            } catch (Exception ex) {
+                logger.warn("Async text extraction failed for note {}: {}", noteId, ex.getMessage());
+            }
+        }
+
         if (text == null || text.trim().isEmpty() || "Failed to extract text.".equals(text) || "Text extraction only supported for PDFs in MVP.".equals(text)) {
             markNoteAsFailed(noteId, "Skipped: " + text);
             return;

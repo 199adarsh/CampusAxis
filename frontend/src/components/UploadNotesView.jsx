@@ -241,27 +241,78 @@ const UploadNotesView = ({ subjects, onSuccess, profile }) => {
 
     setIsUploading(true);
     setUploadProgress(0);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('title', title);
-    formData.append('subjectId', subjectId);
-    formData.append('department', currentDept);
-    formData.append('semester', currentSem);
-    formData.append('unit', unit);
-    formData.append('category', category);
-    formData.append('tags', JSON.stringify(tags));
-    formData.append('uploaderName', profile?.name || 'Academic Administration');
-
     try {
-      await axios.post(`${API_BASE}/notes/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(percent);
+      let directUploaded = false;
+      try {
+        // 1. Request presigned PUT URL for Cloudflare R2
+        const presignRes = await axios.post(`${API_BASE}/notes/presign-upload`, null, {
+          params: {
+            fileName: file.name,
+            subjectId: subjectId,
+            unit: unit,
+            contentType: file.type || 'application/pdf'
           }
+        });
+
+        if (presignRes.data?.uploadUrl && presignRes.data?.r2Key) {
+          const { uploadUrl, r2Key } = presignRes.data;
+
+          // 2. Upload file directly from browser to Cloudflare R2 edge
+          await axios.put(uploadUrl, file, {
+            headers: {
+              'Content-Type': file.type || 'application/octet-stream'
+            },
+            onUploadProgress: (progressEvent) => {
+              if (progressEvent.total) {
+                const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setUploadProgress(percent);
+              }
+            }
+          });
+
+          // 3. Register note metadata with backend (text extraction runs async in background)
+          await axios.post(`${API_BASE}/notes/complete-upload`, {
+            r2Key,
+            title,
+            subjectId,
+            department: currentDept,
+            semester: currentSem,
+            unit,
+            category,
+            tags,
+            uploaderName: profile?.name || 'Academic Administration',
+            originalFilename: file.name
+          });
+
+          directUploaded = true;
         }
-      });
+      } catch (directErr) {
+        console.warn("Direct R2 presigned upload failed; falling back to server upload", directErr);
+      }
+
+      if (!directUploaded) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('title', title);
+        formData.append('subjectId', subjectId);
+        formData.append('department', currentDept);
+        formData.append('semester', currentSem);
+        formData.append('unit', unit);
+        formData.append('category', category);
+        formData.append('tags', JSON.stringify(tags));
+        formData.append('uploaderName', profile?.name || 'Academic Administration');
+
+        await axios.post(`${API_BASE}/notes/upload`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              setUploadProgress(percent);
+            }
+          }
+        });
+      }
+
       toast.success("Upload successful! Document added.");
       setFile(null);
       setTitle('');

@@ -11,6 +11,8 @@ import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -482,6 +484,42 @@ public class R2StorageService {
         String url = presigned.url().toString();
         logger.info("Generated presigned URL for key={} expiry={}min contentType={}", key, presignedExpiryMinutes, contentType);
         return url;
+    }
+
+    /**
+     * Generates a time-limited presigned PUT URL allowing clients (browsers)
+     * to upload files directly to Cloudflare R2 without passing through backend servers.
+     *
+     * @param key the target R2 object key
+     * @param contentType MIME type of the file being uploaded
+     * @return time-limited presigned PUT URL, or null if R2 is unconfigured
+     */
+    public String generatePresignedUploadUrl(String key, String contentType) {
+        if (!isConfigured()) {
+            logger.warn("R2 storage is unconfigured; cannot generate presigned upload URL.");
+            return null;
+        }
+
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .contentType(contentType != null && !contentType.isBlank() ? contentType : "application/octet-stream")
+                    .build();
+
+            PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofMinutes(15))
+                    .putObjectRequest(putObjectRequest)
+                    .build();
+
+            PresignedPutObjectRequest presigned = s3Presigner.presignPutObject(presignRequest);
+            String url = presigned.url().toString();
+            logger.info("Generated presigned upload PUT URL for key={} contentType={}", key, contentType);
+            return url;
+        } catch (Exception e) {
+            logger.error("Failed to generate presigned upload PUT URL for key={}: {}", key, e.getMessage(), e);
+            return null;
+        }
     }
 
     private String resolveContentTypeFromExt(String ext) {

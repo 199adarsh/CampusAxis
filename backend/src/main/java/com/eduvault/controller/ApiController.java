@@ -1081,6 +1081,131 @@ public class ApiController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/notes/presign-upload")
+    public ResponseEntity<Map<String, String>> presignUpload(
+            @RequestParam("fileName") String fileName,
+            @RequestParam("subjectId") String subjectId,
+            @RequestParam(value = "unit", required = false, defaultValue = "Unit 1") String unit,
+            @RequestParam(value = "contentType", required = false, defaultValue = "application/pdf") String contentType) {
+
+        if (fileName == null || fileName.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "fileName is required"));
+        }
+
+        Optional<Subject> subjectOpt = database.getSubjectById(subjectId);
+        if (subjectOpt.isEmpty()) {
+            subjectOpt = getStaticCatalog().stream()
+                    .filter(s -> subjectId.equals(s.getId()))
+                    .findFirst();
+        }
+        if (subjectOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid subject."));
+        }
+        Subject targetSubject = subjectOpt.get();
+
+        String safeSubject = targetSubject.getName() != null
+                ? targetSubject.getName().replaceAll("[\\\\/:*?\"<>|]", "_").trim()
+                : "General";
+        String safeUnit = (unit != null && !unit.isBlank()) ? unit.replaceAll("[\\\\/:*?\"<>|]", "_").trim() : "General";
+        String coursePrefix = (targetSubject.getCode() != null && !targetSubject.getCode().isBlank())
+                ? targetSubject.getCode().trim().toUpperCase() + " "
+                : "";
+        String courseFolder = (coursePrefix + safeSubject).trim();
+        String safeOriginalName = fileName.replaceAll("[\\\\/:*?\"<>|#%&{}^~`\\[\\]]", "_").trim();
+        String r2Key = courseFolder + "/" + safeUnit + "/" + safeOriginalName;
+        if (database.existsNoteByR2ObjectKey(r2Key)) {
+            r2Key = courseFolder + "/" + safeUnit + "/" + System.currentTimeMillis() + "_" + safeOriginalName;
+        }
+
+        String presignedUrl = r2StorageService.generatePresignedUploadUrl(r2Key, contentType);
+        if (presignedUrl == null || presignedUrl.isBlank()) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of("error", "Cloudflare R2 is not configured or unavailable for direct upload"));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "uploadUrl", presignedUrl,
+                "r2Key", r2Key,
+                "fileName", fileName,
+                "method", "PUT"
+        ));
+    }
+
+    @PostMapping("/notes/complete-upload")
+    public ResponseEntity<Map<String, String>> completeDirectUpload(
+            @RequestBody Map<String, Object> payload) {
+
+        String r2Key = (String) payload.get("r2Key");
+        String title = (String) payload.get("title");
+        String subjectId = (String) payload.get("subjectId");
+        String originalFilename = (String) payload.getOrDefault("originalFilename", "document.pdf");
+        String departmentParam = (String) payload.get("department");
+        String semesterParam = (String) payload.get("semester");
+        String unit = (String) payload.getOrDefault("unit", "Unit 1");
+        String examType = (String) payload.getOrDefault("examType", "mid-sem");
+        String category = (String) payload.getOrDefault("category", "Notes");
+        String uploaderName = (String) payload.getOrDefault("uploaderName", "Anonymous");
+        Object tagsObj = payload.get("tags");
+
+        if (r2Key == null || r2Key.isBlank() || subjectId == null || subjectId.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing required fields: r2Key and subjectId"));
+        }
+
+        Optional<Subject> subjectOpt = database.getSubjectById(subjectId);
+        if (subjectOpt.isEmpty()) {
+            subjectOpt = getStaticCatalog().stream()
+                    .filter(s -> subjectId.equals(s.getId()))
+                    .findFirst();
+        }
+        if (subjectOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid subject."));
+        }
+        Subject targetSubject = subjectOpt.get();
+
+        String department = (targetSubject.getDepartment() != null && !targetSubject.getDepartment().isBlank())
+                ? targetSubject.getDepartment()
+                : ((departmentParam != null && !departmentParam.isBlank()) ? departmentParam.trim() : "General");
+        String semester = (targetSubject.getSemester() != null && !targetSubject.getSemester().isBlank())
+                ? targetSubject.getSemester()
+                : ((semesterParam != null && !semesterParam.isBlank()) ? semesterParam.trim() : "General");
+
+        List<String> tags = List.of();
+        if (tagsObj instanceof List<?>) {
+            tags = ((List<?>) tagsObj).stream().map(Object::toString).toList();
+        }
+
+        Note note = Note.builder()
+                .id(UUID.randomUUID().toString())
+                .title(title != null && !title.isBlank() ? title : originalFilename)
+                .subjectId(subjectId)
+                .department(department)
+                .semester(semester)
+                .unit(unit)
+                .examType(examType)
+                .fileUrl(r2Key)
+                .r2ObjectKey(r2Key)
+                .originalFilename(originalFilename)
+                .uploadedBy(uploaderName)
+                .createdAt(LocalDate.now().format(DateTimeFormatter.ISO_DATE))
+                .status("processing")
+                .category(category != null && !category.isBlank() ? category : "Notes")
+                .tags(tags)
+                .extractedText(null)
+                .build();
+
+        database.addNote(note);
+
+        // Asynchronously extract text and generate AI summaries in background
+        geminiService.processNoteAsync(note.getId());
+        ragService.ingestNote(note.getId());
+
+        return ResponseEntity.ok(Map.of(
+                "noteId", note.getId(),
+                "title", note.getTitle(),
+                "status", "processing"
+        ));
+    }
+
     @PostMapping("/notes/upload")
     public ResponseEntity<Map<String, String>> uploadNote(
             @RequestParam("file") MultipartFile file,
@@ -1133,14 +1258,8 @@ public class ApiController {
                 ? targetSubject.getSemester()
                 : ((semesterParam != null && !semesterParam.isBlank()) ? semesterParam.trim() : "General");
         
-        // 2. Extract text from the in-memory file BEFORE uploading (avoids re-downloading from R2)
-        String extractedText = "";
-        try {
-            extractedText = fileStorageService.extractTextFromMultipartFile(file);
-        } catch (Exception e) {
-            logger.warn("Failed extracting text from uploaded file: {}", e.getMessage());
-            extractedText = "Failed to extract text.";
-        }
+        // Heavy text extraction and AI indexing run asynchronously in background
+        String extractedText = null;
 
         // 3. Construct deterministic R2 key: [CourseCode] [SubjectName]/[Unit]/[filename]
         String safeSubject = targetSubject != null && targetSubject.getName() != null
@@ -1192,25 +1311,9 @@ public class ApiController {
 
         database.addNote(note);
 
-        // Trigger Async AI generation and RAG ingestion
+        // Trigger Async text extraction, AI generation, and RAG ingestion in background
         geminiService.processNoteAsync(note.getId());
         ragService.ingestNote(note.getId());
-
-        // Warn if text extraction failed (e.g. scanned/image-only PDF) — AI features will be skipped
-        boolean textExtractionFailed = extractedText == null
-                || extractedText.trim().isEmpty()
-                || extractedText.equals("Failed to extract text.")
-                || extractedText.startsWith("Text extraction only supported");
-
-        if (textExtractionFailed) {
-            logger.warn("Text extraction produced no usable content for note: {} ({}). AI features will be skipped.", note.getId(), savedFileName);
-            return ResponseEntity.ok(Map.of(
-                    "noteId", note.getId(),
-                    "title", note.getTitle(),
-                    "status", "processing",
-                    "warning", "Text could not be extracted from this file. AI features (topics, questions, RAG chat) will not be available. Scanned or image-based PDFs are not supported."
-            ));
-        }
 
         return ResponseEntity.ok(Map.of(
                 "noteId", note.getId(),

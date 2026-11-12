@@ -112,16 +112,76 @@ const UploadModal = ({ onClose, subjects, onSuccess }) => {
     formData.append('uploaderName', uploaderName);
 
     try {
-      await axios.post(`${API_BASE}/notes/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(percentCompleted);
+      let directUploaded = false;
+      try {
+        // 1. Request presigned PUT URL for Cloudflare R2
+        const presignRes = await axios.post(`${API_BASE}/notes/presign-upload`, null, {
+          params: {
+            fileName: file.name,
+            subjectId: subjectId,
+            unit: unit,
+            contentType: file.type || 'application/pdf'
           }
+        });
+
+        if (presignRes.data?.uploadUrl && presignRes.data?.r2Key) {
+          const { uploadUrl, r2Key } = presignRes.data;
+
+          // 2. Upload file directly from browser to Cloudflare R2 edge
+          await axios.put(uploadUrl, file, {
+            headers: {
+              'Content-Type': file.type || 'application/octet-stream'
+            },
+            onUploadProgress: (progressEvent) => {
+              if (progressEvent.total) {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setUploadProgress(percentCompleted);
+              }
+            }
+          });
+
+          // 3. Complete metadata registration with backend (text extraction runs async in background)
+          await axios.post(`${API_BASE}/notes/complete-upload`, {
+            r2Key,
+            title,
+            subjectId,
+            unit,
+            examType,
+            category: "Notes",
+            tags,
+            uploaderName,
+            originalFilename: file.name
+          });
+
+          directUploaded = true;
         }
-      });
-      toast.success("File uploaded successfully! AI is analyzing the document.");
+      } catch (directErr) {
+        console.warn("Direct R2 presigned upload failed; falling back to server upload", directErr);
+      }
+
+      if (!directUploaded) {
+        // Fallback to standard server multipart upload
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('title', title);
+        formData.append('subjectId', subjectId);
+        formData.append('unit', unit);
+        formData.append('examType', examType);
+        formData.append('tags', JSON.stringify(tags));
+        formData.append('uploaderName', uploaderName);
+
+        await axios.post(`${API_BASE}/notes/upload`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              setUploadProgress(percentCompleted);
+            }
+          }
+        });
+      }
+
+      toast.success("File uploaded successfully! AI is analyzing the document in the background.");
       onSuccess();
       onClose();
     } catch (err) {
