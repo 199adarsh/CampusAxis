@@ -98,16 +98,17 @@ public class LocalJsonDatabase {
             try (java.sql.Connection conn = dataSource.getConnection();
                  java.sql.Statement stmt = conn.createStatement()) {
                 stmt.execute("ALTER TABLE announcements ADD COLUMN IF NOT EXISTS deadline VARCHAR(255)");
-            } catch (Exception e) {
-                logger.warn("Could not alter announcements table for deadline column: {}", e.getMessage());
-            }
-
-            try (java.sql.Connection conn = dataSource.getConnection();
-                 java.sql.Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS code VARCHAR(100)");
+                stmt.execute("ALTER TABLE notes ADD COLUMN IF NOT EXISTS r2_object_key VARCHAR(500)");
+                stmt.execute("ALTER TABLE notes ADD COLUMN IF NOT EXISTS original_filename VARCHAR(500)");
+                stmt.execute("ALTER TABLE notes ADD COLUMN IF NOT EXISTS category VARCHAR(100)");
+                stmt.execute("ALTER TABLE notes ADD COLUMN IF NOT EXISTS moodle_id VARCHAR(255)");
+                stmt.execute("ALTER TABLE notes ADD COLUMN IF NOT EXISTS source_url TEXT");
                 stmt.execute("ALTER TABLE notes ADD COLUMN IF NOT EXISTS okf_status VARCHAR(50) DEFAULT 'PENDING'");
+                stmt.execute("ALTER TABLE notes ADD COLUMN IF NOT EXISTS extracted_text TEXT");
                 stmt.execute("UPDATE notes SET okf_status = 'PENDING' WHERE okf_status IS NULL");
             } catch (Exception e) {
-                logger.warn("Could not alter notes table for OKF columns: {}", e.getMessage());
+                logger.warn("Could not alter tables for new columns: {}", e.getMessage());
             }
 
             try (java.sql.Connection conn = dataSource.getConnection();

@@ -1094,6 +1094,10 @@ public class ApiController {
             @RequestParam(value = "tags", required = false) String tagsJson,
             @RequestParam(value = "uploaderName", required = false, defaultValue = "Anonymous") String uploaderName) {
 
+        if (file == null || file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Please provide a valid, non-empty file."));
+        }
+
         // 0. Validate Subject across DB and static catalog
         Optional<Subject> subjectOpt = database.getSubjectById(subjectId);
         if (subjectOpt.isEmpty()) {
@@ -1130,7 +1134,13 @@ public class ApiController {
                 : ((semesterParam != null && !semesterParam.isBlank()) ? semesterParam.trim() : "General");
         
         // 2. Extract text from the in-memory file BEFORE uploading (avoids re-downloading from R2)
-        String extractedText = fileStorageService.extractTextFromMultipartFile(file);
+        String extractedText = "";
+        try {
+            extractedText = fileStorageService.extractTextFromMultipartFile(file);
+        } catch (Exception e) {
+            logger.warn("Failed extracting text from uploaded file: {}", e.getMessage());
+            extractedText = "Failed to extract text.";
+        }
 
         // 3. Construct deterministic R2 key: [CourseCode] [SubjectName]/[Unit]/[filename]
         String safeSubject = targetSubject != null && targetSubject.getName() != null
@@ -1148,9 +1158,16 @@ public class ApiController {
             r2Key = courseFolder + "/" + safeUnit + "/" + System.currentTimeMillis() + "_" + safeOriginalName;
         }
 
-        String savedFileName = r2StorageService.uploadFile(file, r2Key);
+        String savedFileName = null;
+        try {
+            savedFileName = r2StorageService.uploadFile(file, r2Key);
+        } catch (Exception e) {
+            logger.error("Error during R2 upload: {}", e.getMessage(), e);
+        }
+
         if (savedFileName == null || savedFileName.isBlank()) {
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of("error", "Failed to upload file to R2 storage"));
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body(Map.of("error", "Failed to upload file to Cloudflare R2 storage. Please verify R2 credentials in environment variables."));
         }
         
         // 4. Create Note Record

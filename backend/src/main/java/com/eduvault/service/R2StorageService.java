@@ -44,6 +44,17 @@ public class R2StorageService {
     @Value("${app.storage.local-dir:./data}")
     private String localDir;
 
+    @Value("${app.r2.access-key-id:${R2_ACCESS_KEY_ID:}}")
+    private String accessKeyId;
+
+    @Value("${app.r2.secret-access-key:${R2_SECRET_ACCESS_KEY:}}")
+    private String secretAccessKey;
+
+    public boolean isConfigured() {
+        return accessKeyId != null && !accessKeyId.isBlank() &&
+               secretAccessKey != null && !secretAccessKey.isBlank();
+    }
+
     public R2StorageService(S3Client s3Client, S3Presigner s3Presigner) {
         this.s3Client = s3Client;
         this.s3Presigner = s3Presigner;
@@ -53,13 +64,18 @@ public class R2StorageService {
      * Uploads a {@link MultipartFile} to R2.
      *
      * @param file the uploaded file
-     * @return the object key (UUID + original extension) stored in R2
+     * @return the object key (UUID + original extension) stored in R2, or null on failure
      */
     public String uploadFile(MultipartFile file) {
         return uploadFile(file, null);
     }
 
     public String uploadFile(MultipartFile file, String targetKey) {
+        if (!isConfigured()) {
+            logger.error("R2 storage is unconfigured: R2_ACCESS_KEY_ID or R2_SECRET_ACCESS_KEY is missing in environment variables.");
+            return null;
+        }
+
         String originalName = file.getOriginalFilename();
         String ext = (originalName != null && originalName.contains("."))
                 ? originalName.substring(originalName.lastIndexOf('.'))
@@ -80,9 +96,15 @@ public class R2StorageService {
             logger.info("Uploaded file to R2: bucket={} key={} size={}", bucketName, key, file.getSize());
             return key;
         } catch (IOException e) {
-            throw new RuntimeException("Failed to upload file to Cloudflare R2: " + key, e);
+            logger.error("Failed to read file stream for R2 upload: {}", key, e);
+            return null;
         } catch (S3Exception e) {
-            throw new RuntimeException("R2 S3 error during upload: " + e.awsErrorDetails().errorMessage(), e);
+            logger.error("R2 S3 error during upload (status={}): {}", e.statusCode(),
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage(), e);
+            return null;
+        } catch (Exception e) {
+            logger.error("Unexpected error during R2 upload for key {}: {}", key, e.getMessage(), e);
+            return null;
         }
     }
 
