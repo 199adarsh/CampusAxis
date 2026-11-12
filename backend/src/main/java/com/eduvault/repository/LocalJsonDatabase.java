@@ -945,7 +945,11 @@ public class LocalJsonDatabase {
 
     @Cacheable("allSubjects")
     public List<Subject> getAllSubjects() {
-        return subjectRepository.findAll();
+        return subjectRepository.findAll().stream()
+                .sorted(java.util.Comparator
+                    .comparingInt((Subject s) -> com.eduvault.util.AcademicNormalizer.getSemesterNumber(s.getSemester()))
+                    .thenComparing(s -> s.getName() != null ? s.getName().toLowerCase() : ""))
+                .collect(Collectors.toList());
     }
 
     public Optional<Subject> getSubjectById(String id) {

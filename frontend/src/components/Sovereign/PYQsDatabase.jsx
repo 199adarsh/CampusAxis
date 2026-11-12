@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import DocumentLoadingBar from '../DocumentLoadingBar';
-import { isSubjectNameMatch } from '../../lib/noteUtils';
+import { isSubjectNameMatch, sortSubjectsByYear } from '../../lib/noteUtils';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
@@ -82,24 +82,24 @@ const PYQsDatabase = ({
                         const matched = pool.filter(s =>
                             parsed.includes(s.id) || parsed.includes(s.name) || parsed.includes(s.code)
                         );
-                        if (matched.length > 0) return matched;
+                        if (matched.length > 0) return sortSubjectsByYear(matched);
                     }
                 }
             } catch {
                 /* ignore */
             }
-            return currentCatalog.length > 0 ? currentCatalog : currentRaw;
+            return sortSubjectsByYear(currentCatalog.length > 0 ? currentCatalog : currentRaw);
         }
 
         // Student: strictly enrolled attendance subjects
         if (currentRaw && currentRaw.length > 0) {
-            return currentRaw;
+            return sortSubjectsByYear(currentRaw);
         }
         try {
             const saved = localStorage.getItem('eduvault_subjects');
             if (saved) {
                 const parsed = JSON.parse(saved);
-                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                if (Array.isArray(parsed) && parsed.length > 0) return sortSubjectsByYear(parsed);
             }
         } catch {
             /* ignore */

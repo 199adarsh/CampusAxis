@@ -24,7 +24,7 @@ import LmsSyncModal from './LmsSyncModal';
 import PYQsDatabase from './PYQsDatabase';
 import { FluidTabs } from '../fluid-tabs';
 import { DropdownDisclosure } from '../dropdown-disclosure';
-import { isLinkNote, getNoteBadge, isSubjectNameMatch, getCleanTitle } from '../../lib/noteUtils';
+import { isLinkNote, getNoteBadge, isSubjectNameMatch, getCleanTitle, sortSubjectsByYear } from '../../lib/noteUtils';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
@@ -245,7 +245,7 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
         (subjects || []).forEach(s => {
             if (s && s.id && !map.has(s.id)) map.set(s.id, s);
         });
-        return Array.from(map.values());
+        return sortSubjectsByYear(Array.from(map.values()));
     }, [outletCatalogSubjects, subjects]);
 
     // Precomputed subject lookup map for O(1) access
@@ -338,7 +338,7 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
         }
 
         const candidateList = (!isTeacher && subjects && subjects.length > 0) ? subjects : baseList;
-        return candidateList.filter(s => subjectHasNotes(s));
+        return sortSubjectsByYear(candidateList.filter(s => subjectHasNotes(s)));
     }, [isTeacher, subjects, allKnownSubjects, studentDept, studentSem, subjectHasNotes]);
 
     // Animated dummy loading states for opening and downloading notes

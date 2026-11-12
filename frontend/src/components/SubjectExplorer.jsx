@@ -1,8 +1,10 @@
 import React from 'react';
 import { BookOpen, Hash } from 'lucide-react';
 import clsx from 'clsx';
+import { sortSubjectsByYear } from '../lib/noteUtils';
 
 const SubjectExplorer = ({ subjects, selectedId, onSelect }) => {
+  const sorted = sortSubjectsByYear(subjects || []);
   return (
     <div className="py-4 flex flex-col h-full">
       <div className="px-4 mb-2 text-xs font-semibold text-notion-textLight tracking-wider uppercase">
@@ -24,7 +26,7 @@ const SubjectExplorer = ({ subjects, selectedId, onSelect }) => {
           <span className="truncate">All Notes</span>
         </button>
 
-        {subjects.map(subject => (
+        {sorted.map(subject => (
           <button
             key={subject.id}
             onClick={() => onSelect(subject.id)}

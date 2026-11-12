@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import axios from 'axios';
 import clsx from 'clsx';
+import { sortSubjectsByYear } from '@/lib/noteUtils';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
@@ -265,7 +266,7 @@ const UploadModal = ({ onClose, subjects, onSuccess }) => {
                             <SelectValue placeholder="Select a subject" />
                         </SelectTrigger>
                         <SelectContent>
-                            {subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                            {sortSubjectsByYear(subjects || []).map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                             <SelectItem value="CREATE_NEW" className="font-bold text-primary">+ Create New Subject</SelectItem>
                         </SelectContent>
                     </Select>

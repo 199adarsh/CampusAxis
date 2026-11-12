@@ -14,6 +14,7 @@ import {
   Loader2,
   GraduationCap
 } from 'lucide-react';
+import { sortSubjectsByYear } from '../lib/noteUtils';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
@@ -166,7 +167,7 @@ const UploadNotesView = ({ subjects, onSuccess, profile }) => {
     return sMatch && dMatch;
   });
 
-  const activeSubjects = filteredSubjects.length > 0 ? filteredSubjects : sourceSubjects;
+  const activeSubjects = sortSubjectsByYear(filteredSubjects.length > 0 ? filteredSubjects : sourceSubjects);
 
   const subjectOptions = activeSubjects.map(s => ({
     label: s.code ? `${s.name} (${s.code})` : s.name,

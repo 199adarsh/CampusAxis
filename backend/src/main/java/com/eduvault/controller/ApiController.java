@@ -125,6 +125,13 @@ public class ApiController {
                 })
                 .collect(java.util.stream.Collectors.toList());
         }
+
+        all = all.stream()
+            .sorted(java.util.Comparator
+                .comparingInt((Subject s) -> AcademicNormalizer.getSemesterNumber(s.getSemester()))
+                .thenComparing(s -> s.getName() != null ? s.getName().toLowerCase() : ""))
+            .collect(java.util.stream.Collectors.toList());
+
         return ResponseEntity.ok(all);
     }
 

@@ -3,15 +3,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
 import clsx from 'clsx';
+import { sortSubjectsByYear } from '../lib/noteUtils';
 
 const BrowseSubjects = ({ subjects, selectedId, onSelect }) => {
-  if (!subjects || subjects.length === 0) {
+  const sorted = sortSubjectsByYear(subjects || []);
+  if (!sorted || sorted.length === 0) {
       return <div className="text-sm text-muted-foreground p-6 bg-muted/20 rounded-md border text-center">No subjects found for your profile. Upload notes to create new subjects!</div>;
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-      {subjects.map(subject => (
+      {sorted.map(subject => (
         <Card 
           key={subject.id}
           className={clsx(
