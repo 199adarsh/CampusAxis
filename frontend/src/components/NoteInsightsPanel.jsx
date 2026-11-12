@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, MessageCircle, HelpCircle, FileText, Download, Loader2, Trash2 } from 'lucide-react';
+import { Sparkles, MessageCircle, HelpCircle, FileText, Download, Loader2 } from 'lucide-react';
+import { Delete02Icon } from 'hugeicons-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -139,7 +140,7 @@ const NoteInsightsPanel = ({ noteId, onClose, onDelete }) => {
           </SheetTitle>
           {canDelete && (
              <Button variant="ghost" size="icon" onClick={handleDelete} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" title="Delete Note">
-               <Trash2 className="w-4 h-4" />
+               <Delete02Icon className="w-4 h-4" />
              </Button>
           )}
         </SheetHeader>

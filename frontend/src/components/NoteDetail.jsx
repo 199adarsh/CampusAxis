@@ -20,9 +20,10 @@ import {
     Search01Icon,
     Loading01Icon,
     SparklesIcon,
-    ArrowUp02Icon
+    ArrowUp02Icon,
+    FullScreenIcon,
+    Delete02Icon
 } from 'hugeicons-react';
-import { Maximize2, Trash2 } from 'lucide-react';
 import DocumentLoadingBar from './DocumentLoadingBar';
 import PdfViewer from './PdfViewer';
 import DocxViewer from './DocxViewer';
@@ -752,7 +753,7 @@ const NoteDetail = () => {
                         className="hidden md:flex px-3.5 py-1.5 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-xl transition-all items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-xs active:scale-95"
                         title="Open Full Screen Note Annotator"
                     >
-                        <Maximize2 size={14} />
+                        <FullScreenIcon size={14} />
                         <span>Full Screen</span>
                     </button>
 
@@ -771,7 +772,7 @@ const NoteDetail = () => {
                             className="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 rounded-xl transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer active:scale-95"
                             title="Delete Document"
                         >
-                            <Trash2 size={15} />
+                            <Delete02Icon size={15} />
                             <span className="hidden sm:inline">Delete</span>
                         </button>
                     )}

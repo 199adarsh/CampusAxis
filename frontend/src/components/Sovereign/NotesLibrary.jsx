@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Trash2 } from 'lucide-react';
 import {
     Search01Icon,
     Upload01Icon,
@@ -16,7 +15,8 @@ import {
     InboxIcon,
     ArrowDown01Icon,
     Mortarboard01Icon,
-    Download01Icon
+    Download01Icon,
+    Delete02Icon
 } from 'hugeicons-react';
 import { cn } from '../../lib/utils';
 import DocumentLoadingBar from '../DocumentLoadingBar';
@@ -186,7 +186,7 @@ const NoteCard = React.memo(function NoteCard({ note, subject, subjectName, onOp
                             title="Delete Note"
                             type="button"
                         >
-                            <Trash2 size={13} className="sm:size-[14px]" />
+                            <Delete02Icon size={13} className="sm:size-[14px]" />
                         </button>
                     )}
                     <button
