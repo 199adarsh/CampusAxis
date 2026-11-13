@@ -1,5 +1,4 @@
 import { isSubjectNameMatch, normalizeUnitNum, unpackAiAnswer } from "../../lib/noteUtils";
-import { cn } from "@/lib/utils";
 import React, {
     useState,
     useEffect,
@@ -7,7 +6,7 @@ import React, {
     useMemo,
     useCallback,
 } from "react";
-import { useOutletContext, useSearchParams, useLocation } from "react-router-dom";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -21,13 +20,7 @@ import {
     BookOpen01Icon,
     Layers01Icon,
     CheckmarkCircle02Icon,
-    ArrowUp02Icon,
-    Search01Icon,
     File01Icon,
-    Attachment01Icon,
-    Cancel01Icon,
-    Upload01Icon,
-    Loading01Icon,
 } from "hugeicons-react";
 import AiMascotInput from "@/components/ui/ai-mascot-input";
 import { AiLengthSlider, getSavedAiMode } from "@/components/AiLengthSlider";
@@ -97,20 +90,8 @@ const AIAssistant = () => {
     const [selectedUnits, setSelectedUnits] = useState(["all"]);
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [aiMode, setAiMode] = useState(() => getSavedAiMode());
-
-    const location = useLocation();
     const [isAttachingSubjectNotes, setIsAttachingSubjectNotes] = useState(false);
-
-    // Notes Library Selection Modal for Multi-File RAG
-    const [isNotesPickerOpen, setIsNotesPickerOpen] = useState(false);
-    const [pickerSubjectId, setPickerSubjectId] = useState("all");
-    const [pickerSelectedNoteIds, setPickerSelectedNoteIds] = useState(new Set());
-
-    // Multi-File RAG State
     const [attachedFiles, setAttachedFiles] = useState([]);
-    const [isUploadingFiles, setIsUploadingFiles] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
-    const fileInputRef = useRef(null);
 
     const sessionId = useMemo(() => {
         let sid = sessionStorage.getItem('eduvault_rag_session_id');
@@ -373,55 +354,6 @@ const AIAssistant = () => {
         setTimeout(() => setCopiedIndex(null), 2000);
     };
 
-    // Multi-File upload handler
-    const handleFileUpload = async (filesToUpload) => {
-        if (!filesToUpload || filesToUpload.length === 0) return;
-        setIsUploadingFiles(true);
-        const formData = new FormData();
-        for (let i = 0; i < filesToUpload.length; i++) {
-            formData.append('files', filesToUpload[i]);
-        }
-        formData.append('sessionId', sessionId);
-
-        try {
-            const res = await axios.post(`${API_BASE}/ai/upload`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            if (res.data?.success && Array.isArray(res.data.files)) {
-                setAttachedFiles(prev => {
-                    const existingIds = new Set(prev.map(f => f.id));
-                    const next = [...prev];
-                    res.data.files.forEach(f => {
-                        if (!existingIds.has(f.id)) next.push(f);
-                    });
-                    return next;
-                });
-                toast.success(`Attached ${res.data.files.length} document(s) for multi-file RAG query`);
-            }
-        } catch (err) {
-            console.error("Multi-file upload error:", err);
-            toast.error(err?.response?.data?.error || "Failed to upload files for RAG.");
-        } finally {
-            setIsUploadingFiles(false);
-        }
-    };
-
-    const handleRemoveFile = async (fileId) => {
-        try {
-            await axios.delete(`${API_BASE}/ai/files/${fileId}`);
-        } catch { /* ignore */ }
-        setAttachedFiles(prev => prev.filter(f => f.id !== fileId));
-        toast.info("Document removed from query context");
-    };
-
-    const handleClearAllFiles = async () => {
-        try {
-            await axios.post(`${API_BASE}/ai/files/clear`, { sessionId });
-        } catch { /* ignore */ }
-        setAttachedFiles([]);
-        toast.info("All attached files cleared");
-    };
-
     // Auto-attach notes belonging to the selected subject & units to RAG session
     useEffect(() => {
         if (!activeSubject || activeSelectedNotes.length === 0) {
@@ -444,167 +376,6 @@ const AIAssistant = () => {
             setIsAttachingSubjectNotes(false);
         });
     }, [activeSubject, activeSelectedNotes, sessionId]);
-
-    // Sync picker state whenever modal opens
-    useEffect(() => {
-        if (isNotesPickerOpen) {
-            setPickerSelectedNoteIds(new Set(attachedFiles.map(f => f.id)));
-            if (selectedSubject && selectedSubject !== "all") {
-                setPickerSubjectId(selectedSubject);
-            }
-        }
-    }, [isNotesPickerOpen, attachedFiles, selectedSubject]);
-
-    const pickerNotes = useMemo(() => {
-        if (!notes || notes.length === 0) return [];
-        if (pickerSubjectId === "all") {
-            const enrolledIds = new Set(allKnownSubjects.map(s => s.id));
-            const enrolledCodes = new Set(allKnownSubjects.map(s => s.code?.toLowerCase()).filter(Boolean));
-            return notes.filter(n => {
-                if (!n) return false;
-                if (enrolledIds.has(n.subjectId)) return true;
-                if (n.subjectId && enrolledCodes.has(n.subjectId.toLowerCase())) return true;
-                return allKnownSubjects.some(s => s.name && isSubjectNameMatch(n.subjectName, s.name));
-            });
-        }
-        const targetSub = allKnownSubjects.find(s => s.id === pickerSubjectId || s.code === pickerSubjectId);
-        return notes.filter(n => {
-            if (!n) return false;
-            if (String(n.subjectId) === String(pickerSubjectId)) return true;
-            if (targetSub?.code && String(n.subjectId).toLowerCase() === String(targetSub.code).toLowerCase()) return true;
-            if (targetSub?.name && isSubjectNameMatch(n.subjectName, targetSub.name)) return true;
-            if (n.r2ObjectKey && targetSub?.code && n.r2ObjectKey.toUpperCase().includes(targetSub.code.toUpperCase())) return true;
-            return false;
-        });
-    }, [notes, pickerSubjectId, allKnownSubjects]);
-
-    const pickerNotesByUnit = useMemo(() => {
-        const groups = {};
-        pickerNotes.forEach(note => {
-            const uNum = normalizeUnitNum(note.unit);
-            const key = uNum ? `Unit ${uNum}` : (note.unit && note.unit.trim() ? note.unit : 'General / Other');
-            if (!groups[key]) groups[key] = [];
-            groups[key].push(note);
-        });
-        return groups;
-    }, [pickerNotes]);
-
-    const isAllCurrentUnitsSelected = useMemo(() => {
-        if (pickerNotes.length === 0) return false;
-        return pickerNotes.every(n => pickerSelectedNoteIds.has(n.id));
-    }, [pickerNotes, pickerSelectedNoteIds]);
-
-    const handleToggleSelectAllUnits = useCallback(() => {
-        setPickerSelectedNoteIds(prev => {
-            const next = new Set(prev);
-            if (isAllCurrentUnitsSelected) {
-                pickerNotes.forEach(n => next.delete(n.id));
-            } else {
-                pickerNotes.forEach(n => next.add(n.id));
-            }
-            return next;
-        });
-    }, [isAllCurrentUnitsSelected, pickerNotes]);
-
-    const handleToggleUnit = useCallback((unitNotes) => {
-        setPickerSelectedNoteIds(prev => {
-            const next = new Set(prev);
-            const allInUnitSelected = unitNotes.every(n => next.has(n.id));
-            if (allInUnitSelected) {
-                unitNotes.forEach(n => next.delete(n.id));
-            } else {
-                unitNotes.forEach(n => next.add(n.id));
-            }
-            return next;
-        });
-    }, []);
-
-    const handleToggleNote = useCallback((noteId) => {
-        setPickerSelectedNoteIds(prev => {
-            const next = new Set(prev);
-            if (next.has(noteId)) {
-                next.delete(noteId);
-            } else {
-                next.add(noteId);
-            }
-            return next;
-        });
-    }, []);
-
-    const handleConfirmAttachSelected = async () => {
-        const ids = Array.from(pickerSelectedNoteIds);
-        if (ids.length === 0) {
-            setAttachedFiles([]);
-            setIsNotesPickerOpen(false);
-            return;
-        }
-        setIsAttachingSubjectNotes(true);
-        try {
-            const res = await axios.post(`${API_BASE}/ai/attach-notes`, {
-                noteIds: ids,
-                sessionId
-            });
-            if (res.data?.success && Array.isArray(res.data.files)) {
-                setAttachedFiles(res.data.files);
-                toast.success(`Attached ${res.data.files.length} note(s) across units for Multi-File RAG`);
-                setIsNotesPickerOpen(false);
-            }
-        } catch {
-            toast.error("Failed to attach selected notes");
-        } finally {
-            setIsAttachingSubjectNotes(false);
-        }
-    };
-
-    // Attach all units / notes for the active subject directly
-    const handleAttachAllSubjectNotes = async () => {
-        if (!subjectNotes || subjectNotes.length === 0) {
-            toast.info("No notes found for this subject to attach");
-            return;
-        }
-        setIsAttachingSubjectNotes(true);
-        try {
-            const noteIds = subjectNotes.map(n => n.id);
-            const res = await axios.post(`${API_BASE}/ai/attach-notes`, {
-                noteIds,
-                sessionId
-            });
-            if (res.data?.success && Array.isArray(res.data.files)) {
-                setAttachedFiles(prev => {
-                    const existing = new Set(prev.map(f => f.id));
-                    const next = [...prev];
-                    res.data.files.forEach(f => {
-                        if (!existing.has(f.id)) next.push(f);
-                    });
-                    return next;
-                });
-                toast.success(`Attached all units (${res.data.files.length} notes) for Multi-File RAG`);
-            }
-        } catch {
-            toast.error("Failed to attach subject notes for RAG");
-        } finally {
-            setIsAttachingSubjectNotes(false);
-        }
-    };
-
-    // Drag-and-drop file upload
-    const handleDragOver = (e) => {
-        e.preventDefault();
-        setIsDragging(true);
-    };
-
-    const handleDragLeave = (e) => {
-        e.preventDefault();
-        setIsDragging(false);
-    };
-
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setIsDragging(false);
-        if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-            handleFileUpload(e.dataTransfer.files);
-        }
-    };
 
     const sendMessage = async (promptText) => {
         const queryText = (promptText || input).trim();
@@ -764,25 +535,7 @@ const AIAssistant = () => {
     }
 
     return (
-        <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className="flex-1 flex flex-col h-full bg-[#F5F5F7] dark:bg-black font-sans text-[#1D1D1F] dark:text-[#F5F5F7] antialiased overflow-hidden relative"
-        >
-            {/* Hidden Multi-File Input */}
-            <input
-                type="file"
-                ref={fileInputRef}
-                onChange={(e) => {
-                    if (e.target.files) handleFileUpload(e.target.files);
-                    e.target.value = '';
-                }}
-                multiple
-                accept=".pdf,.docx,.pptx,.txt,.md,.csv,.json"
-                className="hidden"
-            />
-
+        <div className="flex-1 flex flex-col h-full bg-[#F5F5F7] dark:bg-black font-sans text-[#1D1D1F] dark:text-[#F5F5F7] antialiased overflow-hidden relative">
             {/* Minimal Header */}
             <header className="h-12 border-b border-[#E5E5EA] dark:border-[#2C2C2E] bg-white/70 dark:bg-[#1C1C1E]/70 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between shrink-0 select-none">
                 <div className="flex items-center gap-2">
