@@ -57,6 +57,10 @@ public class AiController {
             String subjectId = request.get("subjectId");
             String unit = request.get("unit");
             String prn = request.get("prn");
+            String lengthMode = request.get("lengthMode");
+            if (lengthMode == null || lengthMode.isBlank()) {
+                lengthMode = request.get("mode");
+            }
             String customApiKey = apiKeyHeader;
             if (customApiKey == null || customApiKey.isBlank()) {
                 customApiKey = request.get("apiKey");
@@ -91,25 +95,25 @@ public class AiController {
 
                 if (okfContext.isPresent()) {
                     contextSnippet = okfContext.get();
-                    jsonResponse = geminiService.askTutor(question, contextSnippet, customApiKey);
+                    jsonResponse = geminiService.askTutor(question, contextSnippet, customApiKey, lengthMode);
                     source = "OKF_KNOWLEDGE";
                 } else {
                     logger.info("OKF knowledge context still empty for subjectId={}, falling back with strict subject isolation", subjectId);
                     if (noteId != null && !noteId.trim().isEmpty()) {
-                        jsonResponse = ragService.askChapter(question, noteId, customApiKey);
+                        jsonResponse = ragService.askChapter(question, noteId, customApiKey, lengthMode);
                         source = "CHAPTER_RAG";
                     } else {
-                        jsonResponse = executeGeneralTutor(question, prn, customApiKey, subjectId.trim());
+                        jsonResponse = executeGeneralTutor(question, prn, customApiKey, subjectId.trim(), lengthMode);
                         source = "GENERAL_TUTOR";
                     }
                 }
             } else if (noteId != null && !noteId.trim().isEmpty()) {
                 // Route 2: Note-specific Chapter RAG
-                jsonResponse = ragService.askChapter(question, noteId, customApiKey);
+                jsonResponse = ragService.askChapter(question, noteId, customApiKey, lengthMode);
                 source = "CHAPTER_RAG";
             } else {
                 // Route 3: General Academic Assistant Context
-                jsonResponse = executeGeneralTutor(question, prn, customApiKey, null);
+                jsonResponse = executeGeneralTutor(question, prn, customApiKey, null, lengthMode);
                 source = "GENERAL_TUTOR";
             }
 
@@ -157,6 +161,10 @@ public class AiController {
     }
 
     private String executeGeneralTutor(String question, String prn, String customApiKey, String targetSubjectId) {
+        return executeGeneralTutor(question, prn, customApiKey, targetSubjectId, null);
+    }
+
+    private String executeGeneralTutor(String question, String prn, String customApiKey, String targetSubjectId, String lengthMode) {
         StringBuilder contextBuilder = new StringBuilder();
 
         com.eduvault.model.StudentProfile profile = (prn != null && !prn.isBlank()) ? database.getProfile(prn.trim()) : null;
@@ -230,7 +238,7 @@ public class AiController {
             fullContext = "EduVault Academic Vault ready to assist.";
         }
 
-        return geminiService.askTutor(question, fullContext, customApiKey);
+        return geminiService.askTutor(question, fullContext, customApiKey, lengthMode);
     }
 
     @PostMapping("/study-guide")

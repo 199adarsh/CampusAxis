@@ -87,11 +87,16 @@ public class RAGService {
     }
 
     public String askChapter(String question, String noteId, String customApiKey) {
+        return askChapter(question, noteId, customApiKey, null);
+    }
+
+    public String askChapter(String question, String noteId, String customApiKey, String lengthMode) {
         if (question == null || question.trim().isEmpty() || noteId == null || noteId.trim().isEmpty()) {
             return "{\"answer\": \"Please provide both a valid question and a note ID.\", \"confidence\": 0.0}";
         }
 
-        String cacheKey = noteId.trim() + "::" + question.trim().toLowerCase();
+        String mode = (lengthMode != null) ? lengthMode.toLowerCase().trim() : "high";
+        String cacheKey = noteId.trim() + "::" + mode + "::" + question.trim().toLowerCase();
         CachedAnswer cached = queryCache.get(cacheKey);
         if (cached != null && !cached.isExpired()) {
             logger.info("RAG: Cache hit for question '{}' on note {}", question, noteId);
@@ -164,18 +169,36 @@ public class RAGService {
             context.append(snippet).append("\n\n");
         }
 
+        String wordConstraint = "100-120 words";
+        switch (mode) {
+            case "min":
+                wordConstraint = "80-100 words (concise, direct summary)";
+                break;
+            case "max":
+                wordConstraint = "150-180 words (detailed conceptual breakdown)";
+                break;
+            case "ultra":
+                wordConstraint = "220-250 words (comprehensive explanation with technical depth)";
+                break;
+            case "high":
+            default:
+                wordConstraint = "100-120 words (clear, balanced explanation)";
+                break;
+        }
+
         // 4. Strict anti-hallucination prompt for college notes
         String systemInstruction = 
             "You are an expert College Exam & Notes Tutor. Your highest priority is 100% academic correctness.\n" +
             "CRITICAL RULES:\n" +
             "1. Answer the student's question directly and thoroughly using the provided Note Context passages.\n" +
-            "2. Understand standard academic synonyms: \"syllabus\", \"course contents\", \"topics\", and \"curriculum\" refer to the same content.\n" +
-            "3. Understand unit notations: \"Unit 01\", \"Unit 1\", and \"Unit I\" refer to the same unit.\n" +
-            "4. If a question asks about multiple items (e.g. course outcomes AND unit syllabus), answer all requested parts clearly.\n" +
-            "5. Cite exact definitions, formulas, or theorems directly from the text.\n" +
-            "6. If a topic is truly not covered anywhere in the provided notes, say: \"This topic is not covered in the provided notes.\"\n" +
-            "7. Format with clean academic Markdown (bold headers, bullet points, structured lists).\n" +
-            "8. Return strictly valid JSON: {\"answer\": \"<formatted markdown answer>\", \"confidence\": " +
+            "2. STRICT LENGTH CONSTRAINT: Provide your answer in strictly " + wordConstraint + ".\n" +
+            "3. Understand standard academic synonyms: \"syllabus\", \"course contents\", \"topics\", and \"curriculum\" refer to the same content.\n" +
+            "4. Understand unit notations: \"Unit 01\", \"Unit 1\", and \"Unit I\" refer to the same unit.\n" +
+            "5. If a question asks about multiple items (e.g. course outcomes AND unit syllabus), answer all requested parts clearly.\n" +
+            "6. Cite exact definitions, formulas, or theorems directly from the text.\n" +
+            "7. If a topic is truly not covered anywhere in the provided notes, say: \"This topic is not covered in the provided notes.\"\n" +
+            "8. Format with clean academic Markdown (bold headers, bullet points, structured lists).\n" +
+            "9. Return strictly valid JSON: {\"answer\": \"<formatted markdown answer>\", \"confidence\": " +
             String.format(java.util.Locale.US, "%.2f", Math.min(0.95, Math.max(0.70, maxScore / 5.0))) + "}";
 
         String prompt = "CONTEXT PASSAGES:\n" + context + "\nSTUDENT QUESTION:\n" + question;

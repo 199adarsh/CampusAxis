@@ -204,10 +204,14 @@ public class GeminiService {
     }
 
     public String askTutor(String question, String contextTexts) {
-        return askTutor(question, contextTexts, null);
+        return askTutor(question, contextTexts, null, null);
     }
 
     public String askTutor(String question, String contextTexts, String customApiKey) {
+        return askTutor(question, contextTexts, customApiKey, null);
+    }
+
+    public String askTutor(String question, String contextTexts, String customApiKey, String lengthMode) {
         try {
             ensureProxyRunning();
             // Truncate context to fit token limits
@@ -216,10 +220,32 @@ public class GeminiService {
                 truncatedContext = truncatedContext.substring(0, 6000) + "\n...[truncated]";
             }
 
-            String systemInstruction = "You are a knowledgeable AI tutor and institutional academic assistant for EduVault. Provide thorough, well-structured, comprehensive explanations (500-700 words). Use clear markdown formatting with bold headers (###), organized bullet points, formulas, and real-world examples. Return ONLY a JSON object with 'answer' and 'confidence' keys. No markdown code blocks around the JSON.";
-            String prompt = "Context:\n" + truncatedContext + "\n\nQuestion: " + question + "\n\nProvide an in-depth, structured academic explanation using rich markdown formatting. Return: {\"answer\": \"your detailed answer here\", \"confidence\": 0.95}";
+            String wordConstraint = "100-120 words";
+            String mode = (lengthMode != null) ? lengthMode.toLowerCase().trim() : "high";
+            switch (mode) {
+                case "min":
+                    wordConstraint = "80-100 words (concise, direct summary)";
+                    break;
+                case "max":
+                    wordConstraint = "150-180 words (detailed conceptual breakdown)";
+                    break;
+                case "ultra":
+                    wordConstraint = "220-250 words (comprehensive explanation with technical nuances)";
+                    break;
+                case "high":
+                default:
+                    wordConstraint = "100-120 words (clear, balanced explanation)";
+                    break;
+            }
 
-            logger.info("askTutor prompt length: {} chars", prompt.length());
+            String systemInstruction = "You are a knowledgeable AI tutor and institutional academic assistant for EduVault. " +
+                    "STRICT LENGTH CONSTRAINT: Provide your complete answer in strictly " + wordConstraint + ". " +
+                    "Use clear markdown formatting with bold headers (###), organized bullet points, formulas, or short code snippets where appropriate. " +
+                    "Return ONLY a JSON object with 'answer' and 'confidence' keys. No markdown code blocks around the JSON.";
+            String prompt = "Context:\n" + truncatedContext + "\n\nQuestion: " + question + "\n\n" +
+                    "Provide an answer in strictly " + wordConstraint + " using rich markdown formatting. Return: {\"answer\": \"your formatted answer here\", \"confidence\": 0.95}";
+
+            logger.info("askTutor prompt length: {} chars, mode: {}", prompt.length(), mode);
             String responseText = callGemini(systemInstruction, prompt, 0.2, customApiKey);
             String cleaned = cleanJson(responseText);
             if (!cleaned.startsWith("{")) {

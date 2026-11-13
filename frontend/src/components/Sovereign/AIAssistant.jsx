@@ -22,6 +22,7 @@ import {
     Search01Icon,
 } from "hugeicons-react";
 import AiMascotInput from "@/components/ui/ai-mascot-input";
+import { AiLengthSlider, getSavedAiMode } from "@/components/AiLengthSlider";
 
 class AIAssistantErrorBoundary extends React.Component {
     constructor(props) {
@@ -106,6 +107,7 @@ const AIAssistant = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [selectedUnit, setSelectedUnit] = useState("all");
     const [copiedIndex, setCopiedIndex] = useState(null);
+    const [aiMode, setAiMode] = useState(() => getSavedAiMode());
 
     const allKnownSubjects = useMemo(() => {
         const pool = subjects && subjects.length > 0 ? subjects : catalogSubjects || [];
@@ -286,6 +288,8 @@ const AIAssistant = () => {
                     prn: profile?.prn,
                     subjectId: currentSubjectId,
                     unit: currentUnit,
+                    lengthMode: aiMode,
+                    mode: aiMode,
                     customApiKey: customApiKey || undefined,
                     apiKey: customApiKey || undefined,
                 }),
@@ -391,14 +395,17 @@ const AIAssistant = () => {
                     )}
                 </div>
 
-                <button
-                    type="button"
-                    onClick={handleClearChat}
-                    className="p-1.5 text-[#6E6E73] hover:text-[#1D1D1F] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-                    title="Clear conversation"
-                >
-                    <RefreshIcon size={16} />
-                </button>
+                <div className="flex items-center gap-2">
+                    <AiLengthSlider currentMode={aiMode} onModeChange={setAiMode} />
+                    <button
+                        type="button"
+                        onClick={handleClearChat}
+                        className="p-1.5 text-[#6E6E73] hover:text-[#1D1D1F] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                        title="Clear conversation"
+                    >
+                        <RefreshIcon size={16} />
+                    </button>
+                </div>
             </header>
 
             {/* Main Chat Canvas (Full-width section scroll like ChatGPT) */}

@@ -30,6 +30,7 @@ import DocxViewer from './DocxViewer';
 import FullScreenNoteViewer from './FullScreenNoteViewer';
 import { cn } from '@/lib/utils';
 import { getCachedNoteBlob, setCachedNoteBlob } from '@/lib/pdfCache';
+import { AiLengthSlider, getSavedAiMode } from '@/components/AiLengthSlider';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
@@ -128,6 +129,7 @@ const NoteDetail = () => {
     const [loading, setLoading] = useState(() => !cachedNote);
     const [doubtQuery, setDoubtQuery] = useState('');
     const [isFullScreen, setIsFullScreen] = useState(false);
+    const [aiMode, setAiMode] = useState(() => getSavedAiMode());
 
     // Doubts access check: only teachers who selected this note's subject (and all students)
     const canViewDoubts = React.useMemo(() => {
@@ -484,6 +486,8 @@ const NoteDetail = () => {
                 body: JSON.stringify({
                     question: userMsg.text,
                     noteId: noteId,
+                    lengthMode: aiMode,
+                    mode: aiMode,
                     customApiKey: customApiKey || undefined,
                     apiKey: customApiKey || undefined
                 })
@@ -915,14 +919,17 @@ const NoteDetail = () => {
 
                             <div className="flex items-center gap-1">
                                 {activeTab === 'ai' && (
-                                    <button
-                                        type="button"
-                                        onClick={handleClearNoteChat}
-                                        className="p-1.5 text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#F5F5F7] rounded-lg transition-colors cursor-pointer"
-                                        title="Clear conversation"
-                                    >
-                                        <RefreshIcon size={16} />
-                                    </button>
+                                    <>
+                                        <AiLengthSlider currentMode={aiMode} onModeChange={setAiMode} />
+                                        <button
+                                            type="button"
+                                            onClick={handleClearNoteChat}
+                                            className="p-1.5 text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#F5F5F7] rounded-lg transition-colors cursor-pointer"
+                                            title="Clear conversation"
+                                        >
+                                            <RefreshIcon size={16} />
+                                        </button>
+                                    </>
                                 )}
                                 <button
                                     onClick={() => setIsPanelOpen(false)}
