@@ -164,6 +164,25 @@ public class R2StorageService {
     }
 
     /**
+     * Checks if an object exists in R2.
+     */
+    public boolean doesObjectExist(String key) {
+        if (key == null || key.isBlank()) return false;
+        try {
+            s3Client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
+            return true;
+        } catch (NoSuchKeyException e) {
+            return false;
+        } catch (S3Exception e) {
+            if (e.statusCode() == 404) return false;
+            logger.warn("R2 headObject check error for {}: {}", key, e.getMessage());
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
      * Verifies that the file exists in R2; if missing, searches local storage and uploads it.
      */
     public void ensureUploaded(String key) {

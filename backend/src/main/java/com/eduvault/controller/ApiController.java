@@ -61,6 +61,9 @@ public class ApiController {
     private com.eduvault.service.DocumentConversionService documentConversionService;
 
     @Autowired
+    private com.eduvault.service.NightlyDocumentConversionService nightlyDocumentConversionService;
+
+    @Autowired
     private GeminiService geminiService;
 
     @Autowired
@@ -585,6 +588,12 @@ public class ApiController {
         return ResponseEntity.ok(Map.of("repairedCount", repaired, "totalNotes", database.getTotalNotesCount()));
     }
 
+    @RequestMapping(value = "/notes/preconvert-ppts", method = {RequestMethod.GET, RequestMethod.POST})
+    public ResponseEntity<Map<String, Object>> preconvertPpts() {
+        new Thread(() -> nightlyDocumentConversionService.convertAllPresentationsToPdf()).start();
+        return ResponseEntity.ok(Map.of("message", "Triggered presentation-to-PDF conversion in background", "status", "IN_PROGRESS"));
+    }
+
     @GetMapping("/notes/{id}")
     public ResponseEntity<Note> getNote(@PathVariable String id) {
         return database.getNoteById(id)
@@ -859,6 +868,22 @@ public class ApiController {
             return getNoteRawById(noteId);
         }
 
+        // Fast-path: check if pre-converted PDF exists in R2 or local cache
+        String cacheKey = com.eduvault.service.NightlyDocumentConversionService.getPdfR2Key(note);
+        if (r2StorageService != null) {
+            try {
+                byte[] cachedPdf = r2StorageService.getObjectBytes(cacheKey);
+                if (cachedPdf != null && cachedPdf.length > 0) {
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.APPLICATION_PDF)
+                            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName.replaceAll("(?i)\\.[a-z0-9]+$", ".pdf") + "\"")
+                            .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                            .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                            .body(new ByteArrayResource(cachedPdf));
+                }
+            } catch (Exception ignored) {}
+        }
+
         byte[] fileBytes = null;
         if (note.getFileUrl() != null) {
             Path path = fileStorageService.getFilePath(note.getFileUrl());
@@ -896,6 +921,11 @@ public class ApiController {
             try {
                 if (lower.endsWith(".ppt") || lower.endsWith(".pptx")) {
                     byte[] pdfBytes = documentConversionService.convertPptToPdf(new ByteArrayInputStream(fileBytes), fileName);
+                    if (pdfBytes != null && r2StorageService != null) {
+                        try {
+                            r2StorageService.uploadBytes(pdfBytes, cacheKey);
+                        } catch (Exception ignored) {}
+                    }
                     return ResponseEntity.ok()
                             .contentType(MediaType.APPLICATION_PDF)
                             .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName.replaceAll("(?i)\\.pptx?$", ".pdf") + "\"")
