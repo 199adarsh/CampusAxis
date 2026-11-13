@@ -622,7 +622,7 @@ public class GeminiService {
         boolean isGroq = effectiveApiKey != null && effectiveApiKey.startsWith("gsk_");
         if (isGroq) {
             completionsUrl = "https://api.groq.com/openai/v1/chat/completions";
-            modelCascade = List.of("llama-3.1-8b-instant", "llama-3.3-70b-versatile", "mixtral-8x7b-32768");
+            modelCascade = List.of("openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b");
             headers.setBearerAuth(effectiveApiKey);
         } else if (effectiveApiKey != null && (effectiveApiKey.startsWith("AIza") || effectiveApiKey.length() > 30)) {
             completionsUrl = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
