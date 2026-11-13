@@ -167,7 +167,7 @@ export function AiMascotInput({
   const [isSubjectOpen, setIsSubjectOpen] = useState(false);
   const [isUnitOpen, setIsUnitOpen] = useState(false);
   const [internalPrompt, setInternalPrompt] = useState("");
-  
+
   const subjectItems = useMemo(() => [
     {
       id: "all",
@@ -190,8 +190,9 @@ export function AiMascotInput({
     { id: "UNIT 03", name: "Unit 3", description: "Module 3", icon: <Layers01Icon size={14} /> },
     { id: "UNIT 04", name: "Unit 4", description: "Module 4", icon: <Layers01Icon size={14} /> },
     { id: "UNIT 05", name: "Unit 5", description: "Module 5", icon: <Layers01Icon size={14} /> },
+    { id: "UNIT 06", name: "Unit 6", description: "Module 6", icon: <Layers01Icon size={14} /> },
   ], []);
-const [isListening, setIsListening] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
 
@@ -347,8 +348,8 @@ const [isListening, setIsListening] = useState(false);
               onClick={toggleVoice}
               disabled={disabled}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${isListening
-                  ? "bg-red-500 text-white shadow-[0_0_10px_#ef4444] animate-pulse"
-                  : "text-[#727272] hover:text-[#383838] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+                ? "bg-red-500 text-white shadow-[0_0_10px_#ef4444] animate-pulse"
+                : "text-[#727272] hover:text-[#383838] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
                 }`}
               title={isListening ? "Listening... click to stop" : "Voice dictation"}
             >
@@ -362,8 +363,8 @@ const [isListening, setIsListening] = useState(false);
               onClick={handleSend}
               disabled={!canSend}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${canSend
-                  ? "bg-[#0073E6] hover:bg-[#174073] text-white shadow-xs active:scale-95"
-                  : "bg-[#E2E2E2] dark:bg-[#383838] text-[#727272] dark:text-zinc-500 cursor-not-allowed opacity-70"
+                ? "bg-[#0073E6] hover:bg-[#174073] text-white shadow-xs active:scale-95"
+                : "bg-[#E2E2E2] dark:bg-[#383838] text-[#727272] dark:text-zinc-500 cursor-not-allowed opacity-70"
                 }`}
             >
               {processing ? (
