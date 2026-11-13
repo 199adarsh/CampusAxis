@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence, MotionConfig } from 'motion/react';
-import { ChevronDown, X, ArrowUpRight, Check } from 'lucide-react';
+import { ArrowDown01Icon, Cancel01Icon, ArrowUpRight01Icon, CheckmarkCircle02Icon } from 'hugeicons-react';
 import { FaMeta } from 'react-icons/fa6';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { GoogleGeminiIcon, QwenFreeIcons } from '@hugeicons/core-free-icons';
@@ -117,7 +117,7 @@ export const DropdownDisclosure = ({
           {selected.name}
         </span>
 
-        <ChevronDown className={`${compact ? 'h-3 w-3' : 'h-4 w-4'} text-[#174073] dark:text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ArrowDown01Icon size={compact ? 12 : 16} className={`text-[#174073] dark:text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Floating Popover Menu - Absolute above toolbar, DOES NOT expand chatbox */}
@@ -141,7 +141,7 @@ export const DropdownDisclosure = ({
                 aria-label="Close menu"
                 className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-colors"
               >
-                <X className="h-3 w-3 text-neutral-600 dark:text-neutral-300" />
+                <Cancel01Icon size={12} className="text-neutral-600 dark:text-neutral-300" />
               </button>
             </div>
 
@@ -183,7 +183,7 @@ export const DropdownDisclosure = ({
                       {m.hasUpgrade && (
                         <div className="flex items-center overflow-hidden rounded-md border border-neutral-300 text-[10px] font-semibold text-neutral-800 dark:border-neutral-600 dark:text-neutral-300">
                           <div className="border-r border-neutral-300 px-1.5 py-0.5 dark:border-neutral-600">
-                            <ArrowUpRight className="h-3 w-3" />
+                            <ArrowUpRight01Icon size={12} />
                           </div>
                           <div className="px-1.5 py-0.5">Upgrade</div>
                         </div>
@@ -198,7 +198,7 @@ export const DropdownDisclosure = ({
                           }`}
                         >
                           {active && (
-                            <Check className="h-2.5 w-2.5 stroke-[3px] text-white dark:text-neutral-900" />
+                            <CheckmarkCircle02Icon size={10} className="text-white dark:text-neutral-900" />
                           )}
                         </div>
                       )}

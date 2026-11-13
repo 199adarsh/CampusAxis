@@ -170,14 +170,14 @@ export function AiMascotInput({
   const subjectItems = useMemo(() => [
     {
       id: "all",
-      name: "All Enrolled",
-      description: "Search all course notes",
+      name: "All My Subjects",
+      description: "Search across my enrolled courses",
       icon: <BookOpen01Icon size={14} />,
     },
     ...(Array.isArray(allKnownSubjects) ? allKnownSubjects : []).filter(Boolean).map((s) => ({
       id: typeof s === "string" ? s : (s.id || s.code || s.name || "sub"),
       name: typeof s === "string" ? s : (s.name || s.code || "Subject"),
-      description: typeof s === "string" ? "" : (s.code || "Course Subject"),
+      description: typeof s === "string" ? "" : (s.code ? `Course Code: ${s.code}` : "Enrolled Course"),
       icon: <Book02Icon size={14} />,
     })),
   ], [allKnownSubjects]);
@@ -316,7 +316,7 @@ export function AiMascotInput({
                 <DropdownDisclosure
                   compact
                   placement="top"
-                  title="Choose Subject"
+                  title="My Subjects"
                   items={subjectItems}
                   isOpen={isSubjectOpen}
                   onOpenChange={setIsSubjectOpen}
@@ -372,7 +372,7 @@ export function AiMascotInput({
                 onClick={onAttachFiles}
                 disabled={disabled}
                 className="relative w-8 h-8 rounded-full flex items-center justify-center text-[#727272] hover:text-[#0073E6] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                title="Attach documents for multi-file RAG"
+                title="Select notes or attach documents for multi-file RAG"
               >
                 <Attachment01Icon size={16} />
                 {attachedFilesCount > 0 && (
@@ -383,7 +383,7 @@ export function AiMascotInput({
               </button>
             )}
             {onAiModeChange && (
-              <AiLengthSlider currentMode={aiMode} onModeChange={onAiModeChange} />
+              <AiLengthSlider currentMode={aiMode} onModeChange={onAiModeChange} defaultCollapsed={true} />
             )}
             <button
               type="button"

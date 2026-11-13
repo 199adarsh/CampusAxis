@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { SlidersVerticalIcon, LockKeyIcon, CheckmarkCircle02Icon } from 'hugeicons-react';
+import { SlidersVerticalIcon, LockKeyIcon, CheckmarkCircle02Icon, ArrowRight01Icon, ArrowLeft01Icon } from 'hugeicons-react';
 
 export const AI_LENGTH_MODES = [
     { id: 'min', label: 'Min', wordRange: '80-100', desc: 'Quick summary (80-100 words)', requiresPasscode: false },
@@ -51,7 +51,21 @@ export const saveAiMode = (modeId) => {
     } catch { /* ignore */ }
 };
 
-export const AiLengthSlider = ({ currentMode = 'high', onModeChange, className }) => {
+export const AiLengthSlider = ({ currentMode = 'high', onModeChange, className, defaultCollapsed = true }) => {
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        try {
+            const saved = sessionStorage.getItem('eduvault_ai_slider_collapsed');
+            if (saved !== null) return saved === 'true';
+        } catch { /* ignore */ }
+        return defaultCollapsed;
+    });
+
+    const setCollapsedState = (collapsed) => {
+        setIsCollapsed(collapsed);
+        try {
+            sessionStorage.setItem('eduvault_ai_slider_collapsed', String(collapsed));
+        } catch { /* ignore */ }
+    };
     const [showPasscodeModal, setShowPasscodeModal] = useState(false);
     const [targetMode, setTargetMode] = useState(null);
     const [passcode, setPasscode] = useState('');
@@ -95,8 +109,34 @@ export const AiLengthSlider = ({ currentMode = 'high', onModeChange, className }
         }
     };
 
+    if (isCollapsed) {
+        return (
+            <div className={cn("relative flex items-center bg-[#F2F2F7] dark:bg-[#2C2C2E] rounded-full border border-black/5 dark:border-white/5 select-none transition-all duration-200", className)}>
+                <button
+                    type="button"
+                    onClick={() => setCollapsedState(false)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#1D1D1F] dark:text-[#F5F5F7] hover:text-[#0071E3] dark:hover:text-[#0A84FF] transition-colors cursor-pointer group"
+                    title={`Length: ${activeModeObj.label} (${activeModeObj.wordRange} words) - Click to expand`}
+                    aria-label="Expand AI length slider"
+                >
+                    <SlidersVerticalIcon size={12} className="text-[#0071E3] dark:text-[#0A84FF] transition-transform group-hover:scale-110" />
+                    <span className="text-[10px] font-semibold text-[#0071E3] dark:text-[#0A84FF]">
+                        {activeModeObj.label}
+                    </span>
+                    <span className="text-[9px] text-[#8E8E93]">
+                        ({activeModeObj.wordRange.split('-')[1]}w)
+                    </span>
+                    {activeModeObj.requiresPasscode && !isUnlocked && (
+                        <LockKeyIcon size={10} className="text-amber-500" />
+                    )}
+                    <ArrowRight01Icon size={11} className="text-[#8E8E93] group-hover:text-[#0071E3] dark:group-hover:text-[#0A84FF] transition-colors ml-0.5" />
+                </button>
+            </div>
+        );
+    }
+
     return (
-        <div className={cn("relative flex items-center gap-2 bg-[#F2F2F7] dark:bg-[#2C2C2E] px-2.5 py-1 rounded-full border border-black/5 dark:border-white/5 select-none", className)}>
+        <div className={cn("relative flex items-center gap-2 bg-[#F2F2F7] dark:bg-[#2C2C2E] px-2.5 py-1 rounded-full border border-black/5 dark:border-white/5 select-none transition-all duration-200", className)}>
             {/* Header Icon & Label */}
             <div className="flex items-center text-[10px] font-medium text-[#8E8E93] shrink-0">
                 <SlidersVerticalIcon size={12} className="mr-1 text-[#0071E3] dark:text-[#0A84FF]" />
@@ -155,6 +195,17 @@ export const AiLengthSlider = ({ currentMode = 'high', onModeChange, className }
                     <LockKeyIcon size={10} className="text-amber-500 ml-0.5" title="Passcode required" />
                 )}
             </div>
+
+            {/* Collapse Toggle Button */}
+            <button
+                type="button"
+                onClick={() => setCollapsedState(true)}
+                className="p-0.5 rounded-full text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer ml-0.5 shrink-0"
+                title="Collapse slider"
+                aria-label="Collapse AI length slider"
+            >
+                <ArrowLeft01Icon size={11} />
+            </button>
 
             {/* Passcode Modal Dialog */}
             {showPasscodeModal && (

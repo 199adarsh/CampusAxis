@@ -30,6 +30,7 @@ import DocxViewer from './DocxViewer';
 import FullScreenNoteViewer from './FullScreenNoteViewer';
 import { cn } from '@/lib/utils';
 import { getCachedNoteBlob, setCachedNoteBlob } from '@/lib/pdfCache';
+import { unpackAiAnswer } from '@/lib/noteUtils';
 import { AiLengthSlider, getSavedAiMode } from '@/components/AiLengthSlider';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
@@ -497,22 +498,7 @@ const NoteDetail = () => {
             if (response.ok) {
                 const data = await response.json();
                 if (data.answer && !data.answer.toLowerCase().includes("encountered an error")) {
-                    answer = data.answer;
-                }
-            }
-
-            if (typeof answer === 'string') {
-                let clean = answer.trim();
-                if (clean.startsWith('```json')) {
-                    clean = clean.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-                } else if (clean.startsWith('```')) {
-                    clean = clean.replace(/^```\s*/, '').replace(/\s*```$/, '');
-                }
-                if (clean.startsWith('{') && clean.includes('"answer"')) {
-                    try {
-                        const parsed = JSON.parse(clean);
-                        if (parsed.answer) answer = parsed.answer;
-                    } catch (e) { }
+                    answer = unpackAiAnswer(data.answer);
                 }
             }
 
@@ -532,7 +518,10 @@ const NoteDetail = () => {
                     });
                     if (directRes.ok) {
                         const directData = await directRes.json();
-                        answer = directData.candidates?.[0]?.content?.parts?.[0]?.text;
+                        const candidate = directData.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (candidate) {
+                            answer = unpackAiAnswer(candidate);
+                        }
                     }
                 } catch (directErr) {
                     console.warn("Direct Gemini call in NoteDetail failed:", directErr);
@@ -541,9 +530,11 @@ const NoteDetail = () => {
 
             if (!answer) throw new Error("AI service temporarily unavailable");
 
+            const finalAnswer = unpackAiAnswer(answer);
+
             setChatMessages(prev => [...prev, {
                 role: 'assistant',
-                text: answer
+                text: finalAnswer
             }]);
         } catch (err) {
             toast.error(err.message);
@@ -996,11 +987,12 @@ const NoteDetail = () => {
                                     {/* Messages - Exact ChatGPT Style Stream */}
                                     {chatMessages.map((msg, i) => {
                                         const isUser = msg.role === 'user';
+                                        const displayText = !isUser ? unpackAiAnswer(msg.text) : (typeof msg.text === "string" ? msg.text : String(msg.text || ""));
                                         return (
                                             <div key={i} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} gap-1 w-full`}>
                                                 {isUser ? (
                                                     <div className="max-w-[85%] bg-[#F4F4F4] text-[#1D1D1F] px-4 py-2.5 rounded-2xl rounded-tr-sm text-xs leading-relaxed">
-                                                        {msg.text}
+                                                        {displayText}
                                                     </div>
                                                 ) : (
                                                     /* Assistant Response (Clean markdown, no boxed headers, no filenames) */
@@ -1021,13 +1013,13 @@ const NoteDetail = () => {
                                                                         <td className="px-2.5 py-1.5 border-b border-[#E5E5EA] text-[#6E6E73]" {...rest} />
                                                                     ),
                                                                 }}
-                                                                children={typeof msg.text === "string" ? msg.text : String(msg.text || "")}
+                                                                children={displayText}
                                                             />
                                                         </div>
                                                         <div className="flex items-center gap-2 pt-1 opacity-60 hover:opacity-100 transition-opacity">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => handleCopyMessage(msg.text, i)}
+                                                                onClick={() => handleCopyMessage(displayText, i)}
                                                                 className="p-1 text-[#8E8E93] hover:text-[#1D1D1F] rounded transition-colors cursor-pointer"
                                                                 title="Copy response"
                                                             >

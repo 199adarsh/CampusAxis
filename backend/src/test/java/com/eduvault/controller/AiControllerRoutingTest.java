@@ -112,4 +112,44 @@ public class AiControllerRoutingTest {
         assertEquals("CHAPTER_RAG", body.get("source"));
         assertEquals("note-456", body.get("noteId"));
     }
+
+    @Test
+    @DisplayName("Unpacks raw JSON response leaks in chat to render clean markdown")
+    void testChatPreventsRawJsonLeak() {
+        when(geminiService.askTutor(anyString(), anyString(), any()))
+                .thenReturn("```json\n{\"answer\": \"### Clean Markdown Title\\nUnpacked content.\", \"confidence\": 0.95}\n```");
+
+        Map<String, String> request = Map.of(
+                "question", "Explain quicksort"
+        );
+
+        ResponseEntity<?> response = aiController.chat(null, request);
+        assertEquals(200, response.getStatusCode().value());
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        assertEquals("### Clean Markdown Title\nUnpacked content.", body.get("answer"));
+        assertFalse(String.valueOf(body.get("answer")).contains("```json"));
+        assertFalse(String.valueOf(body.get("answer")).contains("{\"answer\""));
+    }
+
+    @Test
+    @DisplayName("Unpacks nested stringified JSON answer in chat")
+    void testChatUnpacksNestedStringifiedJson() {
+        when(geminiService.askTutor(anyString(), anyString(), any()))
+                .thenReturn("{\"answer\": \"{\\\"answer\\\": \\\"### Deeply Nested Title\\nInner text.\\\", \\\"confidence\\\": 0.99}\", \"confidence\": 0.95}");
+
+        Map<String, String> request = Map.of(
+                "question", "Explain recursion"
+        );
+
+        ResponseEntity<?> response = aiController.chat(null, request);
+        assertEquals(200, response.getStatusCode().value());
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        assertEquals("### Deeply Nested Title\nInner text.", body.get("answer"));
+    }
 }

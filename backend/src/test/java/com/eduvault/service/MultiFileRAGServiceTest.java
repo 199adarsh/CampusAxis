@@ -119,4 +119,23 @@ public class MultiFileRAGServiceTest {
         assertTrue(response.contains("\"sources\""));
         assertTrue(response.contains("quotes_test.pdf"));
     }
+
+    @Test
+    @DisplayName("askMultiDocument handles multi-unit notes selected from notes library")
+    void testAskMultiDocumentWithSelectedUnitNotes() throws Exception {
+        UploadedDocument unit1Doc = new UploadedDocument("note_101", "[UNIT 01] CPU Scheduling Algorithms", 5000, "application/pdf",
+                "### Unit 1 CPU Scheduling\nRound Robin and Shortest Job First ensure balanced CPU throughput.", "sess_units");
+        UploadedDocument unit2Doc = new UploadedDocument("note_102", "[UNIT 02] Deadlock Detection and Recovery", 5200, "application/pdf",
+                "### Unit 2 Deadlock Handling\nBanker's Algorithm guarantees safe state execution avoiding deadlocks.", "sess_units");
+
+        when(geminiService.chat(anyString(), anyString(), anyDouble(), any()))
+                .thenReturn("{\"answer\": \"Unit 1 covers Round Robin scheduling while Unit 2 covers Banker's Algorithm for deadlock prevention.\", \"confidence\": 0.98, \"sources\": [\"[UNIT 01] CPU Scheduling Algorithms\", \"[UNIT 02] Deadlock Detection and Recovery\"]}");
+
+        String response = ragService.askMultiDocument("Compare Unit 1 scheduling with Unit 2 deadlock handling", List.of(unit1Doc, unit2Doc), null, "high");
+
+        assertNotNull(response);
+        assertTrue(response.contains("Unit 1 covers Round Robin"));
+        assertTrue(response.contains("[UNIT 01] CPU Scheduling Algorithms"));
+        assertTrue(response.contains("[UNIT 02] Deadlock Detection and Recovery"));
+    }
 }

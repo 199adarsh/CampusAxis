@@ -1,5 +1,6 @@
 package com.eduvault.service;
 
+import com.eduvault.model.AiChatResponse;
 import com.eduvault.model.Note;
 import com.eduvault.model.UploadedDocument;
 import com.eduvault.repository.LocalJsonDatabase;
@@ -83,6 +84,10 @@ public class RAGService {
 
     public void ingestNote(String noteId) {
         logger.info("RAG: Note {} indexed for on-demand BM25 retrieval", noteId);
+    }
+
+    public String unpackAnswer(String raw) {
+        return AiChatResponse.unpackAnswerText(raw);
     }
 
     public String askChapter(String question, String noteId) {
@@ -206,20 +211,19 @@ public class RAGService {
 
         String prompt = "CONTEXT PASSAGES:\n" + context + "\nSTUDENT QUESTION:\n" + question;
 
+        double computedConfidence = Math.min(0.95, Math.max(0.70, maxScore / 5.0));
         String resultJson;
         try {
             String response = geminiService.chat(systemInstruction, prompt, 0.1, customApiKey);
             if (response != null && !response.trim().isEmpty()) {
-                String cleaned = response.trim();
-                if (cleaned.startsWith("```json")) {
-                    cleaned = cleaned.substring(7);
-                } else if (cleaned.startsWith("```")) {
-                    cleaned = cleaned.substring(3);
-                }
-                if (cleaned.endsWith("```")) {
-                    cleaned = cleaned.substring(0, cleaned.length() - 3);
-                }
-                resultJson = cleaned.trim();
+                AiChatResponse parsedResp = AiChatResponse.parse(response, "CHAPTER_RAG");
+                double conf = (parsedResp.getConfidence() != null && parsedResp.getConfidence() > 0)
+                        ? parsedResp.getConfidence()
+                        : computedConfidence;
+                Map<String, Object> map = new LinkedHashMap<>();
+                map.put("answer", parsedResp.getAnswer());
+                map.put("confidence", conf);
+                resultJson = mapper.writeValueAsString(map);
             } else {
                 resultJson = buildFallbackAnswer(topHits, maxScore);
             }
@@ -495,39 +499,19 @@ public class RAGService {
         try {
             String response = geminiService.chat(systemInstruction, prompt, 0.1, customApiKey);
             if (response != null && !response.trim().isEmpty()) {
-                String cleaned = response.trim();
-                if (cleaned.startsWith("```json")) {
-                    cleaned = cleaned.substring(7);
-                } else if (cleaned.startsWith("```")) {
-                    cleaned = cleaned.substring(3);
-                }
-                if (cleaned.endsWith("```")) {
-                    cleaned = cleaned.substring(0, cleaned.length() - 3);
-                }
-                cleaned = cleaned.trim();
+                AiChatResponse parsedResp = AiChatResponse.parse(response, "MULTI_FILE_RAG");
+                double conf = (parsedResp.getConfidence() != null && parsedResp.getConfidence() > 0)
+                        ? parsedResp.getConfidence()
+                        : computedConfidence;
+                List<String> sources = (parsedResp.getSources() != null && !parsedResp.getSources().isEmpty())
+                        ? parsedResp.getSources()
+                        : new ArrayList<>(contributingDocs);
 
-                int firstBrace = cleaned.indexOf('{');
-                int lastBrace = cleaned.lastIndexOf('}');
-                if (firstBrace != -1 && lastBrace != -1 && lastBrace >= firstBrace) {
-                    cleaned = cleaned.substring(firstBrace, lastBrace + 1).trim();
-                }
-
-                try {
-                    Map<String, Object> parsed = mapper.readValue(cleaned, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
-                    if (!parsed.containsKey("sources") || parsed.get("sources") == null || (parsed.get("sources") instanceof List && ((List<?>) parsed.get("sources")).isEmpty())) {
-                        parsed.put("sources", new ArrayList<>(contributingDocs));
-                    }
-                    if (!parsed.containsKey("confidence")) {
-                        parsed.put("confidence", computedConfidence);
-                    }
-                    resultJson = mapper.writeValueAsString(parsed);
-                } catch (Exception parseEx) {
-                    Map<String, Object> safeMap = new HashMap<>();
-                    safeMap.put("answer", cleaned);
-                    safeMap.put("confidence", computedConfidence);
-                    safeMap.put("sources", new ArrayList<>(contributingDocs));
-                    resultJson = mapper.writeValueAsString(safeMap);
-                }
+                Map<String, Object> map = new LinkedHashMap<>();
+                map.put("answer", parsedResp.getAnswer());
+                map.put("confidence", conf);
+                map.put("sources", sources);
+                resultJson = mapper.writeValueAsString(map);
             } else {
                 resultJson = buildMultiDocFallbackAnswer(topHits, maxScore, contributingDocs);
             }

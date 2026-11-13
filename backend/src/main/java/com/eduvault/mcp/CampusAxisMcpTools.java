@@ -394,19 +394,22 @@ public class CampusAxisMcpTools {
                 return Map.of("error", "Access Denied: You are not authorized to query this note.");
             }
             String answer = ragService.askChapter(question, noteId.trim(), null);
-            return Map.of("answer", answer, "source", "CHAPTER_RAG");
+            String unpacked = AiChatResponse.unpackAnswerText(answer);
+            return Map.of("answer", unpacked, "source", "CHAPTER_RAG");
         }
 
         if (subjectId != null && !subjectId.isBlank() && okfKnowledgeService != null) {
             Optional<String> okfContext = okfKnowledgeService.buildSubjectKnowledgeContext(subjectId.trim(), question, unit);
             if (okfContext.isPresent()) {
                 String answer = geminiService.askTutor(question, okfContext.get(), null);
-                return Map.of("answer", answer, "source", "OKF_KNOWLEDGE");
+                String unpacked = AiChatResponse.unpackAnswerText(answer);
+                return Map.of("answer", unpacked, "source", "OKF_KNOWLEDGE");
             }
         }
 
         String answer = geminiService.askTutor(question, "CampusAxis Student Assistant for " + student.name(), null);
-        return Map.of("answer", answer, "source", "GENERAL_TUTOR");
+        String unpacked = AiChatResponse.unpackAnswerText(answer);
+        return Map.of("answer", unpacked, "source", "GENERAL_TUTOR");
     }
 
     private boolean isAuthorizedForSubject(StudentPrincipal student, String subjectId) {

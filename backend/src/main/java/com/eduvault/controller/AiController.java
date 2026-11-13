@@ -1,5 +1,6 @@
 package com.eduvault.controller;
 
+import com.eduvault.model.AiChatResponse;
 import com.eduvault.model.Note;
 import com.eduvault.repository.LocalJsonDatabase;
 import com.eduvault.service.GeminiService;
@@ -257,41 +258,23 @@ public class AiController {
                 source = "GENERAL_TUTOR";
             }
 
-            Map<String, Object> responseMap = new HashMap<>();
-            if (jsonResponse != null && !jsonResponse.trim().isEmpty()) {
-                try {
-                    Map<?, ?> parsed = mapper.readValue(jsonResponse, Map.class);
-                    for (Map.Entry<?, ?> entry : parsed.entrySet()) {
-                        if (entry.getKey() != null) {
-                            responseMap.put(String.valueOf(entry.getKey()), entry.getValue());
-                        }
-                    }
-                } catch (JsonProcessingException e) {
-                    logger.warn("Failed to parse AI response as JSON: {}", jsonResponse);
-                    responseMap.put("answer", jsonResponse);
-                    responseMap.put("confidence", 0.75);
-                }
-            } else {
-                responseMap.put("answer", "I encountered an error and couldn't generate an answer.");
-                responseMap.put("confidence", 0.0);
-            }
+            AiChatResponse responseObj = AiChatResponse.parse(jsonResponse, source);
 
-            responseMap.put("source", source);
             if ("MULTI_FILE_RAG".equals(source)) {
-                responseMap.put("documentsCount", multiDocs.size());
+                responseObj.setDocumentsCount(multiDocs.size());
             } else if ("OKF_KNOWLEDGE".equals(source)) {
-                responseMap.put("subjectId", subjectId.trim());
+                responseObj.setSubjectId(subjectId.trim());
                 if (unit != null && !unit.isBlank()) {
-                    responseMap.put("unit", unit.trim());
+                    responseObj.setUnit(unit.trim());
                 }
                 if (contextSnippet != null) {
-                    responseMap.put("contextSnippet", contextSnippet);
+                    responseObj.setContextSnippet(contextSnippet);
                 }
             } else if ("CHAPTER_RAG".equals(source)) {
-                responseMap.put("noteId", noteId);
+                responseObj.setNoteId(noteId);
             }
 
-            return ResponseEntity.ok(responseMap);
+            return ResponseEntity.ok(responseObj);
         } catch (Exception e) {
             logger.error("Controller error in /api/ai/chat", e);
             return ResponseEntity.status(500).body(Map.of("error", "Internal AI Logic failure", "message", e.getMessage()));

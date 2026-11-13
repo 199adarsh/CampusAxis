@@ -146,3 +146,56 @@ export const sortSubjectsByYear = (subjects = []) => {
         return nameA.localeCompare(nameB);
     });
 };
+
+export const unpackAiAnswer = (raw) => {
+    if (raw === null || raw === undefined) return '';
+    if (typeof raw === 'object') {
+        if (typeof raw.answer === 'string') return unpackAiAnswer(raw.answer);
+        if (typeof raw.text === 'string') return unpackAiAnswer(raw.text);
+        if (typeof raw.content === 'string') return unpackAiAnswer(raw.content);
+        return JSON.stringify(raw);
+    }
+    let text = typeof raw === 'string' ? raw.trim() : String(raw);
+    if (!text) return '';
+
+    // Strip markdown code fences if wrapped in ```json ... ``` or ``` ... ```
+    if (text.startsWith('```json') || text.startsWith('```')) {
+        const stripped = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+        if ((stripped.startsWith('{') && stripped.endsWith('}')) || stripped.includes('"answer"')) {
+            text = stripped;
+        }
+    }
+
+    if (text.startsWith('{') || (text.includes('"answer"') && text.includes('{'))) {
+        try {
+            const start = text.indexOf('{');
+            const end = text.lastIndexOf('}');
+            if (start !== -1 && end > start) {
+                const sub = text.slice(start, end + 1);
+                const parsed = JSON.parse(sub);
+                if (parsed && typeof parsed.answer === 'string') {
+                    return unpackAiAnswer(parsed.answer);
+                }
+                if (parsed && typeof parsed.text === 'string') {
+                    return unpackAiAnswer(parsed.text);
+                }
+                if (parsed && typeof parsed.content === 'string') {
+                    return unpackAiAnswer(parsed.content);
+                }
+            }
+        } catch (e) {
+            const match = text.match(/"answer"\s*:\s*"([\s\S]*?)"(?:\s*,\s*"confidence"|\s*})/);
+            if (match && match[1]) {
+                const unescaped = match[1]
+                    .replace(/\\n/g, '\n')
+                    .replace(/\\"/g, '"')
+                    .replace(/\\\\/g, '\\')
+                    .replace(/\\t/g, '\t')
+                    .replace(/\\r/g, '\r');
+                return unpackAiAnswer(unescaped);
+            }
+        }
+    }
+    return text;
+};
+

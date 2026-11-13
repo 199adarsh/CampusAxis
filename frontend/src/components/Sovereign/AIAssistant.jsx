@@ -1,4 +1,4 @@
-import { isSubjectNameMatch, normalizeUnitNum } from "../../lib/noteUtils";
+import { isSubjectNameMatch, normalizeUnitNum, unpackAiAnswer } from "../../lib/noteUtils";
 import React, {
     useState,
     useEffect,
@@ -6,7 +6,7 @@ import React, {
     useMemo,
     useCallback,
 } from "react";
-import { useOutletContext, useSearchParams } from "react-router-dom";
+import { useOutletContext, useSearchParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -17,6 +17,7 @@ import {
     Tick02Icon,
     RefreshIcon,
     Book02Icon,
+    BookOpen01Icon,
     Layers01Icon,
     CheckmarkCircle02Icon,
     ArrowUp02Icon,
@@ -25,6 +26,7 @@ import {
     Attachment01Icon,
     Cancel01Icon,
     Upload01Icon,
+    Loading01Icon,
 } from "hugeicons-react";
 import AiMascotInput from "@/components/ui/ai-mascot-input";
 import { AiLengthSlider, getSavedAiMode } from "@/components/AiLengthSlider";
@@ -94,19 +96,13 @@ const AIAssistant = () => {
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [aiMode, setAiMode] = useState(() => getSavedAiMode());
 
-    // Dynamic subjects fetch to avoid static/hardcoded subjects
-    const [dynamicSubjects, setDynamicSubjects] = useState([]);
-    useEffect(() => {
-        let isMounted = true;
-        axios.get(`${API_BASE}/subjects`)
-            .then(res => {
-                if (isMounted && Array.isArray(res.data) && res.data.length > 0) {
-                    setDynamicSubjects(res.data);
-                }
-            })
-            .catch(err => console.warn("Failed to dynamically fetch subjects for AIAssistant:", err));
-        return () => { isMounted = false; };
-    }, []);
+    const location = useLocation();
+    const [isAttachingSubjectNotes, setIsAttachingSubjectNotes] = useState(false);
+
+    // Notes Library Selection Modal for Multi-File RAG
+    const [isNotesPickerOpen, setIsNotesPickerOpen] = useState(false);
+    const [pickerSubjectId, setPickerSubjectId] = useState("all");
+    const [pickerSelectedNoteIds, setPickerSelectedNoteIds] = useState(new Set());
 
     // Multi-File RAG State
     const [attachedFiles, setAttachedFiles] = useState([]);
@@ -123,22 +119,78 @@ const AIAssistant = () => {
         return sid;
     }, []);
 
+    const isTeacher = profile?.role === 'teacher';
+
+    // Filter subject selector strictly to enrolled / my subjects
     const allKnownSubjects = useMemo(() => {
-        const pool = (dynamicSubjects.length > 0)
-            ? dynamicSubjects
-            : (subjects && subjects.length > 0 ? subjects : catalogSubjects || []);
+        let list = (subjects && subjects.length > 0) ? subjects : [];
+        if (list.length === 0) {
+            try {
+                if (isTeacher) {
+                    const savedTeacher = localStorage.getItem('eduvault_teacher_subjects');
+                    if (savedTeacher) {
+                        const parsed = JSON.parse(savedTeacher);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            list = (catalogSubjects || []).filter(s =>
+                                parsed.includes(s.id) || parsed.includes(s.name) || parsed.includes(s.code)
+                            );
+                        }
+                    }
+                } else {
+                    const saved = localStorage.getItem('eduvault_subjects');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
+                    }
+                }
+            } catch {
+                /* ignore */
+            }
+        }
+
+        // Fallback strictly matching user's enrolled department & semester, NEVER global un-scoped catalog
+        if ((!list || list.length === 0) && profile?.department && profile?.semester && catalogSubjects?.length > 0) {
+            const normDept = (d) => {
+                if (!d) return 'GENERAL';
+                const u = d.toUpperCase();
+                if (u.includes('UAD') || u.includes('AIDS') || u.includes('AI&DS') || u.includes('AI & DS') || u.includes('ARTIFICIAL')) return 'AIDS';
+                if (u.includes('CSE') || u.includes('COMPUTER')) return 'CSE';
+                return u.replace(/[^A-Z0-9]/g, '');
+            };
+            const normSem = (s) => {
+                if (!s) return 'S01';
+                const m = s.toString().match(/(?:sem|semester|s)?\s*0?([1-8])/i);
+                return m ? `S0${m[1]}` : s.toString().toUpperCase().trim();
+            };
+            list = (catalogSubjects || []).filter(cs =>
+                normDept(cs.department) === normDept(profile.department) &&
+                normSem(cs.semester) === normSem(profile.semester)
+            );
+        } else if ((!list || list.length === 0) && isTeacher) {
+            list = catalogSubjects || [];
+        }
+
+        // Filter out excluded subjects if any
+        try {
+            const savedExcluded = localStorage.getItem('eduvault_excluded_subjects');
+            if (savedExcluded) {
+                const excludedIds = JSON.parse(savedExcluded);
+                if (Array.isArray(excludedIds) && excludedIds.length > 0) {
+                    list = list.filter(s => s && !excludedIds.includes(s.id));
+                }
+            }
+        } catch {
+            /* ignore */
+        }
+
         const map = new Map();
-        pool.forEach(s => {
-            if (s && s.id) map.set(s.id, s);
-        });
-        (subjects || []).forEach(s => {
-            if (s && s.id && !map.has(s.id)) map.set(s.id, s);
-        });
-        (catalogSubjects || []).forEach(s => {
-            if (s && s.id && !map.has(s.id)) map.set(s.id, s);
+        (list || []).forEach(s => {
+            if (s && s.id && !map.has(s.id)) {
+                map.set(s.id, s);
+            }
         });
         return Array.from(map.values()).filter(Boolean);
-    }, [dynamicSubjects, subjects, catalogSubjects]);
+    }, [subjects, isTeacher, catalogSubjects, dynamicSubjects]);
 
     const selectedSubject = searchParams.get("subjectId") || "all";
     const setSelectedSubject = useCallback(
@@ -171,7 +223,7 @@ const AIAssistant = () => {
             );
         });
         if (found) return typeof found === "string" ? { id: found, name: found } : found;
-        return { id: selectedSubject, name: selectedSubject };
+        return null;
     }, [allKnownSubjects, selectedSubject]);
 
     const isInvalidSubject = useMemo(() => {
@@ -351,6 +403,77 @@ const AIAssistant = () => {
         toast.info("All attached files cleared");
     };
 
+    // Auto-attach notes selected from Notes Library
+    useEffect(() => {
+        let noteIdsToAttach = [];
+        if (location.state?.selectedNoteIds && Array.isArray(location.state.selectedNoteIds)) {
+            noteIdsToAttach = location.state.selectedNoteIds;
+        } else {
+            const saved = sessionStorage.getItem('eduvault_rag_selected_notes');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        noteIdsToAttach = parsed;
+                    }
+                } catch {}
+            }
+        }
+
+        if (noteIdsToAttach.length > 0) {
+            sessionStorage.removeItem('eduvault_rag_selected_notes');
+            axios.post(`${API_BASE}/ai/attach-notes`, {
+                noteIds: noteIdsToAttach,
+                sessionId
+            }).then(res => {
+                if (res.data?.success && Array.isArray(res.data.files)) {
+                    setAttachedFiles(prev => {
+                        const existingIds = new Set(prev.map(f => f.id));
+                        const next = [...prev];
+                        res.data.files.forEach(f => {
+                            if (!existingIds.has(f.id)) next.push(f);
+                        });
+                        return next;
+                    });
+                    toast.success(`Attached ${res.data.files.length} library note(s) for Multi-File RAG`);
+                }
+            }).catch(err => {
+                console.warn("Failed to auto-attach notes from library:", err);
+            });
+        }
+    }, [sessionId, location.state]);
+
+    // Attach all units / notes for the active subject directly
+    const handleAttachAllSubjectNotes = async () => {
+        if (!subjectNotes || subjectNotes.length === 0) {
+            toast.info("No notes found for this subject to attach");
+            return;
+        }
+        setIsAttachingSubjectNotes(true);
+        try {
+            const noteIds = subjectNotes.map(n => n.id);
+            const res = await axios.post(`${API_BASE}/ai/attach-notes`, {
+                noteIds,
+                sessionId
+            });
+            if (res.data?.success && Array.isArray(res.data.files)) {
+                setAttachedFiles(prev => {
+                    const existing = new Set(prev.map(f => f.id));
+                    const next = [...prev];
+                    res.data.files.forEach(f => {
+                        if (!existing.has(f.id)) next.push(f);
+                    });
+                    return next;
+                });
+                toast.success(`Attached all units (${res.data.files.length} notes) for Multi-File RAG`);
+            }
+        } catch {
+            toast.error("Failed to attach subject notes for RAG");
+        } finally {
+            setIsAttachingSubjectNotes(false);
+        }
+    };
+
     // Drag-and-drop file upload
     const handleDragOver = (e) => {
         e.preventDefault();
@@ -421,6 +544,7 @@ const AIAssistant = () => {
 
             if (isMultiFileQuery) {
                 requestPayload.fileIds = attachedFiles.map(f => f.id);
+                requestPayload.noteIds = attachedFiles.map(f => f.id);
                 requestPayload.sessionId = sessionId;
             }
 
@@ -440,7 +564,7 @@ const AIAssistant = () => {
                     !data.answer.toLowerCase().includes("encountered an error") &&
                     !data.answer.toLowerCase().includes("error processing")
                 ) {
-                    answer = data.answer;
+                    answer = unpackAiAnswer(data.answer);
                     confidence = data.confidence || 0.95;
                     source = data.source;
                     sources = data.sources || (isMultiFileQuery ? attachedFiles.map(f => f.name) : undefined);
@@ -466,7 +590,7 @@ const AIAssistant = () => {
                     const candidate =
                         directData.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (candidate) {
-                        answer = candidate;
+                        answer = unpackAiAnswer(candidate);
                         confidence = 0.98;
                         source = "GENERAL_TUTOR";
                     }
@@ -477,11 +601,12 @@ const AIAssistant = () => {
         }
 
         if (answer) {
+            const finalAnswer = unpackAiAnswer(answer);
             setMessages((prev) => [
                 ...prev,
                 {
                     role: "ai",
-                    content: answer,
+                    content: finalAnswer,
                     time: new Date().toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -575,6 +700,18 @@ const AIAssistant = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5">
+                    {activeSubject && subjectNotes.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={handleAttachAllSubjectNotes}
+                            disabled={isAttachingSubjectNotes}
+                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#0071E3] bg-[#0071E3]/10 hover:bg-[#0071E3]/15 rounded-lg transition-colors cursor-pointer"
+                            title={`Attach all ${subjectNotes.length} notes across all units for ${activeSubject.name} to Multi-File RAG`}
+                        >
+                            <Layers01Icon size={14} />
+                            <span className="hidden sm:inline">Attach All Units ({subjectNotes.length})</span>
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
@@ -629,130 +766,134 @@ const AIAssistant = () => {
                     )}
 
                     {/* Messages Flow */}
-                    {messages.map((msg, i) => (
-                        <div key={i} className="flex flex-col">
-                            {msg.role === "user" ? (
-                                <div className="self-end max-w-[85%] sm:max-w-[75%]">
-                                    <div className="bg-[#E5E5EA] dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-[#F5F5F7] rounded-3xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap select-text">
-                                        {typeof msg.content === "string" ? msg.content : String(msg.content || "")}
-                                    </div>
-                                    {Array.isArray(msg.attachedFiles) && msg.attachedFiles.length > 0 && (
-                                        <div className="flex items-center gap-1 justify-end mt-1 text-[10px] text-[#8E8E93]">
-                                            <File01Icon size={11} />
-                                            <span>Queried across: {msg.attachedFiles.join(", ")}</span>
+                    {messages.map((msg, i) => {
+                        const isUser = msg.role === "user";
+                        const renderedContent = !isUser ? unpackAiAnswer(msg.content) : (typeof msg.content === "string" ? msg.content : String(msg.content || ""));
+                        return (
+                            <div key={i} className="flex flex-col">
+                                {isUser ? (
+                                    <div className="self-end max-w-[85%] sm:max-w-[75%]">
+                                        <div className="bg-[#E5E5EA] dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-[#F5F5F7] rounded-3xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap select-text">
+                                            {renderedContent}
                                         </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex items-start gap-3 w-full group">
-                                    <div className="w-7 h-7 rounded-full bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] flex items-center justify-center text-[#0071E3] shrink-0 mt-0.5 select-none shadow-xs">
-                                        <SparklesIcon size={14} />
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-sm leading-relaxed text-[#1D1D1F] dark:text-[#F5F5F7] select-text">
-                                            <ReactMarkdown
-                                                remarkPlugins={[remarkGfm]}
-                                                components={{
-                                                    p: ({ node, ...rest }) => (
-                                                        <p className="mb-3 last:mb-0 leading-relaxed" {...rest} />
-                                                    ),
-                                                    ul: ({ node, ...rest }) => (
-                                                        <ul className="list-disc list-outside ml-4 mb-3 space-y-1" {...rest} />
-                                                    ),
-                                                    ol: ({ node, ...rest }) => (
-                                                        <ol className="list-decimal list-outside ml-4 mb-3 space-y-1" {...rest} />
-                                                    ),
-                                                    li: ({ node, ...rest }) => (
-                                                        <li className="leading-relaxed" {...rest} />
-                                                    ),
-                                                    h1: ({ node, ...rest }) => (
-                                                        <h1 className="text-base font-bold text-[#1D1D1F] dark:text-white mt-4 mb-2" {...rest} />
-                                                    ),
-                                                    h2: ({ node, ...rest }) => (
-                                                        <h2 className="text-sm font-bold text-[#1D1D1F] dark:text-white mt-3 mb-1.5" {...rest} />
-                                                    ),
-                                                    h3: ({ node, ...rest }) => (
-                                                        <h3 className="text-xs font-semibold text-[#1D1D1F] dark:text-white mt-2 mb-1" {...rest} />
-                                                    ),
-                                                    strong: ({ node, ...rest }) => (
-                                                        <strong className="font-semibold text-[#1D1D1F] dark:text-white" {...rest} />
-                                                    ),
-                                                    pre: ({ node, ...rest }) => (
-                                                        <pre className="bg-[#1C1C1E] text-[#F5F5F7] p-3.5 rounded-xl overflow-x-auto text-xs font-mono my-3 border border-[#2C2C2E]" {...rest} />
-                                                    ),
-                                                    code: ({ node, className, children, ...rest }) => {
-                                                        const isMultiLine = String(children).includes("\n");
-                                                        if (!className && !isMultiLine) {
-                                                            return (
-                                                                <code className="bg-black/5 dark:bg-white/10 text-[#1D1D1F] dark:text-[#F5F5F7] px-1.5 py-0.5 rounded text-xs font-mono" {...rest}>
-                                                                    {children}
-                                                                </code>
-                                                            );
-                                                        }
-                                                        return <code className={className} {...rest}>{children}</code>;
-                                                    },
-                                                    blockquote: ({ node, ...rest }) => (
-                                                        <blockquote className="border-l-2 border-[#0071E3] pl-3 italic text-[#6E6E73] dark:text-[#AEAEB2] my-2" {...rest} />
-                                                    ),
-                                                    table: ({ node, ...rest }) => (
-                                                        <div className="overflow-x-auto my-3">
-                                                            <table className="min-w-full divide-y divide-[#E5E5EA] dark:divide-[#2C2C2E] border border-[#E5E5EA] dark:border-[#2C2C2E] text-xs" {...rest} />
-                                                        </div>
-                                                    ),
-                                                    th: ({ node, ...rest }) => (
-                                                        <th className="bg-[#F5F5F7] dark:bg-[#2C2C2E] px-3 py-2 text-left font-semibold text-[#1D1D1F] dark:text-white border-b border-[#E5E5EA] dark:border-[#2C2C2E]" {...rest} />
-                                                    ),
-                                                    td: ({ node, ...rest }) => (
-                                                        <td className="px-3 py-2 border-b border-[#E5E5EA] dark:border-[#2C2C2E] text-[#6E6E73] dark:text-[#AEAEB2]" {...rest} />
-                                                    ),
-                                                }}
-                                                children={typeof msg.content === "string" ? msg.content : String(msg.content || "")}
-                                            />
-                                        </div>
-
-                                        {/* Multi-File RAG Source Badges */}
-                                        {msg.source === "MULTI_FILE_RAG" && (
-                                            <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2 border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
-                                                <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[#0071E3] dark:text-[#0A84FF] bg-[#0071E3]/10 dark:bg-[#0A84FF]/10 px-2 py-0.5 rounded-full">
-                                                    <File01Icon size={12} />
-                                                    <span>Multi-File RAG Grounded</span>
-                                                </span>
-                                                {Array.isArray(msg.sources) && msg.sources.map((src, sIdx) => (
-                                                    <span key={sIdx} className="text-[10px] text-[#6E6E73] dark:text-[#AEAEB2] bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md font-mono truncate max-w-[180px]" title={src}>
-                                                        {src}
-                                                    </span>
-                                                ))}
+                                        {Array.isArray(msg.attachedFiles) && msg.attachedFiles.length > 0 && (
+                                            <div className="flex items-center gap-1 justify-end mt-1 text-[10px] text-[#8E8E93]">
+                                                <File01Icon size={11} />
+                                                <span>Queried across: {msg.attachedFiles.join(", ")}</span>
                                             </div>
                                         )}
+                                    </div>
+                                ) : (
+                                    <div className="flex items-start gap-3 w-full group">
+                                        <div className="w-7 h-7 rounded-full bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] flex items-center justify-center text-[#0071E3] shrink-0 mt-0.5 select-none shadow-xs">
+                                            <SparklesIcon size={14} />
+                                        </div>
 
-                                        {/* Action Bar (Copy + Verified Syllabus Badge) */}
-                                        <div className="flex items-center gap-2 mt-2 pt-1">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleCopy(msg.content, i)}
-                                                className="p-1 rounded text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer"
-                                                title="Copy answer"
-                                            >
-                                                {copiedIndex === i ? (
-                                                    <Tick02Icon size={14} className="text-[#34C759]" />
-                                                ) : (
-                                                    <Copy01Icon size={14} />
-                                                )}
-                                            </button>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm leading-relaxed text-[#1D1D1F] dark:text-[#F5F5F7] select-text">
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        p: ({ node, ...rest }) => (
+                                                            <p className="mb-3 last:mb-0 leading-relaxed" {...rest} />
+                                                        ),
+                                                        ul: ({ node, ...rest }) => (
+                                                            <ul className="list-disc list-outside ml-4 mb-3 space-y-1" {...rest} />
+                                                        ),
+                                                        ol: ({ node, ...rest }) => (
+                                                            <ol className="list-decimal list-outside ml-4 mb-3 space-y-1" {...rest} />
+                                                        ),
+                                                        li: ({ node, ...rest }) => (
+                                                            <li className="leading-relaxed" {...rest} />
+                                                        ),
+                                                        h1: ({ node, ...rest }) => (
+                                                            <h1 className="text-base font-bold text-[#1D1D1F] dark:text-white mt-4 mb-2" {...rest} />
+                                                        ),
+                                                        h2: ({ node, ...rest }) => (
+                                                            <h2 className="text-sm font-bold text-[#1D1D1F] dark:text-white mt-3 mb-1.5" {...rest} />
+                                                        ),
+                                                        h3: ({ node, ...rest }) => (
+                                                            <h3 className="text-xs font-semibold text-[#1D1D1F] dark:text-white mt-2 mb-1" {...rest} />
+                                                        ),
+                                                        strong: ({ node, ...rest }) => (
+                                                            <strong className="font-semibold text-[#1D1D1F] dark:text-white" {...rest} />
+                                                        ),
+                                                        pre: ({ node, ...rest }) => (
+                                                            <pre className="bg-[#1C1C1E] text-[#F5F5F7] p-3.5 rounded-xl overflow-x-auto text-xs font-mono my-3 border border-[#2C2C2E]" {...rest} />
+                                                        ),
+                                                        code: ({ node, className, children, ...rest }) => {
+                                                            const isMultiLine = String(children).includes("\n");
+                                                            if (!className && !isMultiLine) {
+                                                                return (
+                                                                    <code className="bg-black/5 dark:bg-white/10 text-[#1D1D1F] dark:text-[#F5F5F7] px-1.5 py-0.5 rounded text-xs font-mono" {...rest}>
+                                                                        {children}
+                                                                    </code>
+                                                                );
+                                                            }
+                                                            return <code className={className} {...rest}>{children}</code>;
+                                                        },
+                                                        blockquote: ({ node, ...rest }) => (
+                                                            <blockquote className="border-l-2 border-[#0071E3] pl-3 italic text-[#6E6E73] dark:text-[#AEAEB2] my-2" {...rest} />
+                                                        ),
+                                                        table: ({ node, ...rest }) => (
+                                                            <div className="overflow-x-auto my-3">
+                                                                <table className="min-w-full divide-y divide-[#E5E5EA] dark:divide-[#2C2C2E] border border-[#E5E5EA] dark:border-[#2C2C2E] text-xs" {...rest} />
+                                                            </div>
+                                                        ),
+                                                        th: ({ node, ...rest }) => (
+                                                            <th className="bg-[#F5F5F7] dark:bg-[#2C2C2E] px-3 py-2 text-left font-semibold text-[#1D1D1F] dark:text-white border-b border-[#E5E5EA] dark:border-[#2C2C2E]" {...rest} />
+                                                        ),
+                                                        td: ({ node, ...rest }) => (
+                                                            <td className="px-3 py-2 border-b border-[#E5E5EA] dark:border-[#2C2C2E] text-[#6E6E73] dark:text-[#AEAEB2]" {...rest} />
+                                                        ),
+                                                    }}
+                                                    children={renderedContent}
+                                                />
+                                            </div>
 
-                                            {msg.source === "OKF_KNOWLEDGE" && (
-                                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#34C759] bg-[#34C759]/10 px-2 py-0.5 rounded-full">
-                                                    <CheckmarkCircle02Icon size={12} />
-                                                    <span>Verified Syllabus</span>
-                                                </span>
+                                            {/* Multi-File RAG Source Badges */}
+                                            {msg.source === "MULTI_FILE_RAG" && (
+                                                <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2 border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
+                                                    <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[#0071E3] dark:text-[#0A84FF] bg-[#0071E3]/10 dark:bg-[#0A84FF]/10 px-2 py-0.5 rounded-full">
+                                                        <File01Icon size={12} />
+                                                        <span>Multi-File RAG Grounded</span>
+                                                    </span>
+                                                    {Array.isArray(msg.sources) && msg.sources.map((src, sIdx) => (
+                                                        <span key={sIdx} className="text-[10px] text-[#6E6E73] dark:text-[#AEAEB2] bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md font-mono truncate max-w-[180px]" title={src}>
+                                                            {src}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             )}
+
+                                            {/* Action Bar (Copy + Verified Syllabus Badge) */}
+                                            <div className="flex items-center gap-2 mt-2 pt-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopy(renderedContent, i)}
+                                                    className="p-1 rounded text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer"
+                                                    title="Copy answer"
+                                                >
+                                                    {copiedIndex === i ? (
+                                                        <Tick02Icon size={14} className="text-[#34C759]" />
+                                                    ) : (
+                                                        <Copy01Icon size={14} />
+                                                    )}
+                                                </button>
+
+                                                {msg.source === "OKF_KNOWLEDGE" && (
+                                                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#34C759] bg-[#34C759]/10 px-2 py-0.5 rounded-full">
+                                                        <CheckmarkCircle02Icon size={12} />
+                                                        <span>Verified Syllabus</span>
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                                )}
+                            </div>
+                        );
+                    })}
 
                     {/* Searching / Thinking State */}
                     {isTyping && (
