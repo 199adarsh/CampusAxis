@@ -290,147 +290,134 @@ export function AiMascotInput({
     <div className={`relative w-full max-w-3xl mx-auto flex flex-col items-center ${className}`}>
 
       {/* ChatGPT-Style Chatbar */}
-      <div className="w-full rounded-[24px] bg-white dark:bg-[#212121] border border-[#E2E2E2] dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] focus-within:border-[#B4B4B4] dark:focus-within:border-white/20 transition-all p-3 sm:px-4 sm:py-3">
+        <div className="w-full rounded-[24px] bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)] focus-within:border-[#D2D2D7] dark:focus-within:border-[#3A3A3C] transition-all p-3 sm:px-4 sm:py-3">
 
-        {/* Textarea: Strictly No Blue Browser Outline */}
-        <textarea
-          ref={textareaRef}
-          id="aiPromptInput"
-          value={promptText}
-          onChange={(e) => handlePromptChange(e.target.value)}
-          disabled={disabled}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          placeholder={placeholder}
-          rows={2}
-          style={{ outline: "none", border: "none", boxShadow: "none" }}
-          className="w-full bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus:border-0 shadow-none p-0 text-sm text-[#383838] dark:text-white placeholder-[#727272] leading-relaxed resize-none min-h-[44px] max-h-[140px]"
-        />
+          {/* Textarea: Clean, borderless input */}
+          <textarea
+            ref={textareaRef}
+            id="aiPromptInput"
+            value={promptText}
+            onChange={(e) => handlePromptChange(e.target.value)}
+            disabled={disabled}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder={placeholder}
+            rows={2}
+            style={{ outline: "none", border: "none", boxShadow: "none" }}
+            className="w-full bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus:border-0 shadow-none p-0 text-sm text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#8E8E93] leading-relaxed resize-none min-h-[44px] max-h-[140px]"
+          />
 
-        {/* Toolbar Row */}
-        <div className="flex items-center justify-between pt-2 mt-1">
-          {/* Left: Scope Selection Pills */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {setSelectedSubject && (
-              <>
-                <DropdownDisclosure
-                  compact
-                  placement="top"
-                  title="My Subjects"
-                  items={subjectItems}
-                  isOpen={isSubjectOpen}
-                  onOpenChange={setIsSubjectOpen}
-                  selectedId={selectedSubject}
-                  onChange={(item) => setSelectedSubject(item.id)}
-                />
+          {/* Toolbar Row */}
+            <div className="flex items-center justify-between pt-2 mt-1 gap-2">
+              {/* Left: Scope Selection Pills */}
+                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                  {setSelectedSubject && (
+                    <>
+                      <DropdownDisclosure
+                        compact
+                        placement="top"
+                        title="My Subjects"
+                        items={subjectItems}
+                        isOpen={isSubjectOpen}
+                        onOpenChange={setIsSubjectOpen}
+                        selectedId={selectedSubject}
+                        onChange={(item) => setSelectedSubject(item.id)}
+                      />
 
-                {selectedSubject !== "all" && (setSelectedUnits || setSelectedUnit) && (
-                  <DropdownDisclosure
-                    compact
-                    placement="top"
-                    title="Choose Units"
-                    items={unitItems}
-                    isOpen={isUnitOpen}
-                    onOpenChange={setIsUnitOpen}
-                    selectedId={selectedUnit}
-                    selectedIds={selectedUnits || (selectedUnit ? [selectedUnit] : ["all"])}
-                    multiSelect={Boolean(setSelectedUnits)}
-                    onChange={(item) => setSelectedUnit?.(item.id)}
-                    onMultiChange={(uList) => setSelectedUnits?.(uList)}
-                  />
-                )}
+                      {selectedSubject !== "all" && (setSelectedUnits || setSelectedUnit) && (
+                        <DropdownDisclosure
+                          compact
+                          placement="top"
+                          title="Choose Units"
+                          items={unitItems}
+                          isOpen={isUnitOpen}
+                          onOpenChange={setIsUnitOpen}
+                          selectedId={selectedUnit}
+                          selectedIds={selectedUnits || (selectedUnit ? [selectedUnit] : ["all"])}
+                          multiSelect={Boolean(setSelectedUnits)}
+                          onChange={(item) => setSelectedUnit?.(item.id)}
+                          onMultiChange={(uList) => setSelectedUnits?.(uList)}
+                        />
+                      )}
 
-                {selectedSubject !== "all" && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSubject("all")}
-                    className="text-[#727272] hover:text-[#E11D48] p-1 transition-colors cursor-pointer"
-                    title="Reset to all enrolled"
-                  >
-                    <Cancel01Icon size={12} />
-                  </button>
-                )}
-              </>
-            )}
+                      {selectedSubject !== "all" && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSubject("all")}
+                          className="text-[#8E8E93] hover:text-[#FF3B30] p-1 transition-colors cursor-pointer"
+                          title="Reset to all enrolled"
+                        >
+                          <Cancel01Icon size={12} />
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
 
-            {/* Grounding Status Badges */}
-            <div className="hidden sm:flex items-center">
-              {selectedSubject === "all" ? (
-                <span id="okfGeneralBadge" className="text-[10px] text-[#727272] ml-1">
-                  General Scope
-                </span>
-              ) : hasCompiledOkf ? (
-                <span id="okfReadyBadge" className="text-[10px] text-emerald-600 font-medium ml-1">
-                  • Course Grounded
-                </span>
-              ) : null}
+                {/* Right: Actions */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {onAttachFiles && (
+                      <button
+                        type="button"
+                        onClick={onAttachFiles}
+                        disabled={disabled}
+                        className="relative w-8 h-8 rounded-full flex items-center justify-center text-[#727272] hover:text-[#0073E6] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                        title="Select notes or attach documents for multi-file RAG"
+                      >
+                        <Attachment01Icon size={16} />
+                        {attachedFilesCount > 0 && (
+                          <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 rounded-full bg-[#0073E6] text-white text-[9px] font-bold flex items-center justify-center shadow-xs">
+                            {attachedFilesCount}
+                          </span>
+                        )}
+                      </button>
+                    )}
+                    {onAiModeChange && (
+                      <AiLengthSlider currentMode={aiMode} onModeChange={onAiModeChange} defaultCollapsed={true} />
+                    )}
+                    <button
+                      type="button"
+                      onClick={toggleVoice}
+                      disabled={disabled}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${isListening
+                        ? "bg-red-500 text-white shadow-[0_0_10px_#ef4444] animate-pulse"
+                        : "text-[#727272] hover:text-[#383838] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+                        }`}
+                      title={isListening ? "Listening... click to stop" : "Voice dictation"}
+                    >
+                      <Mic01Icon size={16} className={isListening ? "animate-pulse" : ""} />
+                    </button>
+
+                    {/* ChatGPT Circular Send Button */}
+                    <button
+                      id="sendPromptBtn"
+                      type="button"
+                      onClick={handleSend}
+                      disabled={!canSend}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${canSend
+                          ? "bg-[#1D1D1F] dark:bg-white text-white dark:text-black shadow-xs active:scale-95"
+                          : "bg-black/5 dark:bg-white/10 text-[#8E8E93] cursor-not-allowed opacity-60"
+                        }`}
+                    >
+                      {processing ? (
+                <Loading01Icon className="animate-spin text-current" size={16} />
+                      ) : (
+                        <ArrowUp02Icon size={16} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+
+
             </div>
-          </div>
-
-          {/* Right: Actions */}
-          <div className="flex items-center gap-1.5">
-            {onAttachFiles && (
-              <button
-                type="button"
-                onClick={onAttachFiles}
-                disabled={disabled}
-                className="relative w-8 h-8 rounded-full flex items-center justify-center text-[#727272] hover:text-[#0073E6] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                title="Select notes or attach documents for multi-file RAG"
-              >
-                <Attachment01Icon size={16} />
-                {attachedFilesCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 rounded-full bg-[#0073E6] text-white text-[9px] font-bold flex items-center justify-center shadow-xs">
-                    {attachedFilesCount}
-                  </span>
-                )}
-              </button>
-            )}
-            {onAiModeChange && (
-              <AiLengthSlider currentMode={aiMode} onModeChange={onAiModeChange} defaultCollapsed={true} />
-            )}
-            <button
-              type="button"
-              onClick={toggleVoice}
-              disabled={disabled}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${isListening
-                ? "bg-red-500 text-white shadow-[0_0_10px_#ef4444] animate-pulse"
-                : "text-[#727272] hover:text-[#383838] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
-                }`}
-              title={isListening ? "Listening... click to stop" : "Voice dictation"}
-            >
-              <Mic01Icon size={16} className={isListening ? "animate-pulse" : ""} />
-            </button>
-
-            {/* ChatGPT Circular Send Button */}
-            <button
-              id="sendPromptBtn"
-              type="button"
-              onClick={handleSend}
-              disabled={!canSend}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${canSend
-                ? "bg-[#0073E6] hover:bg-[#174073] text-white shadow-xs active:scale-95"
-                : "bg-[#E2E2E2] dark:bg-[#383838] text-[#727272] dark:text-zinc-500 cursor-not-allowed opacity-70"
-                }`}
-            >
-              {processing ? (
-                <Loading01Icon className="animate-spin text-white" size={16} />
-              ) : (
-                <ArrowUp02Icon size={16} />
-              )}
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-
-
-    </div>
-  );
+            );
 }
 
-export default AiMascotInput;
+            export default AiMascotInput;

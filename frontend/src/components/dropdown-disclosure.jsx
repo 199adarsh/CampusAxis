@@ -74,14 +74,14 @@ export const DropdownDisclosure = ({
 
   const selected = multiSelect
     ? (selectedSet.size === 0 || selectedSet.has("all")
-        ? { id: "all", name: "All Units", icon: null }
-        : {
-            id: Array.from(selectedSet).join(","),
-            name: selectedSet.size === 1
-              ? (itemList.find(m => String(m.id) === Array.from(selectedSet)[0])?.name || `${selectedSet.size} Unit`)
-              : `${selectedSet.size} Units Selected`,
-            icon: null
-          })
+      ? { id: "all", name: "All Units", icon: null }
+      : {
+        id: Array.from(selectedSet).join(","),
+        name: selectedSet.size === 1
+          ? (itemList.find(m => String(m.id) === Array.from(selectedSet)[0])?.name || `${selectedSet.size} Unit`)
+          : `${selectedSet.size} Units Selected`,
+        icon: null
+      })
     : (itemList.find((m) => String(m.id) === String(currentId)) || itemList[0] || { id: 'default', name: 'Select option' });
 
   const containerRef = useRef(null);
@@ -132,119 +132,116 @@ export const DropdownDisclosure = ({
       <button
         type="button"
         onClick={() => onOpenChange?.(!isOpen)}
-        className={`flex cursor-pointer items-center transition-all outline-none ${
-          compact
-            ? 'gap-1.5 px-2.5 py-1 rounded-full border border-[#D9ECFF] dark:border-white/10 bg-[#F2F7FC] dark:bg-[#2C2C2E] hover:bg-[#E5F1FC] dark:hover:bg-[#3A3A3C]'
-            : 'gap-2 px-3 py-1.5 rounded-2xl border border-black/10 dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 shadow-xs'
+        className={`flex cursor-pointer items-center transition-all outline-none ${compact
+              ? 'gap-1.5 px-2.5 py-1 rounded-full border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.06] hover:bg-black/[0.06] dark:hover:bg-white/[0.1]'
+              : 'gap-2 px-3 py-1.5 rounded-2xl border border-black/10 dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 shadow-xs'
         } ${triggerClassName}`}
       >
         {selected.icon && (
-          <div className={`flex shrink-0 items-center justify-center rounded-full text-neutral-600 dark:text-neutral-300 ${compact ? 'w-4 h-4' : 'w-7 h-7 border border-neutral-200 dark:border-neutral-700'}`}>
-            {selected.icon}
-          </div>
+            <div className={`flex shrink-0 items-center justify-center rounded-full text-neutral-600 dark:text-neutral-300 ${compact ? 'w-3.5 h-3.5' : 'w-7 h-7 border border-neutral-200 dark:border-neutral-700'}`}>
+              {selected.icon}
+            </div>
         )}
 
-        <span className={`truncate font-semibold text-[#174073] dark:text-zinc-200 ${compact ? 'text-[11px] max-w-[150px]' : 'text-xs font-bold'} flex-1 text-left`}>
-          {selected.name}
-        </span>
-
-        <ArrowDown01Icon size={compact ? 12 : 16} className={`text-[#174073] dark:text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {/* Floating Popover Menu - Absolute above toolbar, DOES NOT expand chatbox */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.96 }}
-            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className={`absolute z-50 w-64 sm:w-72 max-h-[75vh] flex flex-col rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#1C1C1E] p-2.5 shadow-xl backdrop-blur-md ${placement === "top" ? "bottom-full mb-2" : "top-full mt-2"} ${align === "right" ? "right-0" : "left-0"}`}
-          >
-            <div className="mb-2 flex items-center justify-between px-2 pt-1 shrink-0">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                {title}
+              <span className={`truncate font-medium text-[#1D1D1F] dark:text-[#F5F5F7] ${compact ? 'text-[11px] max-w-[140px]' : 'text-xs font-bold'} flex-1 text-left`}>
+                {selected.name}
               </span>
 
-              <button
-                type="button"
-                onClick={() => onOpenChange?.(false)}
-                aria-label="Close menu"
-                className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-colors"
-              >
-                <Cancel01Icon size={12} className="text-neutral-600 dark:text-neutral-300" />
-              </button>
-            </div>
+              <ArrowDown01Icon size={compact ? 12 : 16} className={`text-[#8E8E93] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-            <div className="flex flex-col gap-1 max-h-[55vh] sm:max-h-64 overflow-y-auto no-scrollbar">
-              {itemList.map((m) => {
-                const active = multiSelect
-                  ? (m.id === "all" ? (selectedSet.size === 0 || selectedSet.has("all")) : selectedSet.has(String(m.id)))
-                  : m.id === selected.id;
+            {/* Floating Popover Menu - Absolute above toolbar, DOES NOT expand chatbox */}
+            <AnimatePresence>
+              {isOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                  className={`absolute z-50 w-64 sm:w-72 max-h-[75vh] flex flex-col rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#1C1C1E] p-2.5 shadow-xl backdrop-blur-md ${placement === "top" ? "bottom-full mb-2" : "top-full mt-2"} ${align === "right" ? "right-0" : "left-0"}`}
+                >
+                  <div className="mb-2 flex items-center justify-between px-2 pt-1 shrink-0">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                      {title}
+                    </span>
 
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => handleSelect(m)}
-                    className={`group flex w-full items-center justify-between gap-3 rounded-xl px-2.5 py-2 transition-colors cursor-pointer text-left ${
-                      active
-                        ? 'bg-neutral-100 dark:bg-neutral-800/80'
-                        : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'
-                    }`}
-                  >
-                    <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                      {m.icon && (
-                        <div className="flex shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 dark:border-neutral-700 dark:text-neutral-400 w-7 h-7">
-                          {m.icon}
-                        </div>
-                      )}
+                    <button
+                      type="button"
+                      onClick={() => onOpenChange?.(false)}
+                      aria-label="Close menu"
+                      className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-colors"
+                    >
+                      <Cancel01Icon size={12} className="text-neutral-600 dark:text-neutral-300" />
+                    </button>
+                  </div>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-xs font-bold text-neutral-800 dark:text-neutral-100">
-                          {m.name}
-                        </div>
-                        {m.description && (
-                          <div className="truncate text-[11px] text-neutral-500 dark:text-neutral-400">
-                            {m.description}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  <div className="flex flex-col gap-1 max-h-[55vh] sm:max-h-64 overflow-y-auto no-scrollbar">
+                    {itemList.map((m) => {
+                      const active = multiSelect
+                        ? (m.id === "all" ? (selectedSet.size === 0 || selectedSet.has("all")) : selectedSet.has(String(m.id)))
+                        : m.id === selected.id;
 
-                    <div className="flex items-center gap-2">
-                      {m.hasUpgrade && (
-                        <div className="flex items-center overflow-hidden rounded-md border border-neutral-300 text-[10px] font-semibold text-neutral-800 dark:border-neutral-600 dark:text-neutral-300">
-                          <div className="border-r border-neutral-300 px-1.5 py-0.5 dark:border-neutral-600">
-                            <ArrowUpRight01Icon size={12} />
-                          </div>
-                          <div className="px-1.5 py-0.5">Upgrade</div>
-                        </div>
-                      )}
-
-                      {!m.hasUpgrade && (
-                        <div
-                          className={`flex h-4 w-4 items-center justify-center rounded-full border transition-all ${
-                            active
-                              ? 'border-neutral-900 bg-neutral-900 dark:border-neutral-100 dark:bg-neutral-100'
-                              : 'border-neutral-300 dark:border-neutral-700'
-                          }`}
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => handleSelect(m)}
+                          className={`group flex w-full items-center justify-between gap-3 rounded-xl px-2.5 py-2 transition-colors cursor-pointer text-left ${active
+                              ? 'bg-neutral-100 dark:bg-neutral-800/80'
+                              : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'
+                            }`}
                         >
-                          {active && (
-                            <CheckmarkCircle02Icon size={10} className="text-white dark:text-neutral-900" />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
+                          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                            {m.icon && (
+                              <div className="flex shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 dark:border-neutral-700 dark:text-neutral-400 w-7 h-7">
+                                {m.icon}
+                              </div>
+                            )}
+
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-xs font-bold text-neutral-800 dark:text-neutral-100">
+                                {m.name}
+                              </div>
+                              {m.description && (
+                                <div className="truncate text-[11px] text-neutral-500 dark:text-neutral-400">
+                                  {m.description}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {m.hasUpgrade && (
+                              <div className="flex items-center overflow-hidden rounded-md border border-neutral-300 text-[10px] font-semibold text-neutral-800 dark:border-neutral-600 dark:text-neutral-300">
+                                <div className="border-r border-neutral-300 px-1.5 py-0.5 dark:border-neutral-600">
+                                  <ArrowUpRight01Icon size={12} />
+                                </div>
+                                <div className="px-1.5 py-0.5">Upgrade</div>
+                              </div>
+                            )}
+
+                            {!m.hasUpgrade && (
+                              <div
+                                className={`flex h-4 w-4 items-center justify-center rounded-full border transition-all ${active
+                                    ? 'border-neutral-900 bg-neutral-900 dark:border-neutral-100 dark:bg-neutral-100'
+                                    : 'border-neutral-300 dark:border-neutral-700'
+                                  }`}
+                              >
+                                {active && (
+                                  <CheckmarkCircle02Icon size={10} className="text-white dark:text-neutral-900" />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        );
 };
 
-export default DropdownDisclosure;
+        export default DropdownDisclosure;

@@ -63,7 +63,7 @@ export const CiePerformanceSection = React.memo(function CiePerformanceSection({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="text-sm sm:text-base font-bold text-[#383838] tracking-tight">
-                Internal Marks (CIE)
+                CIE Score
               </h2>
               <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#DEEDFC] text-[#174073]">
                 Sem {semNumber}
