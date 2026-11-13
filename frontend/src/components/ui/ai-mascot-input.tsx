@@ -121,6 +121,8 @@ export interface AiMascotInputProps {
   setSelectedSubject?: (val: string) => void;
   selectedUnit?: string;
   setSelectedUnit?: (val: string) => void;
+  selectedUnits?: string[];
+  setSelectedUnits?: (units: string[]) => void;
   availableUnits?: (number | string)[];
   allKnownSubjects?: Array<{ id: string; name: string; code?: string }>;
   isInvalidSubject?: boolean;
@@ -150,6 +152,8 @@ export function AiMascotInput({
   setSelectedSubject,
   selectedUnit = "all",
   setSelectedUnit,
+  selectedUnits,
+  setSelectedUnits,
   availableUnits,
   allKnownSubjects = [],
   isInvalidSubject = false,
@@ -324,16 +328,19 @@ export function AiMascotInput({
                   onChange={(item) => setSelectedSubject(item.id)}
                 />
 
-                {selectedSubject !== "all" && setSelectedUnit && (
+                {selectedSubject !== "all" && (setSelectedUnits || setSelectedUnit) && (
                   <DropdownDisclosure
                     compact
                     placement="top"
-                    title="Choose Unit"
+                    title="Choose Units"
                     items={unitItems}
                     isOpen={isUnitOpen}
                     onOpenChange={setIsUnitOpen}
                     selectedId={selectedUnit}
-                    onChange={(item) => setSelectedUnit(item.id)}
+                    selectedIds={selectedUnits || (selectedUnit ? [selectedUnit] : ["all"])}
+                    multiSelect={Boolean(setSelectedUnits)}
+                    onChange={(item) => setSelectedUnit?.(item.id)}
+                    onMultiChange={(uList) => setSelectedUnits?.(uList)}
                   />
                 )}
 

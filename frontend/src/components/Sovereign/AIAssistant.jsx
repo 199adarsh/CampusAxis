@@ -94,6 +94,7 @@ const AIAssistant = () => {
     } = useOutletContext() || {};
     const [searchParams, setSearchParams] = useSearchParams();
     const [selectedUnit, setSelectedUnit] = useState("all");
+    const [selectedUnits, setSelectedUnits] = useState(["all"]);
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [aiMode, setAiMode] = useState(() => getSavedAiMode());
 
@@ -270,15 +271,19 @@ const AIAssistant = () => {
         return Array.from(set).sort((a, b) => a - b);
     }, [subjectNotes]);
 
-    // Auto-reset selectedUnit if not in availableUnits
+    // Auto-reset selectedUnits if not in availableUnits
     useEffect(() => {
-        if (selectedUnit !== "all") {
-            const uNum = normalizeUnitNum(selectedUnit);
-            if (uNum !== null && !availableUnits.includes(uNum)) {
-                setSelectedUnit("all");
-            }
+        if (!selectedUnits || selectedUnits.includes("all")) return;
+        const validUnits = selectedUnits.filter(u => {
+            const uNum = normalizeUnitNum(u);
+            return uNum !== null && availableUnits.includes(uNum);
+        });
+        if (validUnits.length === 0) {
+            setSelectedUnits(["all"]);
+        } else if (validUnits.length !== selectedUnits.length) {
+            setSelectedUnits(validUnits);
         }
-    }, [selectedSubject, availableUnits, selectedUnit]);
+    }, [selectedSubject, availableUnits, selectedUnits]);
 
     const compiledCount = useMemo(() => {
         return (subjectNotes || []).filter((n) => n && n.okfStatus === "PROCESSED").length;
@@ -290,9 +295,22 @@ const AIAssistant = () => {
 
     const hasCompiledOkf = compiledCount > 0;
 
+    // Notes filtered strictly to selected subject and selected units
+    const activeSelectedNotes = useMemo(() => {
+        if (!subjectNotes || subjectNotes.length === 0) return [];
+        if (!selectedUnits || selectedUnits.length === 0 || selectedUnits.includes("all")) {
+            return subjectNotes;
+        }
+        const unitNums = new Set(selectedUnits.map(normalizeUnitNum).filter(n => n !== null));
+        return subjectNotes.filter(n => {
+            const uNum = normalizeUnitNum(n.unit);
+            return uNum !== null && unitNums.has(uNum);
+        });
+    }, [subjectNotes, selectedUnits]);
+
     const defaultInitialMessage = {
         role: "ai",
-        content: `Hello ${profile?.name ? formatName(profile.name) : "Scholar"}. I am your academic study assistant, grounded in your syllabus, course notes, and multi-file document archives. You can ask questions or upload multiple files to query with RAG. How can I assist your study session today?`,
+        content: `Hello ${profile?.name ? formatName(profile.name) : "Scholar"}. I am your academic study assistant. Select your subject and units to get grounded answers with citations. How can I assist your study session today?`,
         time: new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
@@ -404,45 +422,28 @@ const AIAssistant = () => {
         toast.info("All attached files cleared");
     };
 
-    // Auto-attach notes selected from Notes Library
+    // Auto-attach notes belonging to the selected subject & units to RAG session
     useEffect(() => {
-        let noteIdsToAttach = [];
-        if (location.state?.selectedNoteIds && Array.isArray(location.state.selectedNoteIds)) {
-            noteIdsToAttach = location.state.selectedNoteIds;
-        } else {
-            const saved = sessionStorage.getItem('eduvault_rag_selected_notes');
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        noteIdsToAttach = parsed;
-                    }
-                } catch {}
-            }
+        if (!activeSubject || activeSelectedNotes.length === 0) {
+            setAttachedFiles([]);
+            return;
         }
 
-        if (noteIdsToAttach.length > 0) {
-            sessionStorage.removeItem('eduvault_rag_selected_notes');
-            axios.post(`${API_BASE}/ai/attach-notes`, {
-                noteIds: noteIdsToAttach,
-                sessionId
-            }).then(res => {
-                if (res.data?.success && Array.isArray(res.data.files)) {
-                    setAttachedFiles(prev => {
-                        const existingIds = new Set(prev.map(f => f.id));
-                        const next = [...prev];
-                        res.data.files.forEach(f => {
-                            if (!existingIds.has(f.id)) next.push(f);
-                        });
-                        return next;
-                    });
-                    toast.success(`Attached ${res.data.files.length} library note(s) for Multi-File RAG`);
-                }
-            }).catch(err => {
-                console.warn("Failed to auto-attach notes from library:", err);
-            });
-        }
-    }, [sessionId, location.state]);
+        const noteIdsToAttach = activeSelectedNotes.map(n => n.id);
+        setIsAttachingSubjectNotes(true);
+        axios.post(`${API_BASE}/ai/attach-notes`, {
+            noteIds: noteIdsToAttach,
+            sessionId
+        }).then(res => {
+            if (res.data?.success && Array.isArray(res.data.files)) {
+                setAttachedFiles(res.data.files);
+            }
+        }).catch(err => {
+            console.warn("Failed to attach subject unit notes:", err);
+        }).finally(() => {
+            setIsAttachingSubjectNotes(false);
+        });
+    }, [activeSubject, activeSelectedNotes, sessionId]);
 
     // Sync picker state whenever modal opens
     useEffect(() => {
@@ -610,6 +611,7 @@ const AIAssistant = () => {
         if (!queryText) return;
 
         const isMultiFileQuery = attachedFiles.length > 0;
+        const noteIds = activeSelectedNotes.map(n => n.id);
 
         const userMessage = {
             role: "user",
@@ -640,7 +642,9 @@ const AIAssistant = () => {
                 ? activeSubject.id
                 : undefined;
         const currentUnit =
-            selectedUnit && selectedUnit !== "all" ? selectedUnit : undefined;
+            selectedUnits && !selectedUnits.includes("all") && selectedUnits.length === 1
+                ? selectedUnits[0]
+                : (selectedUnit && selectedUnit !== "all" ? selectedUnit : undefined);
 
         try {
             const requestPayload = {
@@ -654,9 +658,10 @@ const AIAssistant = () => {
                 apiKey: customApiKey || undefined,
             };
 
-            if (isMultiFileQuery) {
-                requestPayload.fileIds = attachedFiles.map(f => f.id);
-                requestPayload.noteIds = attachedFiles.map(f => f.id);
+            if (isMultiFileQuery || noteIds.length > 0) {
+                const targetIds = isMultiFileQuery ? attachedFiles.map(f => f.id) : noteIds;
+                requestPayload.fileIds = targetIds;
+                requestPayload.noteIds = targetIds;
                 requestPayload.sessionId = sessionId;
             }
 
@@ -778,21 +783,6 @@ const AIAssistant = () => {
                 className="hidden"
             />
 
-            {/* Drag & Drop Visual Backdrop */}
-            {isDragging && (
-                <div className="absolute inset-0 z-50 bg-[#0071E3]/15 backdrop-blur-xs border-2 border-dashed border-[#0071E3] flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
-                    <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#1C1C1E] shadow-xl flex items-center justify-center text-[#0071E3] mb-3">
-                        <Upload01Icon size={32} />
-                    </div>
-                    <h3 className="text-base font-bold text-[#1D1D1F] dark:text-white">
-                        Drop Documents to Query
-                    </h3>
-                    <p className="text-xs text-[#6E6E73] dark:text-[#AEAEB2] mt-1 max-w-sm">
-                        Release files to automatically attach and query across all documents with high-precision RAG.
-                    </p>
-                </div>
-            )}
-
             {/* Minimal Header */}
             <header className="h-12 border-b border-[#E5E5EA] dark:border-[#2C2C2E] bg-white/70 dark:bg-[#1C1C1E]/70 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between shrink-0 select-none">
                 <div className="flex items-center gap-2">
@@ -800,39 +790,14 @@ const AIAssistant = () => {
                     <span className="text-xs font-semibold text-[#1D1D1F] dark:text-white">
                         AI Academic Assistant
                     </span>
-                    {attachedFiles.length > 0 ? (
-                        <span className="text-[11px] font-semibold text-[#0071E3] bg-[#0071E3]/10 px-2 py-0.5 rounded-full ml-1">
-                            Multi-File RAG ({attachedFiles.length} file{attachedFiles.length > 1 ? 's' : ''})
-                        </span>
-                    ) : activeSubject ? (
+                    {activeSubject ? (
                         <span className="text-[11px] font-medium text-[#0071E3] bg-[#0071E3]/10 px-2 py-0.5 rounded-full ml-1 truncate max-w-[200px]">
-                            {activeSubject.name}
+                            {activeSubject.name} {selectedUnits && !selectedUnits.includes("all") && `(${selectedUnits.join(", ")})`}
                         </span>
                     ) : null}
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                    {activeSubject && subjectNotes.length > 0 && (
-                        <button
-                            type="button"
-                            onClick={handleAttachAllSubjectNotes}
-                            disabled={isAttachingSubjectNotes}
-                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#0071E3] bg-[#0071E3]/10 hover:bg-[#0071E3]/15 rounded-lg transition-colors cursor-pointer"
-                            title={`Attach all ${subjectNotes.length} notes across all units for ${activeSubject.name} to Multi-File RAG`}
-                        >
-                            <Layers01Icon size={14} />
-                            <span className="hidden sm:inline">Attach All Units ({subjectNotes.length})</span>
-                        </button>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#0071E3] bg-[#0071E3]/10 hover:bg-[#0071E3]/15 rounded-lg transition-colors cursor-pointer"
-                        title="Upload documents to query"
-                    >
-                        <Attachment01Icon size={14} />
-                        <span className="hidden sm:inline">Upload Files</span>
-                    </button>
                     <button
                         type="button"
                         onClick={handleClearChat}
@@ -861,19 +826,8 @@ const AIAssistant = () => {
                                 Hello, I am Caxiee !
                             </h2>
                             <p className="text-xs text-[#6E6E73] dark:text-[#AEAEB2] mt-1.5 max-w-md">
-                                Your multi-file academic tutor. Upload lecture notes, exam papers, and question banks to query all of them simultaneously with RAG.
+                                Your academic study tutor. Select your subject and specific units below to retrieve grounded answers with direct document citations.
                             </p>
-
-                            <div className="mt-4 flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0071E3] text-white text-xs font-semibold rounded-xl hover:bg-[#0077ED] transition-colors shadow-xs cursor-pointer"
-                                >
-                                    <Attachment01Icon size={14} />
-                                    <span>Upload Documents for RAG</span>
-                                </button>
-                            </div>
                         </div>
                     )}
 
@@ -1087,6 +1041,8 @@ const AIAssistant = () => {
                         setSelectedSubject={setSelectedSubject}
                         selectedUnit={selectedUnit}
                         setSelectedUnit={setSelectedUnit}
+                        selectedUnits={selectedUnits}
+                        setSelectedUnits={setSelectedUnits}
                         availableUnits={availableUnits}
                         allKnownSubjects={allKnownSubjects}
                         isInvalidSubject={isInvalidSubject}
@@ -1096,18 +1052,16 @@ const AIAssistant = () => {
                         subjectNotesCount={subjectNotes.length}
                         aiMode={aiMode}
                         onAiModeChange={setAiMode}
-                        onAttachFiles={() => setIsNotesPickerOpen(true)}
-                        attachedFilesCount={attachedFiles.length}
                         placeholder={
-                            attachedFiles.length > 0
-                                ? `Ask questions across your ${attachedFiles.length} attached documents...`
-                                : activeSubject
-                                    ? `Ask anything about ${activeSubject.name}...`
-                                    : "Ask anything across your courses, notes, and uploaded files..."
+                            activeSubject
+                                ? selectedUnits && !selectedUnits.includes("all") && selectedUnits.length > 0
+                                    ? `Ask anything about ${activeSubject.name} (${selectedUnits.join(", ")})...`
+                                    : `Ask anything about ${activeSubject.name}...`
+                                : "Select a subject and units to ask questions..."
                         }
                         onSubmit={(data) => sendMessage(data.prompt)}
                         isProcessing={isTyping}
-                        disabled={isTyping || isUploadingFiles}
+                        disabled={isTyping || isAttachingSubjectNotes}
                     />
                 </div>
             </div>
@@ -1294,18 +1248,9 @@ const AIAssistant = () => {
 
                         {/* Modal Footer */}
                         <div className="px-5 py-3 border-t border-[#E5E5EA] dark:border-white/10 bg-[#FAFBFD] dark:bg-[#202022] flex items-center justify-between shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsNotesPickerOpen(false);
-                                    fileInputRef.current?.click();
-                                }}
-                                className="inline-flex items-center gap-1.5 text-xs text-[#0073E6] hover:underline font-semibold cursor-pointer"
-                                title="Upload custom PDF/DOCX from computer"
-                            >
-                                <Upload01Icon size={14} />
-                                <span className="hidden sm:inline">Upload external file instead</span>
-                            </button>
+                            <div>
+                                <span className="text-xs text-[#8E8E93]">Multi-Unit RAG Grounding</span>
+                            </div>
 
                             <div className="flex items-center gap-2">
                                 <button

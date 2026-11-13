@@ -56,8 +56,11 @@ export const DropdownDisclosure = ({
   onOpenChange,
   selectedModelId,
   selectedId,
+  selectedIds,
+  multiSelect = false,
   onModelChange,
   onChange,
+  onMultiChange,
   title = "Choose Option",
   compact = false,
   placement = "bottom",
@@ -67,8 +70,19 @@ export const DropdownDisclosure = ({
 }) => {
   const itemList = items || models || DEFAULT_MODELS;
   const currentId = selectedId || selectedModelId;
-  const selected =
-    itemList.find((m) => String(m.id) === String(currentId)) || itemList[0] || { id: 'default', name: 'Select option' };
+  const selectedSet = new Set(Array.isArray(selectedIds) ? selectedIds.map(String) : []);
+
+  const selected = multiSelect
+    ? (selectedSet.size === 0 || selectedSet.has("all")
+        ? { id: "all", name: "All Units", icon: null }
+        : {
+            id: Array.from(selectedSet).join(","),
+            name: selectedSet.size === 1
+              ? (itemList.find(m => String(m.id) === Array.from(selectedSet)[0])?.name || `${selectedSet.size} Unit`)
+              : `${selectedSet.size} Units Selected`,
+            icon: null
+          })
+    : (itemList.find((m) => String(m.id) === String(currentId)) || itemList[0] || { id: 'default', name: 'Select option' });
 
   const containerRef = useRef(null);
 
@@ -90,6 +104,23 @@ export const DropdownDisclosure = ({
   }, [isOpen, onOpenChange]);
 
   const handleSelect = (item) => {
+    if (multiSelect) {
+      if (!onMultiChange) return;
+      if (item.id === "all") {
+        onMultiChange(["all"]);
+        return;
+      }
+      const next = new Set(selectedSet);
+      next.delete("all");
+      if (next.has(String(item.id))) {
+        next.delete(String(item.id));
+      } else {
+        next.add(String(item.id));
+      }
+      const nextArr = Array.from(next);
+      onMultiChange(nextArr.length === 0 ? ["all"] : nextArr);
+      return;
+    }
     onChange?.(item);
     onModelChange?.(item);
     onOpenChange?.(false);
@@ -147,7 +178,9 @@ export const DropdownDisclosure = ({
 
             <div className="flex flex-col gap-1 max-h-[55vh] sm:max-h-64 overflow-y-auto no-scrollbar">
               {itemList.map((m) => {
-                const active = m.id === selected.id;
+                const active = multiSelect
+                  ? (m.id === "all" ? (selectedSet.size === 0 || selectedSet.has("all")) : selectedSet.has(String(m.id)))
+                  : m.id === selected.id;
 
                 return (
                   <button

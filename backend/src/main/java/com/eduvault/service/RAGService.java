@@ -440,8 +440,8 @@ public class RAGService {
                 .collect(Collectors.toList());
 
         if (topHits.isEmpty()) {
-            return "{\"answer\": \"I searched across your uploaded files (" + String.join(", ", validDocNames) +
-                    "), but could not find information addressing: \\\"" + question.replace("\"", "\\\"") + "\\\".\", \"confidence\": 0.0}";
+            return "{\"answer\": \"I searched across your selected material (" + String.join(", ", validDocNames) +
+                    "), but this topic is not covered in the selected material.\", \"confidence\": 0.0}";
         }
 
         double maxScore = topHits.get(0).score;
@@ -480,13 +480,13 @@ public class RAGService {
 
         // 4. Strict multi-file RAG prompt with citation requirements
         String systemInstruction =
-            "You are an expert Academic Tutor and Multi-Document Research Assistant. Your highest priority is 100% academic correctness.\n" +
+            "You are an expert Academic Course Notes Tutor. Your highest priority is 100% academic correctness.\n" +
             "CRITICAL RULES:\n" +
-            "1. Answer the student's question directly and thoroughly by synthesizing relevant content from ALL provided source document passages.\n" +
+            "1. Answer the student's question directly and thoroughly using ONLY the provided course material passages.\n" +
             "2. STRICT LENGTH CONSTRAINT: Provide your answer in strictly " + wordConstraint + ".\n" +
-            "3. Explicitly cite the source document name (e.g. `[filename.pdf]`) when stating key definitions, formulas, or facts.\n" +
-            "4. If multiple uploaded files discuss the topic, compare or integrate their perspectives coherently.\n" +
-            "5. If a topic is not covered in the provided documents, say: \"This topic is not covered in the uploaded files.\"\n" +
+            "3. Explicitly cite the source document name and unit number (e.g. `[filename.pdf, Unit 1]`) when stating key definitions, formulas, or facts.\n" +
+            "4. Do NOT use content from unselected units, other subjects, or outside information not in the passages.\n" +
+            "5. If the answer is not found in the provided material, clearly state: \"This topic is not covered in the selected material.\"\n" +
             "6. Format with clean academic Markdown (bold headers, bullet points, structured lists).\n" +
             "7. Return strictly valid JSON: {\"answer\": \"<formatted markdown answer>\", \"confidence\": " +
             String.format(java.util.Locale.US, "%.2f", Math.min(0.98, Math.max(0.75, maxScore / 5.0))) +
