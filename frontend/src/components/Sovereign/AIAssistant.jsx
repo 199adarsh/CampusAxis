@@ -190,7 +190,7 @@ const AIAssistant = () => {
             }
         });
         return Array.from(map.values()).filter(Boolean);
-    }, [subjects, isTeacher, catalogSubjects, dynamicSubjects]);
+    }, [subjects, isTeacher, catalogSubjects]);
 
     const selectedSubject = searchParams.get("subjectId") || "all";
     const setSelectedSubject = useCallback(
