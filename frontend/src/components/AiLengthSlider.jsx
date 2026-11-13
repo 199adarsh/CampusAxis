@@ -51,11 +51,15 @@ export const saveAiMode = (modeId) => {
     } catch { /* ignore */ }
 };
 
-export const AiLengthSlider = ({ currentMode, onModeChange, className }) => {
+export const AiLengthSlider = ({ currentMode = 'high', onModeChange, className }) => {
     const [showPasscodeModal, setShowPasscodeModal] = useState(false);
     const [targetMode, setTargetMode] = useState(null);
     const [passcode, setPasscode] = useState('');
     const isUnlocked = isAiTierUnlocked();
+
+    const currentIndex = Math.max(0, AI_LENGTH_MODES.findIndex(m => m.id === currentMode));
+    const activeModeObj = AI_LENGTH_MODES[currentIndex] || AI_LENGTH_MODES[1];
+    const progressPercent = (currentIndex / (AI_LENGTH_MODES.length - 1)) * 100;
 
     const handleSelect = (mode) => {
         if (mode.requiresPasscode && !isUnlocked) {
@@ -63,8 +67,16 @@ export const AiLengthSlider = ({ currentMode, onModeChange, className }) => {
             setShowPasscodeModal(true);
             return;
         }
-        onModeChange(mode.id);
+        if (onModeChange) onModeChange(mode.id);
         saveAiMode(mode.id);
+    };
+
+    const handleSliderChange = (e) => {
+        const newIdx = parseInt(e.target.value, 10);
+        const nextMode = AI_LENGTH_MODES[newIdx];
+        if (nextMode) {
+            handleSelect(nextMode);
+        }
     };
 
     const handleUnlockSubmit = (e) => {
@@ -73,7 +85,7 @@ export const AiLengthSlider = ({ currentMode, onModeChange, className }) => {
             setAiTierUnlocked(true);
             toast.success('Max & Ultra modes unlocked for this session!');
             if (targetMode) {
-                onModeChange(targetMode.id);
+                if (onModeChange) onModeChange(targetMode.id);
                 saveAiMode(targetMode.id);
             }
             setShowPasscodeModal(false);
@@ -84,38 +96,65 @@ export const AiLengthSlider = ({ currentMode, onModeChange, className }) => {
     };
 
     return (
-        <div className={cn("relative flex items-center gap-1 bg-[#F2F2F7] dark:bg-[#2C2C2E] p-0.5 rounded-full border border-black/5 dark:border-white/5", className)}>
-            <div className="flex items-center px-1.5 py-0.5 text-[10px] font-medium text-[#8E8E93] select-none">
-                <SlidersVerticalIcon size={11} className="mr-1" />
-                <span className="hidden sm:inline">Tokens:</span>
+        <div className={cn("relative flex items-center gap-2 bg-[#F2F2F7] dark:bg-[#2C2C2E] px-2.5 py-1 rounded-full border border-black/5 dark:border-white/5 select-none", className)}>
+            {/* Header Icon & Label */}
+            <div className="flex items-center text-[10px] font-medium text-[#8E8E93] shrink-0">
+                <SlidersVerticalIcon size={12} className="mr-1 text-[#0071E3] dark:text-[#0A84FF]" />
+                <span className="hidden sm:inline font-semibold">Length:</span>
             </div>
 
-            {AI_LENGTH_MODES.map((mode) => {
-                const isActive = currentMode === mode.id;
-                const isLocked = mode.requiresPasscode && !isUnlocked;
+            {/* Progress-Bar Slider Track with Indicator */}
+            <div className="relative w-20 sm:w-28 h-2.5 bg-[#E5E5EA] dark:bg-[#38383A] rounded-full flex items-center cursor-pointer group">
+                {/* Active Progress Fill */}
+                <div
+                    className="h-full bg-[#0071E3] dark:bg-[#0A84FF] rounded-full transition-all duration-200 ease-out"
+                    style={{ width: `${Math.max(6, progressPercent)}%` }}
+                />
 
-                return (
-                    <button
-                        key={mode.id}
-                        type="button"
-                        onClick={() => handleSelect(mode)}
-                        title={`${mode.label}: ${mode.desc} ${isLocked ? '(Passcode required)' : ''}`}
-                        className={cn(
-                            "px-2 py-0.5 text-[10.5px] font-medium rounded-full transition-all duration-150 flex items-center gap-0.5 cursor-pointer select-none",
-                            isActive
-                                ? "bg-white dark:bg-[#1C1C1E] text-[#0071E3] font-semibold shadow-2xs"
-                                : "text-[#6E6E73] dark:text-[#AEAEB2] hover:text-[#1D1D1F] dark:hover:text-white"
-                        )}
-                    >
-                        <span>{mode.label}</span>
-                        {isLocked ? (
-                            <LockKeyIcon size={9} className="opacity-70 text-amber-500" />
-                        ) : (
-                            <span className="text-[9px] opacity-60">({mode.wordRange.split('-')[1]})</span>
-                        )}
-                    </button>
-                );
-            })}
+                {/* Step Tick Dots */}
+                <div className="absolute inset-0 flex justify-between items-center px-1 pointer-events-none">
+                    {AI_LENGTH_MODES.map((mode, idx) => (
+                        <div
+                            key={mode.id}
+                            className={cn(
+                                "w-1 h-1 rounded-full transition-colors z-10",
+                                idx <= currentIndex ? "bg-white" : "bg-black/25 dark:bg-white/25"
+                            )}
+                        />
+                    ))}
+                </div>
+
+                {/* Slider Thumb Handle */}
+                <div
+                    className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-[#1C1C1E] border-2 border-[#0071E3] dark:border-[#0A84FF] rounded-full shadow-xs transition-all duration-200 pointer-events-none -translate-x-1/2 z-20"
+                    style={{ left: `${Math.min(94, Math.max(6, progressPercent))}%` }}
+                />
+
+                {/* Range Input for dragging/sliding */}
+                <input
+                    type="range"
+                    min="0"
+                    max={AI_LENGTH_MODES.length - 1}
+                    step="1"
+                    value={currentIndex}
+                    onChange={handleSliderChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
+                    title={`Length: ${activeModeObj.label} (${activeModeObj.wordRange} words)`}
+                />
+            </div>
+
+            {/* Current Mode Badge */}
+            <div className="flex items-center gap-1 shrink-0">
+                <span className="text-[10.5px] font-semibold text-[#0071E3] dark:text-[#0A84FF]">
+                    {activeModeObj.label}
+                </span>
+                <span className="text-[9px] text-[#8E8E93] hidden md:inline">
+                    ({activeModeObj.wordRange.split('-')[1]}w)
+                </span>
+                {activeModeObj.requiresPasscode && !isUnlocked && (
+                    <LockKeyIcon size={10} className="text-amber-500 ml-0.5" title="Passcode required" />
+                )}
+            </div>
 
             {/* Passcode Modal Dialog */}
             {showPasscodeModal && (
@@ -164,4 +203,3 @@ export const AiLengthSlider = ({ currentMode, onModeChange, className }) => {
         </div>
     );
 };
-

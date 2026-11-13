@@ -24,7 +24,7 @@ import LmsSyncModal from './LmsSyncModal';
 import PYQsDatabase from './PYQsDatabase';
 import { FluidTabs } from '../fluid-tabs';
 import { DropdownDisclosure } from '../dropdown-disclosure';
-import { isLinkNote, getNoteBadge, isSubjectNameMatch, getCleanTitle, sortSubjectsByYear } from '../../lib/noteUtils';
+import { isLinkNote, getNoteBadge, isSubjectNameMatch, getCleanTitle, sortSubjectsByYear, normalizeUnitNum, normalizeUnit } from '../../lib/noteUtils';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
@@ -44,8 +44,6 @@ const normalizeSem = (sem) => {
     const m = sem.toString().match(/(?:sem|semester|s)?\s*0?([1-8])/i);
     return m ? `S0${m[1]}` : sem.toString().toUpperCase().trim();
 };
-
-const normalizeUnit = (u) => (u || '').toString().toLowerCase().replace(/[^0-9]/g, '');
 
 // Core 4-5 categories for filtering
 const CORE_CATEGORIES = [
@@ -212,7 +210,7 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
     const [showLmsSync, setShowLmsSync] = useState(false);
     const [selectedCategory] = useState('All');
     const [selectedUnit, setSelectedUnit] = useState('all');
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '');
     const [pyqSearch, setPyqSearch] = useState('');
     const [pyqSubject, setPyqSubject] = useState('');
     const [pyqExam, setPyqExam] = useState('');
@@ -228,6 +226,19 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
     const studentDept = normalizeDept(profile?.department);
     const studentSem = normalizeSem(profile?.semester);
 
+    const [dynamicCatalog, setDynamicCatalog] = useState([]);
+    useEffect(() => {
+        let isMounted = true;
+        axios.get(`${API_BASE}/subjects`)
+            .then(res => {
+                if (isMounted && Array.isArray(res.data) && res.data.length > 0) {
+                    setDynamicCatalog(res.data);
+                }
+            })
+            .catch(err => console.warn("Failed to dynamically fetch subjects:", err));
+        return () => { isMounted = false; };
+    }, []);
+
     const handleTabChange = (tab) => {
         setActiveTab(tab);
         setSearchParams(tab === 'notes' ? {} : { tab });
@@ -235,9 +246,9 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
 
     // Unified catalog pool of subjects for complete metadata
     const allKnownSubjects = useMemo(() => {
-        const pool = (outletCatalogSubjects && outletCatalogSubjects.length > 0)
-            ? outletCatalogSubjects
-            : (subjects || []);
+        const pool = (dynamicCatalog && dynamicCatalog.length > 0)
+            ? dynamicCatalog
+            : ((outletCatalogSubjects && outletCatalogSubjects.length > 0) ? outletCatalogSubjects : (subjects || []));
         const map = new Map();
         pool.forEach(s => {
             if (s && s.id) map.set(s.id, s);
@@ -245,8 +256,11 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
         (subjects || []).forEach(s => {
             if (s && s.id && !map.has(s.id)) map.set(s.id, s);
         });
+        (outletCatalogSubjects || []).forEach(s => {
+            if (s && s.id && !map.has(s.id)) map.set(s.id, s);
+        });
         return sortSubjectsByYear(Array.from(map.values()));
-    }, [outletCatalogSubjects, subjects]);
+    }, [dynamicCatalog, outletCatalogSubjects, subjects]);
 
     // Precomputed subject lookup map for O(1) access
     const subjectMap = useMemo(() => {
@@ -431,7 +445,10 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
     // Derive active subject ID: pick selected if in availableSubjects, else first available
     const activeSubjectId = useMemo(() => {
         if (!availableSubjects || availableSubjects.length === 0) return '';
-        const match = availableSubjects.find(s => s.id === selectedSubject);
+        const match = availableSubjects.find(s =>
+            s.id === selectedSubject ||
+            (s.code && s.code.toLowerCase() === selectedSubject.toLowerCase())
+        );
         return match ? match.id : availableSubjects[0].id;
     }, [availableSubjects, selectedSubject]);
 
@@ -447,17 +464,82 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
         }));
     }, [availableSubjects]);
 
-    const unitDropdownItems = useMemo(() => [
-        { id: 'all', name: 'All Units' },
-        { id: 'UNIT 01', name: 'Unit 1' },
-        { id: 'UNIT 02', name: 'Unit 2' },
-        { id: 'UNIT 03', name: 'Unit 3' },
-        { id: 'UNIT 04', name: 'Unit 4' },
-        { id: 'UNIT 05', name: 'Unit 5' },
-        { id: 'UNIT 06', name: 'Unit 6' },
-        { id: 'cat:Lab Manual', name: 'Lab Manual' },
-        { id: 'cat:Other', name: 'Other Files' },
-    ], []);
+    // Notes matching active subject
+    const subjectNotesForActive = useMemo(() => {
+        if (!activeSubjectId || !notes || notes.length === 0) return [];
+        return notes.filter(note => {
+            const resolvedId = resolveSubjectId(note);
+            return resolvedId === activeSubjectId || note.subjectId === activeSubjectId ||
+                (activeSubjectObj && (
+                    (activeSubjectObj.code && activeSubjectObj.code.length > 2 && note.r2ObjectKey && (
+                        note.r2ObjectKey.toUpperCase().includes(activeSubjectObj.code.toUpperCase())
+                    )) ||
+                    (activeSubjectObj.canonicalCode && activeSubjectObj.canonicalCode.length > 2 && note.r2ObjectKey && (
+                        note.r2ObjectKey.toUpperCase().includes(activeSubjectObj.canonicalCode.toUpperCase())
+                    )) ||
+                    (activeSubjectObj.name && (
+                        (note.subjectName && isSubjectNameMatch(note.subjectName, activeSubjectObj.name)) ||
+                        (note.r2ObjectKey && isSubjectNameMatch(note.r2ObjectKey.split('/')[0], activeSubjectObj.name))
+                    ))
+                ));
+        });
+    }, [notes, activeSubjectId, activeSubjectObj, resolveSubjectId]);
+
+    // Available units derived strictly from notes that actually exist for this subject
+    const availableUnits = useMemo(() => {
+        const unitSet = new Set();
+        subjectNotesForActive.forEach(note => {
+            const uNum = normalizeUnitNum(note.unit);
+            if (uNum !== null && uNum >= 1 && uNum <= 6) {
+                unitSet.add(uNum);
+            }
+        });
+        return Array.from(unitSet).sort((a, b) => a - b);
+    }, [subjectNotesForActive]);
+
+    // Dynamic unit dropdown items: strictly show Units 1-6 ONLY when notes are available
+    const unitDropdownItems = useMemo(() => {
+        const hasLabManual = subjectNotesForActive.some(n => matchesCategory(n, 'Lab Manual'));
+        const hasOther = subjectNotesForActive.some(n => !normalizeUnitNum(n.unit) && !matchesCategory(n, 'Lab Manual'));
+
+        if (availableUnits.length === 0 && !hasLabManual && !hasOther) {
+            return [{ id: 'all', name: 'No units available', description: 'No unit notes uploaded yet' }];
+        }
+
+        const items = [{ id: 'all', name: 'All Units' }];
+        availableUnits.forEach(uNum => {
+            items.push({
+                id: `UNIT 0${uNum}`,
+                name: `Unit ${uNum}`,
+                description: `Unit ${uNum} module notes`,
+            });
+        });
+        if (hasLabManual) {
+            items.push({ id: 'cat:Lab Manual', name: 'Lab Manual' });
+        }
+        if (hasOther) {
+            items.push({ id: 'cat:Other', name: 'Other Files' });
+        }
+        return items;
+    }, [availableUnits, subjectNotesForActive]);
+
+    // Auto-reset selectedUnit to 'all' if the selected unit is no longer available in the current subject
+    useEffect(() => {
+        if (selectedUnit !== 'all') {
+            if (selectedUnit === 'cat:Lab Manual') {
+                const hasLab = subjectNotesForActive.some(n => matchesCategory(n, 'Lab Manual'));
+                if (!hasLab) setSelectedUnit('all');
+            } else if (selectedUnit === 'cat:Other') {
+                const hasOther = subjectNotesForActive.some(n => !normalizeUnitNum(n.unit) && !matchesCategory(n, 'Lab Manual'));
+                if (!hasOther) setSelectedUnit('all');
+            } else {
+                const num = normalizeUnitNum(selectedUnit);
+                if (num !== null && !availableUnits.includes(num)) {
+                    setSelectedUnit('all');
+                }
+            }
+        }
+    }, [activeSubjectId, availableUnits, selectedUnit, subjectNotesForActive]);
 
     const pyqExamDropdownItems = useMemo(() => [
         { id: '', name: 'All Exams' },
@@ -533,9 +615,15 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
                 if (selectedUnit === 'cat:Lab Manual') {
                     if (!matchesCategory(note, 'Lab Manual')) return false;
                 } else if (selectedUnit === 'cat:Other') {
-                    if (normalizeUnit(note.unit) || matchesCategory(note, 'Lab Manual')) return false;
-                } else if (normalizeUnit(note.unit) !== normalizeUnit(selectedUnit)) {
-                    return false;
+                    if (normalizeUnitNum(note.unit) || matchesCategory(note, 'Lab Manual')) return false;
+                } else {
+                    const selNum = normalizeUnitNum(selectedUnit);
+                    const noteNum = normalizeUnitNum(note.unit);
+                    if (selNum !== null && noteNum !== null) {
+                        if (selNum !== noteNum) return false;
+                    } else if (normalizeUnit(note.unit) !== normalizeUnit(selectedUnit)) {
+                        return false;
+                    }
                 }
             }
 

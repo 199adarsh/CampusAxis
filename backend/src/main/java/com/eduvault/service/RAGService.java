@@ -1,6 +1,7 @@
 package com.eduvault.service;
 
 import com.eduvault.model.Note;
+import com.eduvault.model.UploadedDocument;
 import com.eduvault.repository.LocalJsonDatabase;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -47,6 +48,8 @@ public class RAGService {
 
     @Autowired
     private LocalJsonDatabase database;
+
+    private final com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
     @Autowired(required = false)
     private FileStorageService fileStorageService;
@@ -368,5 +371,240 @@ public class RAGService {
             sb.append("> ").append(snippet.replace("\"", "\\\"").replace("\n", " ")).append("\\n\\n");
         }
         return "{\"answer\": \"" + sb.toString().trim() + "\", \"confidence\": " + String.format(java.util.Locale.US, "%.2f", Math.min(0.85, maxScore / 5.0)) + "}";
+    }
+
+    public static class MultiDocPassage {
+        public final String docId;
+        public final String docName;
+        public final String heading;
+        public final String body;
+
+        public MultiDocPassage(String docId, String docName, String heading, String body) {
+            this.docId = docId;
+            this.docName = docName;
+            this.heading = heading;
+            this.body = body;
+        }
+    }
+
+    private static class ScoredMultiDocPassage {
+        final MultiDocPassage passage;
+        final double score;
+
+        ScoredMultiDocPassage(MultiDocPassage passage, double score) {
+            this.passage = passage;
+            this.score = score;
+        }
+    }
+
+    public String askMultiDocument(String question, List<UploadedDocument> documents, String customApiKey, String lengthMode) {
+        if (question == null || question.trim().isEmpty()) {
+            return "{\"answer\": \"Please provide a valid question to query your documents.\", \"confidence\": 0.0}";
+        }
+        if (documents == null || documents.isEmpty()) {
+            return "{\"answer\": \"No documents provided for multi-file querying. Please upload at least one document.\", \"confidence\": 0.0}";
+        }
+
+        String mode = (lengthMode != null) ? lengthMode.toLowerCase().trim() : "high";
+
+        // 1. Partition each document into structured passages tagged with its filename
+        List<MultiDocPassage> allPassages = new ArrayList<>();
+        List<String> validDocNames = new ArrayList<>();
+
+        for (UploadedDocument doc : documents) {
+            if (doc == null) continue;
+            String text = doc.getExtractedText();
+            if (text == null || text.trim().isEmpty() || text.startsWith("Failed to extract") || text.startsWith("File not found")) {
+                continue;
+            }
+            validDocNames.add(doc.getFilename() != null ? doc.getFilename() : doc.getId());
+            List<Passage> docPassages = partitionIntoPassages(doc.getFilename(), text);
+            for (Passage p : docPassages) {
+                allPassages.add(new MultiDocPassage(doc.getId(), doc.getFilename(), p.heading, p.body));
+            }
+        }
+
+        if (allPassages.isEmpty()) {
+            return "{\"answer\": \"None of the uploaded files contain readable text to answer from. Please verify your uploaded documents.\", \"confidence\": 0.0}";
+        }
+
+        // 2. Rank passages across all documents using BM25 relevance scoring
+        List<ScoredMultiDocPassage> scored = rankMultiDocPassages(allPassages, question.trim());
+        List<ScoredMultiDocPassage> topHits = scored.stream()
+                .filter(p -> p.score >= 0.8)
+                .limit(5)
+                .collect(Collectors.toList());
+
+        if (topHits.isEmpty()) {
+            return "{\"answer\": \"I searched across your uploaded files (" + String.join(", ", validDocNames) +
+                    "), but could not find information addressing: \\\"" + question.replace("\"", "\\\"") + "\\\".\", \"confidence\": 0.0}";
+        }
+
+        double maxScore = topHits.get(0).score;
+        Set<String> contributingDocs = topHits.stream()
+                .map(h -> h.passage.docName != null ? h.passage.docName : "Document")
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        // 3. Assemble multi-document context bounded for TPM budget
+        StringBuilder context = new StringBuilder();
+        context.append("TOTAL UPLOADED DOCUMENTS SEARCHED: ").append(validDocNames.size()).append(" (")
+                .append(String.join(", ", validDocNames)).append(")\n\n");
+
+        for (ScoredMultiDocPassage hit : topHits) {
+            context.append("=== SOURCE DOCUMENT: ").append(hit.passage.docName).append(" ===\n");
+            context.append("--- SECTION [").append(hit.passage.heading).append("] ---\n");
+            String snippet = hit.passage.body.length() > 1000 ? hit.passage.body.substring(0, 1000) + "..." : hit.passage.body;
+            context.append(snippet).append("\n\n");
+        }
+
+        String wordConstraint = "100-120 words";
+        switch (mode) {
+            case "min":
+                wordConstraint = "80-100 words (concise, direct multi-document summary)";
+                break;
+            case "max":
+                wordConstraint = "150-180 words (detailed conceptual breakdown across documents)";
+                break;
+            case "ultra":
+                wordConstraint = "220-250 words (comprehensive multi-document synthesis with depth)";
+                break;
+            case "high":
+            default:
+                wordConstraint = "100-120 words (clear, balanced multi-document explanation)";
+                break;
+        }
+
+        // 4. Strict multi-file RAG prompt with citation requirements
+        String systemInstruction =
+            "You are an expert Academic Tutor and Multi-Document Research Assistant. Your highest priority is 100% academic correctness.\n" +
+            "CRITICAL RULES:\n" +
+            "1. Answer the student's question directly and thoroughly by synthesizing relevant content from ALL provided source document passages.\n" +
+            "2. STRICT LENGTH CONSTRAINT: Provide your answer in strictly " + wordConstraint + ".\n" +
+            "3. Explicitly cite the source document name (e.g. `[filename.pdf]`) when stating key definitions, formulas, or facts.\n" +
+            "4. If multiple uploaded files discuss the topic, compare or integrate their perspectives coherently.\n" +
+            "5. If a topic is not covered in the provided documents, say: \"This topic is not covered in the uploaded files.\"\n" +
+            "6. Format with clean academic Markdown (bold headers, bullet points, structured lists).\n" +
+            "7. Return strictly valid JSON: {\"answer\": \"<formatted markdown answer>\", \"confidence\": " +
+            String.format(java.util.Locale.US, "%.2f", Math.min(0.98, Math.max(0.75, maxScore / 5.0))) +
+            ", \"sources\": [" + contributingDocs.stream().map(d -> "\"" + d.replace("\"", "\\\"") + "\"").collect(Collectors.joining(",")) + "]}";
+
+        String prompt = "UPLOADED DOCUMENTS PASSAGES:\n" + context + "\nSTUDENT QUESTION:\n" + question;
+
+        double computedConfidence = Math.min(0.98, Math.max(0.75, maxScore / 5.0));
+        String resultJson;
+        try {
+            String response = geminiService.chat(systemInstruction, prompt, 0.1, customApiKey);
+            if (response != null && !response.trim().isEmpty()) {
+                String cleaned = response.trim();
+                if (cleaned.startsWith("```json")) {
+                    cleaned = cleaned.substring(7);
+                } else if (cleaned.startsWith("```")) {
+                    cleaned = cleaned.substring(3);
+                }
+                if (cleaned.endsWith("```")) {
+                    cleaned = cleaned.substring(0, cleaned.length() - 3);
+                }
+                cleaned = cleaned.trim();
+
+                int firstBrace = cleaned.indexOf('{');
+                int lastBrace = cleaned.lastIndexOf('}');
+                if (firstBrace != -1 && lastBrace != -1 && lastBrace >= firstBrace) {
+                    cleaned = cleaned.substring(firstBrace, lastBrace + 1).trim();
+                }
+
+                try {
+                    Map<String, Object> parsed = mapper.readValue(cleaned, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+                    if (!parsed.containsKey("sources") || parsed.get("sources") == null || (parsed.get("sources") instanceof List && ((List<?>) parsed.get("sources")).isEmpty())) {
+                        parsed.put("sources", new ArrayList<>(contributingDocs));
+                    }
+                    if (!parsed.containsKey("confidence")) {
+                        parsed.put("confidence", computedConfidence);
+                    }
+                    resultJson = mapper.writeValueAsString(parsed);
+                } catch (Exception parseEx) {
+                    Map<String, Object> safeMap = new HashMap<>();
+                    safeMap.put("answer", cleaned);
+                    safeMap.put("confidence", computedConfidence);
+                    safeMap.put("sources", new ArrayList<>(contributingDocs));
+                    resultJson = mapper.writeValueAsString(safeMap);
+                }
+            } else {
+                resultJson = buildMultiDocFallbackAnswer(topHits, maxScore, contributingDocs);
+            }
+        } catch (Exception e) {
+            logger.warn("LLM generation failed for multi-doc RAG, using fallback quotes: {}", e.getMessage());
+            resultJson = buildMultiDocFallbackAnswer(topHits, maxScore, contributingDocs);
+        }
+
+        return resultJson;
+    }
+
+    private List<ScoredMultiDocPassage> rankMultiDocPassages(List<MultiDocPassage> passages, String query) {
+        String qLower = query.toLowerCase();
+        String[] qTokens = WORD_SPLIT.split(qLower);
+        Set<String> queryWords = Arrays.stream(qTokens)
+                .filter(w -> (w.length() > 2 || w.matches("\\d+")) && !STOP_WORDS.contains(w))
+                .collect(Collectors.toSet());
+
+        if (queryWords.contains("syllabus") || queryWords.contains("topics") || queryWords.contains("curriculum")) {
+            queryWords.add("contents");
+            queryWords.add("content");
+        }
+
+        List<ScoredMultiDocPassage> scored = new ArrayList<>();
+        if (queryWords.isEmpty()) {
+            return scored;
+        }
+
+        for (MultiDocPassage p : passages) {
+            String text = (p.heading + " " + p.body).toLowerCase();
+            double score = 0.0;
+
+            for (String word : queryWords) {
+                int count = 0;
+                int idx = 0;
+                while ((idx = text.indexOf(word, idx)) != -1) {
+                    count++;
+                    idx += word.length();
+                }
+                if (count > 0) {
+                    if (p.heading.toLowerCase().contains(word)) {
+                        score += 3.0 * count;
+                    } else {
+                        score += 1.0 * count;
+                    }
+                }
+            }
+
+            if (text.contains(query.toLowerCase())) {
+                score += 10.0;
+            }
+
+            double normalizedScore = score / (1.0 + (p.body.length() / 800.0));
+            scored.add(new ScoredMultiDocPassage(p, normalizedScore));
+        }
+
+        scored.sort((a, b) -> Double.compare(b.score, a.score));
+        return scored;
+    }
+
+    private String buildMultiDocFallbackAnswer(List<ScoredMultiDocPassage> topHits, double maxScore, Set<String> contributingDocs) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("**Excerpt synthesized from uploaded files:**\n\n");
+        for (ScoredMultiDocPassage hit : topHits) {
+            sb.append("### [").append(hit.passage.docName != null ? hit.passage.docName : "Document").append("] ").append(hit.passage.heading != null ? hit.passage.heading : "Section").append("\n");
+            String snippet = hit.passage.body.length() > 400 ? hit.passage.body.substring(0, 400) + "..." : hit.passage.body;
+            sb.append("> ").append(snippet.replace("\n", " ")).append("\n\n");
+        }
+        Map<String, Object> fallbackMap = new HashMap<>();
+        fallbackMap.put("answer", sb.toString().trim());
+        fallbackMap.put("confidence", Math.min(0.85, maxScore / 5.0));
+        fallbackMap.put("sources", new ArrayList<>(contributingDocs));
+        try {
+            return mapper.writeValueAsString(fallbackMap);
+        } catch (Exception ex) {
+            String escaped = sb.toString().trim().replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+            return "{\"answer\": \"" + escaped + "\", \"confidence\": 0.85, \"sources\": []}";
+        }
     }
 }

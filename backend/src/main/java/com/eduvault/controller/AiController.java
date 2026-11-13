@@ -12,11 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -32,6 +34,12 @@ public class AiController {
     @Autowired
     private LocalJsonDatabase database;
 
+    @Autowired
+    private com.eduvault.service.MultiFileDocumentStore multiFileDocumentStore;
+
+    @Autowired
+    private com.eduvault.service.FileStorageService fileStorageService;
+
     @Autowired(required = false)
     private com.eduvault.service.OkfKnowledgeService okfKnowledgeService;
 
@@ -41,44 +49,172 @@ public class AiController {
     private static final Logger logger = LoggerFactory.getLogger(AiController.class);
     private final ObjectMapper mapper = new ObjectMapper();
 
+    private String getParam(Map<String, ?> map, String key) {
+        if (map == null) return null;
+        Object val = map.get(key);
+        return val != null ? String.valueOf(val).trim() : null;
+    }
+
+    @PostMapping(value = "/upload", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadFiles(
+            @RequestParam("files") org.springframework.web.multipart.MultipartFile[] files,
+            @RequestParam(value = "sessionId", required = false) String sessionId) {
+        try {
+            if (files == null || files.length == 0) {
+                return ResponseEntity.badRequest().body(Map.of("error", "No files provided for upload"));
+            }
+
+            String activeSessionId = (sessionId != null && !sessionId.isBlank())
+                    ? sessionId.trim()
+                    : UUID.randomUUID().toString();
+
+            List<Map<String, Object>> uploadedList = new ArrayList<>();
+
+            for (org.springframework.web.multipart.MultipartFile file : files) {
+                if (file.isEmpty()) continue;
+                String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "document.pdf";
+                String docId = "doc_" + UUID.randomUUID().toString().substring(0, 8);
+
+                String extractedText = fileStorageService.extractTextFromMultipartFile(file);
+                String lowerName = originalFilename.toLowerCase();
+                boolean isPlainText = lowerName.endsWith(".txt") || lowerName.endsWith(".md") || lowerName.endsWith(".csv") || lowerName.endsWith(".json");
+                if (extractedText == null || extractedText.isBlank() || extractedText.startsWith("Failed to extract")) {
+                    if (isPlainText) {
+                        try {
+                            extractedText = new String(file.getBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                        } catch (Exception ex) {
+                            extractedText = "Content could not be parsed as text.";
+                        }
+                    } else {
+                        extractedText = "No extractable text found in " + originalFilename + ". (File may be scanned, image-only, or encrypted).";
+                    }
+                }
+
+                com.eduvault.model.UploadedDocument doc = new com.eduvault.model.UploadedDocument(
+                        docId,
+                        originalFilename,
+                        file.getSize(),
+                        file.getContentType(),
+                        extractedText,
+                        activeSessionId
+                );
+                multiFileDocumentStore.saveDocument(doc);
+
+                Map<String, Object> meta = new HashMap<>();
+                meta.put("id", docId);
+                meta.put("name", originalFilename);
+                meta.put("size", file.getSize());
+                meta.put("charCount", extractedText != null ? extractedText.length() : 0);
+                meta.put("preview", extractedText != null && extractedText.length() > 150 ? extractedText.substring(0, 150) + "..." : extractedText);
+                uploadedList.add(meta);
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "sessionId", activeSessionId,
+                    "files", uploadedList
+            ));
+        } catch (Exception e) {
+            logger.error("Error uploading files for multi-file RAG", e);
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to process uploaded files: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/files")
+    public ResponseEntity<?> getUploadedFiles(@RequestParam(value = "sessionId", required = false) String sessionId) {
+        List<com.eduvault.model.UploadedDocument> docs = multiFileDocumentStore.getDocumentsForSession(sessionId);
+        List<Map<String, Object>> metaList = docs.stream().map(doc -> {
+            Map<String, Object> meta = new HashMap<>();
+            meta.put("id", doc.getId());
+            meta.put("name", doc.getFilename());
+            meta.put("size", doc.getSize());
+            meta.put("charCount", doc.getExtractedText() != null ? doc.getExtractedText().length() : 0);
+            return meta;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(Map.of("files", metaList));
+    }
+
+    @DeleteMapping("/files/{id}")
+    public ResponseEntity<?> deleteUploadedFile(@PathVariable("id") String id) {
+        boolean removed = multiFileDocumentStore.removeDocument(id);
+        return ResponseEntity.ok(Map.of("success", removed, "id", id));
+    }
+
+    @PostMapping("/files/clear")
+    public ResponseEntity<?> clearUploadedFiles(@RequestBody(required = false) Map<String, String> body) {
+        String sessionId = (body != null) ? body.get("sessionId") : null;
+        if (sessionId != null) {
+            multiFileDocumentStore.clearSession(sessionId);
+        }
+        return ResponseEntity.ok(Map.of("success", true, "message", "Session documents cleared"));
+    }
+
     @PostMapping("/chat")
     public ResponseEntity<?> chat(
             @RequestHeader(value = "X-Gemini-Api-Key", required = false) String apiKeyHeader,
-            @RequestBody Map<String, String> request) {
+            @RequestBody Map<String, ?> request) {
         try {
-            String question = request.get("question");
-            if (question == null || question.trim().isEmpty()) {
-                question = request.get("message");
+            String question = getParam(request, "question");
+            if (question == null || question.isEmpty()) {
+                question = getParam(request, "message");
             }
-            if (question == null || question.trim().isEmpty()) {
-                question = request.get("prompt");
+            if (question == null || question.isEmpty()) {
+                question = getParam(request, "prompt");
             }
-            String noteId = request.get("noteId"); // Optional context
-            String subjectId = request.get("subjectId");
-            String unit = request.get("unit");
-            String prn = request.get("prn");
-            String lengthMode = request.get("lengthMode");
+            String noteId = getParam(request, "noteId"); // Optional context
+            String subjectId = getParam(request, "subjectId");
+            String unit = getParam(request, "unit");
+            String prn = getParam(request, "prn");
+            String lengthMode = getParam(request, "lengthMode");
             if (lengthMode == null || lengthMode.isBlank()) {
-                lengthMode = request.get("mode");
+                lengthMode = getParam(request, "mode");
             }
             String customApiKey = apiKeyHeader;
             if (customApiKey == null || customApiKey.isBlank()) {
-                customApiKey = request.get("apiKey");
+                customApiKey = getParam(request, "apiKey");
             }
             if (customApiKey == null || customApiKey.isBlank()) {
-                customApiKey = request.get("customApiKey");
+                customApiKey = getParam(request, "customApiKey");
             }
 
             if (question == null || question.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Question or message is required"));
             }
 
+            // Inspect multi-file attachments
+            List<String> fileIds = new ArrayList<>();
+            Object fileIdsObj = request.get("fileIds");
+            if (fileIdsObj instanceof List<?>) {
+                for (Object o : (List<?>) fileIdsObj) {
+                    if (o != null && !String.valueOf(o).isBlank()) fileIds.add(String.valueOf(o).trim());
+                }
+            } else if (fileIdsObj instanceof String && !((String) fileIdsObj).isBlank()) {
+                String[] parts = ((String) fileIdsObj).split(",");
+                for (String p : parts) {
+                    if (!p.trim().isEmpty()) fileIds.add(p.trim());
+                }
+            }
+
+            String sessionId = getParam(request, "sessionId");
+            List<com.eduvault.model.UploadedDocument> multiDocs = Collections.emptyList();
+            if (!fileIds.isEmpty()) {
+                multiDocs = multiFileDocumentStore.getDocuments(fileIds);
+            } else if (sessionId != null && !sessionId.isBlank()) {
+                multiDocs = multiFileDocumentStore.getDocumentsForSession(sessionId.trim());
+            }
+
             String jsonResponse;
             String source = "GENERAL_TUTOR";
             String contextSnippet = null;
 
+            // Route 0: Multi-File RAG across uploaded files
+            if (!multiDocs.isEmpty()) {
+                logger.info("Executing Multi-File RAG across {} uploaded documents for query: '{}'", multiDocs.size(), question);
+                jsonResponse = ragService.askMultiDocument(question, multiDocs, customApiKey, lengthMode);
+                source = "MULTI_FILE_RAG";
+            }
             // Route 1: Subject-Aware OKF Knowledge Serving
-            if (subjectId != null && !subjectId.trim().isEmpty() && okfKnowledgeService != null) {
+            else if (subjectId != null && !subjectId.trim().isEmpty() && okfKnowledgeService != null) {
                 Optional<String> okfContext = okfKnowledgeService.buildSubjectKnowledgeContext(subjectId.trim(), question, unit);
                 
                 // JIT On-Demand Compilation: if not compiled yet, compile immediately so user never waits for overnight cron
@@ -95,7 +231,11 @@ public class AiController {
 
                 if (okfContext.isPresent()) {
                     contextSnippet = okfContext.get();
-                    jsonResponse = geminiService.askTutor(question, contextSnippet, customApiKey, lengthMode);
+                    if (lengthMode != null && !lengthMode.isBlank()) {
+                        jsonResponse = geminiService.askTutor(question, contextSnippet, customApiKey, lengthMode);
+                    } else {
+                        jsonResponse = geminiService.askTutor(question, contextSnippet, customApiKey);
+                    }
                     source = "OKF_KNOWLEDGE";
                 } else {
                     logger.info("OKF knowledge context still empty for subjectId={}, falling back with strict subject isolation", subjectId);
@@ -137,7 +277,9 @@ public class AiController {
             }
 
             responseMap.put("source", source);
-            if ("OKF_KNOWLEDGE".equals(source)) {
+            if ("MULTI_FILE_RAG".equals(source)) {
+                responseMap.put("documentsCount", multiDocs.size());
+            } else if ("OKF_KNOWLEDGE".equals(source)) {
                 responseMap.put("subjectId", subjectId.trim());
                 if (unit != null && !unit.isBlank()) {
                     responseMap.put("unit", unit.trim());
@@ -238,7 +380,11 @@ public class AiController {
             fullContext = "EduVault Academic Vault ready to assist.";
         }
 
-        return geminiService.askTutor(question, fullContext, customApiKey, lengthMode);
+        if (lengthMode != null && !lengthMode.isBlank()) {
+            return geminiService.askTutor(question, fullContext, customApiKey, lengthMode);
+        } else {
+            return geminiService.askTutor(question, fullContext, customApiKey);
+        }
     }
 
     @PostMapping("/study-guide")

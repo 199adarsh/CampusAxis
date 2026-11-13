@@ -46,11 +46,44 @@ export const isSubjectNameMatch = (nameA, nameB) => {
 
 export const getCleanTitle = (title) => {
     if (!title) return 'Study Material';
+    let clean = title;
     if (title.includes('/') && !title.includes(' ')) {
         const last = title.split('/').filter(Boolean).pop();
-        if (last) return last;
+        if (last) clean = last;
     }
-    return title.replace(/\.pdf$/i, '').trim();
+    if (clean.includes('_')) {
+        return clean.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).replace(/\.([a-z])/g, (_, c) => '.' + c.toUpperCase())).join(' ');
+    }
+    return clean.replace(/\.pdf$/i, '').trim();
+};
+
+export const normalizeUnitNum = (u) => {
+    if (!u) return null;
+    const str = String(u).trim().toLowerCase();
+
+    // 1. Explicit 'unit' or 'module' prefix: e.g. 'unit 1', 'unit-02', 'module 3', 'unit vi'
+    const unitMatch = str.match(/\b(?:unit|module|mod|u)[-:\s#]*([0-9]+|[ivx]+)\b/i);
+    const token = unitMatch ? unitMatch[1] : str;
+
+    const romanMap = { vi: 6, v: 5, iv: 4, iii: 3, ii: 2, i: 1 };
+    if (romanMap[token]) return romanMap[token];
+
+    const parsed = parseInt(token.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= 6) return parsed;
+
+    // 2. Fallback: match standalone Roman numerals or single digit 1-6
+    for (const [r, n] of Object.entries(romanMap)) {
+        if (new RegExp('\\b' + r + '\\b', 'i').test(str)) return n;
+    }
+    const digitMatch = str.match(/\b([1-6])\b/);
+    if (digitMatch) return parseInt(digitMatch[1], 10);
+
+    return null;
+};
+
+export const normalizeUnit = (u) => {
+    const num = normalizeUnitNum(u);
+    return num !== null ? String(num) : (u || '').toString().toLowerCase().trim();
 };
 
 export const getSemesterNumber = (semester) => {
@@ -69,15 +102,15 @@ export const getSemesterNumber = (semester) => {
 
 export const getYearOrder = (subjectOrSem) => {
     if (!subjectOrSem) return 999;
-    const semValue = typeof subjectOrSem === 'object' 
-        ? (subjectOrSem.semester || subjectOrSem.sem || subjectOrSem.year || '') 
+    const semValue = typeof subjectOrSem === 'object'
+        ? (subjectOrSem.semester || subjectOrSem.sem || subjectOrSem.year || '')
         : subjectOrSem;
     const s = String(semValue).toUpperCase().trim();
     if (s.includes('FY') || s.includes('FIRST') || s === '1' || s === '2') return 1;
     if (s.includes('SY') || s.includes('SECOND') || s === '3' || s === '4') return 2;
     if (s.includes('TY') || s.includes('THIRD') || s === '5' || s === '6') return 3;
     if (s.includes('FINAL') || s.includes('BTECH') || s.includes('B.TECH') || s.includes('FOURTH') || s.includes('BE') || s === '7' || s === '8') return 4;
-    
+
     const semNum = getSemesterNumber(semValue);
     if (semNum <= 2) return 1;
     if (semNum <= 4) return 2;

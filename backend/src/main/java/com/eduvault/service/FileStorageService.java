@@ -181,8 +181,11 @@ public class FileStorageService {
                     }
                     return sanitizeText(sb.toString());
                 }
+            } else if (lowerName.endsWith(".txt") || lowerName.endsWith(".md") || lowerName.endsWith(".csv") || lowerName.endsWith(".json")) {
+                byte[] streamBytes = is.readAllBytes();
+                return sanitizeText(new String(streamBytes, java.nio.charset.StandardCharsets.UTF_8));
             } else {
-                return "Text extraction only supported for PDFs, DOCX and PPTX.";
+                return "Text extraction only supported for PDFs, DOCX, PPTX, TXT, and Markdown files.";
             }
         } catch (Exception e) {
             logger.error("Failed to extract text from MultipartFile: {}", originalName, e);
@@ -240,8 +243,10 @@ public class FileStorageService {
                     }
                     return sanitizeText(sb.toString());
                 }
+            } else if (lowerName.endsWith(".txt") || lowerName.endsWith(".md") || lowerName.endsWith(".csv") || lowerName.endsWith(".json")) {
+                return sanitizeText(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
             } else {
-                return "Text extraction only supported for PDFs, DOCX and PPTX.";
+                return "Text extraction only supported for PDFs, DOCX, PPTX, TXT, and Markdown files.";
             }
         } catch (Exception e) {
             logger.warn("Failed to extract text from bytes: {}", originalName, e);

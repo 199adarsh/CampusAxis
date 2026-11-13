@@ -2,16 +2,9 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { DropdownDisclosure } from "../dropdown-disclosure";
-import { Book02Icon, BookOpen01Icon, Layers01Icon, ArrowUp02Icon, Loading01Icon, Cancel01Icon } from "hugeicons-react";
+import { Book02Icon, BookOpen01Icon, Layers01Icon, ArrowUp02Icon, Loading01Icon, Cancel01Icon, Mic01Icon, Attachment01Icon } from "hugeicons-react";
 import { AiLengthSlider } from "../AiLengthSlider";
 import { motion } from "motion/react";
-import {
-  PiArrowUpBold,
-  PiBrainFill,
-  PiMicrophoneBold,
-  PiMicrophoneFill,
-  PiXBold,
-} from "react-icons/pi";
 
 export type RobotEmotion = "reading" | "thinking";
 
@@ -128,6 +121,7 @@ export interface AiMascotInputProps {
   setSelectedSubject?: (val: string) => void;
   selectedUnit?: string;
   setSelectedUnit?: (val: string) => void;
+  availableUnits?: (number | string)[];
   allKnownSubjects?: Array<{ id: string; name: string; code?: string }>;
   isInvalidSubject?: boolean;
   hasCompiledOkf?: boolean;
@@ -136,6 +130,8 @@ export interface AiMascotInputProps {
   subjectNotesCount?: number;
   aiMode?: string;
   onAiModeChange?: (mode: string) => void;
+  onAttachFiles?: () => void;
+  attachedFilesCount?: number;
 }
 
 export function AiMascotInput({
@@ -154,6 +150,7 @@ export function AiMascotInput({
   setSelectedSubject,
   selectedUnit = "all",
   setSelectedUnit,
+  availableUnits,
   allKnownSubjects = [],
   isInvalidSubject = false,
   showVoice = false,
@@ -163,6 +160,8 @@ export function AiMascotInput({
   subjectNotesCount = 0,
   aiMode = "high",
   onAiModeChange,
+  onAttachFiles,
+  attachedFilesCount = 0,
 }: AiMascotInputProps) {
   const [isSubjectOpen, setIsSubjectOpen] = useState(false);
   const [isUnitOpen, setIsUnitOpen] = useState(false);
@@ -183,15 +182,42 @@ export function AiMascotInput({
     })),
   ], [allKnownSubjects]);
 
-  const unitItems = useMemo(() => [
-    { id: "all", name: "All Units", description: "Entire syllabus", icon: <Layers01Icon size={14} /> },
-    { id: "UNIT 01", name: "Unit 1", description: "Module 1", icon: <Layers01Icon size={14} /> },
-    { id: "UNIT 02", name: "Unit 2", description: "Module 2", icon: <Layers01Icon size={14} /> },
-    { id: "UNIT 03", name: "Unit 3", description: "Module 3", icon: <Layers01Icon size={14} /> },
-    { id: "UNIT 04", name: "Unit 4", description: "Module 4", icon: <Layers01Icon size={14} /> },
-    { id: "UNIT 05", name: "Unit 5", description: "Module 5", icon: <Layers01Icon size={14} /> },
-    { id: "UNIT 06", name: "Unit 6", description: "Module 6", icon: <Layers01Icon size={14} /> },
-  ], []);
+  const unitItems = useMemo(() => {
+    if (Array.isArray(availableUnits) && availableUnits.length === 0) {
+      return [
+        {
+          id: "all",
+          name: "No units available",
+          description: "No notes uploaded for this subject yet",
+          icon: <Layers01Icon size={14} />,
+        },
+      ];
+    }
+    const items = [
+      { id: "all", name: "All Units", description: "Entire syllabus", icon: <Layers01Icon size={14} /> },
+    ];
+    if (Array.isArray(availableUnits)) {
+      availableUnits.forEach((u) => {
+        const uNum = typeof u === "number" ? u : parseInt(String(u).replace(/[^0-9]/g, ""), 10);
+        if (!isNaN(uNum) && uNum >= 1 && uNum <= 6) {
+          items.push({
+            id: `UNIT 0${uNum}`,
+            name: `Unit ${uNum}`,
+            description: `Module ${uNum}`,
+            icon: <Layers01Icon size={14} />,
+          });
+        } else if (typeof u === "string" && u.trim().length > 0) {
+          items.push({
+            id: u,
+            name: u,
+            description: u,
+            icon: <Layers01Icon size={14} />,
+          });
+        }
+      });
+    }
+    return items;
+  }, [availableUnits]);
   const [isListening, setIsListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -340,6 +366,22 @@ export function AiMascotInput({
 
           {/* Right: Actions */}
           <div className="flex items-center gap-1.5">
+            {onAttachFiles && (
+              <button
+                type="button"
+                onClick={onAttachFiles}
+                disabled={disabled}
+                className="relative w-8 h-8 rounded-full flex items-center justify-center text-[#727272] hover:text-[#0073E6] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                title="Attach documents for multi-file RAG"
+              >
+                <Attachment01Icon size={16} />
+                {attachedFilesCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 rounded-full bg-[#0073E6] text-white text-[9px] font-bold flex items-center justify-center shadow-xs">
+                    {attachedFilesCount}
+                  </span>
+                )}
+              </button>
+            )}
             {onAiModeChange && (
               <AiLengthSlider currentMode={aiMode} onModeChange={onAiModeChange} />
             )}
@@ -353,7 +395,7 @@ export function AiMascotInput({
                 }`}
               title={isListening ? "Listening... click to stop" : "Voice dictation"}
             >
-              {isListening ? <PiMicrophoneFill size={15} /> : <PiMicrophoneBold size={15} />}
+              <Mic01Icon size={16} className={isListening ? "animate-pulse" : ""} />
             </button>
 
             {/* ChatGPT Circular Send Button */}

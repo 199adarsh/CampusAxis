@@ -1,4 +1,4 @@
-import { isSubjectNameMatch } from "../../lib/noteUtils";
+import { isSubjectNameMatch, normalizeUnitNum } from "../../lib/noteUtils";
 import React, {
     useState,
     useEffect,
@@ -7,6 +7,7 @@ import React, {
     useCallback,
 } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
+import axios from "axios";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -20,6 +21,10 @@ import {
     CheckmarkCircle02Icon,
     ArrowUp02Icon,
     Search01Icon,
+    File01Icon,
+    Attachment01Icon,
+    Cancel01Icon,
+    Upload01Icon,
 } from "hugeicons-react";
 import AiMascotInput from "@/components/ui/ai-mascot-input";
 import { AiLengthSlider, getSavedAiMode } from "@/components/AiLengthSlider";
@@ -61,7 +66,6 @@ class AIAssistantErrorBoundary extends React.Component {
     }
 }
 
-
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const formatName = (fullName) => {
@@ -77,25 +81,6 @@ const formatName = (fullName) => {
         .join(" ");
 };
 
-const SUGGESTIONS = [
-    {
-        label: "Syllabus Breakdown",
-        prompt: "Summarize the key modules and high-weightage topics in this syllabus.",
-    },
-    {
-        label: "High-Yield PYQ Topics",
-        prompt: "What questions and topics appear most frequently in past exam papers?",
-    },
-    {
-        label: "Core Concept Explainer",
-        prompt: "Explain the core concepts and fundamental principles simply with an applied example.",
-    },
-    {
-        label: "Exam Revision Checklist",
-        prompt: "Create a high-impact revision checklist for upcoming mid-term and end-term exams.",
-    },
-];
-
 const AIAssistant = () => {
     const {
         profile,
@@ -109,10 +94,51 @@ const AIAssistant = () => {
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [aiMode, setAiMode] = useState(() => getSavedAiMode());
 
+    // Dynamic subjects fetch to avoid static/hardcoded subjects
+    const [dynamicSubjects, setDynamicSubjects] = useState([]);
+    useEffect(() => {
+        let isMounted = true;
+        axios.get(`${API_BASE}/subjects`)
+            .then(res => {
+                if (isMounted && Array.isArray(res.data) && res.data.length > 0) {
+                    setDynamicSubjects(res.data);
+                }
+            })
+            .catch(err => console.warn("Failed to dynamically fetch subjects for AIAssistant:", err));
+        return () => { isMounted = false; };
+    }, []);
+
+    // Multi-File RAG State
+    const [attachedFiles, setAttachedFiles] = useState([]);
+    const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef(null);
+
+    const sessionId = useMemo(() => {
+        let sid = sessionStorage.getItem('eduvault_rag_session_id');
+        if (!sid) {
+            sid = 'sess_' + Math.random().toString(36).substring(2, 11);
+            sessionStorage.setItem('eduvault_rag_session_id', sid);
+        }
+        return sid;
+    }, []);
+
     const allKnownSubjects = useMemo(() => {
-        const pool = subjects && subjects.length > 0 ? subjects : catalogSubjects || [];
-        return Array.isArray(pool) ? pool.filter(Boolean) : [];
-    }, [subjects, catalogSubjects]);
+        const pool = (dynamicSubjects.length > 0)
+            ? dynamicSubjects
+            : (subjects && subjects.length > 0 ? subjects : catalogSubjects || []);
+        const map = new Map();
+        pool.forEach(s => {
+            if (s && s.id) map.set(s.id, s);
+        });
+        (subjects || []).forEach(s => {
+            if (s && s.id && !map.has(s.id)) map.set(s.id, s);
+        });
+        (catalogSubjects || []).forEach(s => {
+            if (s && s.id && !map.has(s.id)) map.set(s.id, s);
+        });
+        return Array.from(map.values()).filter(Boolean);
+    }, [dynamicSubjects, subjects, catalogSubjects]);
 
     const selectedSubject = searchParams.get("subjectId") || "all";
     const setSelectedSubject = useCallback(
@@ -158,16 +184,48 @@ const AIAssistant = () => {
     }, [selectedSubject, allKnownSubjects, activeSubject]);
 
     const subjectNotes = useMemo(() => {
-        if (!activeSubject || !notes) return [];
-        return (notes || []).filter(
-            (n) =>
-                n && (
-                    String(n.subjectId) === String(activeSubject.id) ||
-                    (activeSubject.code && String(n.subjectId) === String(activeSubject.code)) ||
-                    (n.subject && (String(n.subject) === String(activeSubject.id) || String(n.subject) === String(activeSubject.name)))
-                )
-        );
+        if (!notes) return [];
+        if (!activeSubject) {
+            // When 'all' is selected, include all notes
+            return notes.filter(Boolean);
+        }
+        return (notes || []).filter((n) => {
+            if (!n) return false;
+            if (String(n.subjectId) === String(activeSubject.id)) return true;
+            if (activeSubject.code && String(n.subjectId).toLowerCase() === String(activeSubject.code).toLowerCase()) return true;
+            if (n.subject && (String(n.subject) === String(activeSubject.id) || String(n.subject) === String(activeSubject.name))) return true;
+            if (n.subjectName && activeSubject.name && isSubjectNameMatch(n.subjectName, activeSubject.name)) return true;
+            if (n.r2ObjectKey) {
+                const folder = n.r2ObjectKey.split('/')[0];
+                if (activeSubject.code && activeSubject.code.length > 2 && folder.toUpperCase().includes(activeSubject.code.toUpperCase())) return true;
+                if (activeSubject.name && isSubjectNameMatch(folder, activeSubject.name)) return true;
+            }
+            return false;
+        });
     }, [activeSubject, notes]);
+
+    // Available units strictly derived from notes that actually exist for the active subject
+    const availableUnits = useMemo(() => {
+        if (!subjectNotes || subjectNotes.length === 0) return [];
+        const set = new Set();
+        subjectNotes.forEach(n => {
+            const uNum = normalizeUnitNum(n.unit);
+            if (uNum !== null && uNum >= 1 && uNum <= 6) {
+                set.add(uNum);
+            }
+        });
+        return Array.from(set).sort((a, b) => a - b);
+    }, [subjectNotes]);
+
+    // Auto-reset selectedUnit if not in availableUnits
+    useEffect(() => {
+        if (selectedUnit !== "all") {
+            const uNum = normalizeUnitNum(selectedUnit);
+            if (uNum !== null && !availableUnits.includes(uNum)) {
+                setSelectedUnit("all");
+            }
+        }
+    }, [selectedSubject, availableUnits, selectedUnit]);
 
     const compiledCount = useMemo(() => {
         return (subjectNotes || []).filter((n) => n && n.okfStatus === "PROCESSED").length;
@@ -181,7 +239,7 @@ const AIAssistant = () => {
 
     const defaultInitialMessage = {
         role: "ai",
-        content: `Hello ${profile?.name ? formatName(profile.name) : "Scholar"}. I am your academic study assistant, grounded in your syllabus, course notes, and exam archives. How can I assist your study session today?`,
+        content: `Hello ${profile?.name ? formatName(profile.name) : "Scholar"}. I am your academic study assistant, grounded in your syllabus, course notes, and multi-file document archives. You can ask questions or upload multiple files to query with RAG. How can I assist your study session today?`,
         time: new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
@@ -225,7 +283,7 @@ const AIAssistant = () => {
         const fresh = [
             {
                 role: "ai",
-                content: "Chat cleared. Ask any question about your courses, syllabus, or past exams.",
+                content: "Chat cleared. Ask any question across your uploaded files, courses, or exam archives.",
                 time: new Date().toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -244,9 +302,79 @@ const AIAssistant = () => {
         setTimeout(() => setCopiedIndex(null), 2000);
     };
 
+    // Multi-File upload handler
+    const handleFileUpload = async (filesToUpload) => {
+        if (!filesToUpload || filesToUpload.length === 0) return;
+        setIsUploadingFiles(true);
+        const formData = new FormData();
+        for (let i = 0; i < filesToUpload.length; i++) {
+            formData.append('files', filesToUpload[i]);
+        }
+        formData.append('sessionId', sessionId);
+
+        try {
+            const res = await axios.post(`${API_BASE}/ai/upload`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            if (res.data?.success && Array.isArray(res.data.files)) {
+                setAttachedFiles(prev => {
+                    const existingIds = new Set(prev.map(f => f.id));
+                    const next = [...prev];
+                    res.data.files.forEach(f => {
+                        if (!existingIds.has(f.id)) next.push(f);
+                    });
+                    return next;
+                });
+                toast.success(`Attached ${res.data.files.length} document(s) for multi-file RAG query`);
+            }
+        } catch (err) {
+            console.error("Multi-file upload error:", err);
+            toast.error(err?.response?.data?.error || "Failed to upload files for RAG.");
+        } finally {
+            setIsUploadingFiles(false);
+        }
+    };
+
+    const handleRemoveFile = async (fileId) => {
+        try {
+            await axios.delete(`${API_BASE}/ai/files/${fileId}`);
+        } catch { /* ignore */ }
+        setAttachedFiles(prev => prev.filter(f => f.id !== fileId));
+        toast.info("Document removed from query context");
+    };
+
+    const handleClearAllFiles = async () => {
+        try {
+            await axios.post(`${API_BASE}/ai/files/clear`, { sessionId });
+        } catch { /* ignore */ }
+        setAttachedFiles([]);
+        toast.info("All attached files cleared");
+    };
+
+    // Drag-and-drop file upload
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+            handleFileUpload(e.dataTransfer.files);
+        }
+    };
+
     const sendMessage = async (promptText) => {
         const queryText = (promptText || input).trim();
         if (!queryText) return;
+
+        const isMultiFileQuery = attachedFiles.length > 0;
 
         const userMessage = {
             role: "user",
@@ -255,6 +383,7 @@ const AIAssistant = () => {
                 hour: "2-digit",
                 minute: "2-digit",
             }),
+            attachedFiles: isMultiFileQuery ? attachedFiles.map(f => f.name) : undefined,
         };
 
         setMessages((prev) => [...prev, userMessage]);
@@ -264,6 +393,8 @@ const AIAssistant = () => {
         let answer = null;
         let confidence = 0.95;
         let source = null;
+        let sources = null;
+        let retrievedCount = 0;
 
         const customApiKey =
             localStorage.getItem("eduvault_custom_gemini_key") ||
@@ -277,22 +408,29 @@ const AIAssistant = () => {
             selectedUnit && selectedUnit !== "all" ? selectedUnit : undefined;
 
         try {
+            const requestPayload = {
+                question: queryText,
+                prn: profile?.prn,
+                subjectId: currentSubjectId,
+                unit: currentUnit,
+                lengthMode: aiMode,
+                mode: aiMode,
+                customApiKey: customApiKey || undefined,
+                apiKey: customApiKey || undefined,
+            };
+
+            if (isMultiFileQuery) {
+                requestPayload.fileIds = attachedFiles.map(f => f.id);
+                requestPayload.sessionId = sessionId;
+            }
+
             const response = await fetch(`${API_BASE}/ai/chat`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     ...(customApiKey ? { "X-Gemini-Api-Key": customApiKey } : {}),
                 },
-                body: JSON.stringify({
-                    question: queryText,
-                    prn: profile?.prn,
-                    subjectId: currentSubjectId,
-                    unit: currentUnit,
-                    lengthMode: aiMode,
-                    mode: aiMode,
-                    customApiKey: customApiKey || undefined,
-                    apiKey: customApiKey || undefined,
-                }),
+                body: JSON.stringify(requestPayload),
             });
 
             if (response.ok) {
@@ -305,13 +443,15 @@ const AIAssistant = () => {
                     answer = data.answer;
                     confidence = data.confidence || 0.95;
                     source = data.source;
+                    sources = data.sources || (isMultiFileQuery ? attachedFiles.map(f => f.name) : undefined);
+                    retrievedCount = data.documentsCount || data.retrievedPassages || (sources ? sources.length : 0);
                 }
             }
         } catch (err) {
             console.warn("Backend AI chat error:", err);
         }
 
-        if (!answer && customApiKey) {
+        if (!answer && customApiKey && !isMultiFileQuery) {
             try {
                 const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(customApiKey)}`;
                 const directRes = await fetch(geminiUrl, {
@@ -348,12 +488,14 @@ const AIAssistant = () => {
                     }),
                     confidence,
                     source,
+                    sources,
+                    retrievedCount,
                     subjectId: currentSubjectId,
                 },
             ]);
         } else {
             const fallbackMsg =
-                "Unable to synthesize response. Ensure the backend service is running or check your API key in Settings.";
+                "Unable to synthesize response. Ensure the backend service is running or check your uploaded files.";
             toast.error(fallbackMsg);
             setMessages((prev) => [
                 ...prev,
@@ -380,7 +522,40 @@ const AIAssistant = () => {
     }
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-[#F5F5F7] dark:bg-black font-sans text-[#1D1D1F] dark:text-[#F5F5F7] antialiased overflow-hidden">
+        <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className="flex-1 flex flex-col h-full bg-[#F5F5F7] dark:bg-black font-sans text-[#1D1D1F] dark:text-[#F5F5F7] antialiased overflow-hidden relative"
+        >
+            {/* Hidden Multi-File Input */}
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => {
+                    if (e.target.files) handleFileUpload(e.target.files);
+                    e.target.value = '';
+                }}
+                multiple
+                accept=".pdf,.docx,.pptx,.txt,.md,.csv,.json"
+                className="hidden"
+            />
+
+            {/* Drag & Drop Visual Backdrop */}
+            {isDragging && (
+                <div className="absolute inset-0 z-50 bg-[#0071E3]/15 backdrop-blur-xs border-2 border-dashed border-[#0071E3] flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
+                    <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#1C1C1E] shadow-xl flex items-center justify-center text-[#0071E3] mb-3">
+                        <Upload01Icon size={32} />
+                    </div>
+                    <h3 className="text-base font-bold text-[#1D1D1F] dark:text-white">
+                        Drop Documents to Query
+                    </h3>
+                    <p className="text-xs text-[#6E6E73] dark:text-[#AEAEB2] mt-1 max-w-sm">
+                        Release files to automatically attach and query across all documents with high-precision RAG.
+                    </p>
+                </div>
+            )}
+
             {/* Minimal Header */}
             <header className="h-12 border-b border-[#E5E5EA] dark:border-[#2C2C2E] bg-white/70 dark:bg-[#1C1C1E]/70 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between shrink-0 select-none">
                 <div className="flex items-center gap-2">
@@ -388,30 +563,45 @@ const AIAssistant = () => {
                     <span className="text-xs font-semibold text-[#1D1D1F] dark:text-white">
                         AI Academic Assistant
                     </span>
-                    {activeSubject && (
+                    {attachedFiles.length > 0 ? (
+                        <span className="text-[11px] font-semibold text-[#0071E3] bg-[#0071E3]/10 px-2 py-0.5 rounded-full ml-1">
+                            Multi-File RAG ({attachedFiles.length} file{attachedFiles.length > 1 ? 's' : ''})
+                        </span>
+                    ) : activeSubject ? (
                         <span className="text-[11px] font-medium text-[#0071E3] bg-[#0071E3]/10 px-2 py-0.5 rounded-full ml-1 truncate max-w-[200px]">
                             {activeSubject.name}
                         </span>
-                    )}
+                    ) : null}
                 </div>
 
-                <button
-                    type="button"
-                    onClick={handleClearChat}
-                    className="p-1.5 text-[#6E6E73] hover:text-[#1D1D1F] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-                    title="Clear conversation"
-                >
-                    <RefreshIcon size={16} />
-                </button>
+                <div className="flex items-center gap-1.5">
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#0071E3] bg-[#0071E3]/10 hover:bg-[#0071E3]/15 rounded-lg transition-colors cursor-pointer"
+                        title="Upload documents to query"
+                    >
+                        <Attachment01Icon size={14} />
+                        <span className="hidden sm:inline">Upload Files</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleClearChat}
+                        className="p-1.5 text-[#6E6E73] hover:text-[#1D1D1F] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                        title="Clear conversation"
+                    >
+                        <RefreshIcon size={16} />
+                    </button>
+                </div>
             </header>
 
-            {/* Main Chat Canvas (Full-width section scroll like ChatGPT) */}
+            {/* Main Chat Canvas */}
             <main
                 ref={scrollRef}
                 className="flex-1 w-full overflow-y-auto select-text scroll-smooth relative"
                 id="chatStream"
             >
-                <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 flex flex-col gap-6 pt-6 pb-52 md:pb-40 min-h-full">
+                <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 flex flex-col gap-6 pt-6 pb-56 md:pb-48 min-h-full">
                     {/* Empty State / Welcome Screen */}
                     {messages.length <= 1 && (
                         <div className="flex flex-col items-center justify-center my-auto py-8 text-center select-none">
@@ -422,11 +612,19 @@ const AIAssistant = () => {
                                 Hello, I am Caxiee !
                             </h2>
                             <p className="text-xs text-[#6E6E73] dark:text-[#AEAEB2] mt-1.5 max-w-md">
-                                Your academic companion, ready to explain, guide, and help you learn.
+                                Your multi-file academic tutor. Upload lecture notes, exam papers, and question banks to query all of them simultaneously with RAG.
                             </p>
 
-
-
+                            <div className="mt-4 flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0071E3] text-white text-xs font-semibold rounded-xl hover:bg-[#0077ED] transition-colors shadow-xs cursor-pointer"
+                                >
+                                    <Attachment01Icon size={14} />
+                                    <span>Upload Documents for RAG</span>
+                                </button>
+                            </div>
                         </div>
                     )}
 
@@ -438,6 +636,12 @@ const AIAssistant = () => {
                                     <div className="bg-[#E5E5EA] dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-[#F5F5F7] rounded-3xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap select-text">
                                         {typeof msg.content === "string" ? msg.content : String(msg.content || "")}
                                     </div>
+                                    {Array.isArray(msg.attachedFiles) && msg.attachedFiles.length > 0 && (
+                                        <div className="flex items-center gap-1 justify-end mt-1 text-[10px] text-[#8E8E93]">
+                                            <File01Icon size={11} />
+                                            <span>Queried across: {msg.attachedFiles.join(", ")}</span>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="flex items-start gap-3 w-full group">
@@ -507,7 +711,22 @@ const AIAssistant = () => {
                                             />
                                         </div>
 
-                                        {/* Action Bar (Copy + Source Badge) */}
+                                        {/* Multi-File RAG Source Badges */}
+                                        {msg.source === "MULTI_FILE_RAG" && (
+                                            <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2 border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
+                                                <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[#0071E3] dark:text-[#0A84FF] bg-[#0071E3]/10 dark:bg-[#0A84FF]/10 px-2 py-0.5 rounded-full">
+                                                    <File01Icon size={12} />
+                                                    <span>Multi-File RAG Grounded</span>
+                                                </span>
+                                                {Array.isArray(msg.sources) && msg.sources.map((src, sIdx) => (
+                                                    <span key={sIdx} className="text-[10px] text-[#6E6E73] dark:text-[#AEAEB2] bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md font-mono truncate max-w-[180px]" title={src}>
+                                                        {src}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Action Bar (Copy + Verified Syllabus Badge) */}
                                         <div className="flex items-center gap-2 mt-2 pt-1">
                                             <button
                                                 type="button"
@@ -543,21 +762,79 @@ const AIAssistant = () => {
                             </div>
                             <div className="flex items-center gap-2 py-1 text-xs text-[#6E6E73] dark:text-[#AEAEB2]">
                                 <div className="w-1.5 h-1.5 rounded-full bg-[#0071E3] animate-pulse" />
-                                <span>Searching notes & syllabus context...</span>
+                                <span>
+                                    {attachedFiles.length > 0
+                                        ? `Searching & synthesizing across ${attachedFiles.length} uploaded files...`
+                                        : "Searching notes & syllabus context..."}
+                                </span>
                             </div>
                         </div>
                     )}
                 </div>
             </main>
 
-            {/* Grounding & Chat Input Area (Fixed at bottom like ChatGPT) */}
+            {/* Grounding & Chat Input Area (Fixed at bottom) */}
             <div className="absolute bottom-0 left-0 right-0 pointer-events-none bg-gradient-to-t from-[#F5F5F7] via-[#F5F5F7]/95 to-transparent dark:from-black dark:via-black/95 pt-8 pb-20 md:pb-4 z-10">
                 <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 pointer-events-auto">
+                    {/* Attached Files Chips Bar */}
+                    {attachedFiles.length > 0 && (
+                        <div className="mb-2 p-2 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-md rounded-2xl border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm animate-in fade-in">
+                            <div className="flex items-center justify-between mb-1.5 px-1">
+                                <div className="flex items-center gap-1.5 text-xs font-semibold text-[#1D1D1F] dark:text-white">
+                                    <File01Icon size={14} className="text-[#0071E3]" />
+                                    <span>Attached Query Files ({attachedFiles.length})</span>
+                                    <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-full">
+                                        Multi-File RAG Active
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleClearAllFiles}
+                                    className="text-[10px] text-red-500 hover:text-red-700 cursor-pointer font-medium"
+                                >
+                                    Clear All
+                                </button>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap max-h-24 overflow-y-auto">
+                                {attachedFiles.map((file) => (
+                                    <div
+                                        key={file.id}
+                                        className="flex items-center gap-1.5 px-2.5 py-1 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-xl text-xs text-[#1D1D1F] dark:text-[#F5F5F7] border border-black/5 dark:border-white/5"
+                                    >
+                                        <File01Icon size={12} className="text-[#0071E3] shrink-0" />
+                                        <span className="truncate max-w-[140px] text-[11px] font-medium" title={file.name}>
+                                            {file.name}
+                                        </span>
+                                        <span className="text-[9px] text-[#8E8E93]">
+                                            {file.size ? `${Math.round(file.size / 1024)}KB` : ''}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveFile(file.id)}
+                                            className="text-[#8E8E93] hover:text-red-500 cursor-pointer transition-colors"
+                                            title="Remove file"
+                                        >
+                                            <Cancel01Icon size={12} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {isUploadingFiles && (
+                        <div className="mb-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-[#0071E3] text-xs rounded-xl flex items-center gap-2 border border-blue-200 dark:border-blue-800">
+                            <div className="w-3.5 h-3.5 border-2 border-[#0071E3]/30 border-t-[#0071E3] rounded-full animate-spin" />
+                            <span>Processing and indexing uploaded documents for RAG...</span>
+                        </div>
+                    )}
+
                     <AiMascotInput
                         selectedSubject={selectedSubject}
                         setSelectedSubject={setSelectedSubject}
                         selectedUnit={selectedUnit}
                         setSelectedUnit={setSelectedUnit}
+                        availableUnits={availableUnits}
                         allKnownSubjects={allKnownSubjects}
                         isInvalidSubject={isInvalidSubject}
                         hasCompiledOkf={hasCompiledOkf}
@@ -566,14 +843,18 @@ const AIAssistant = () => {
                         subjectNotesCount={subjectNotes.length}
                         aiMode={aiMode}
                         onAiModeChange={setAiMode}
+                        onAttachFiles={() => fileInputRef.current?.click()}
+                        attachedFilesCount={attachedFiles.length}
                         placeholder={
-                            activeSubject
-                                ? `Ask anything about ${activeSubject.name}...`
-                                : "Ask anything across your courses, notes, and exam archives..."
+                            attachedFiles.length > 0
+                                ? `Ask questions across your ${attachedFiles.length} attached documents...`
+                                : activeSubject
+                                    ? `Ask anything about ${activeSubject.name}...`
+                                    : "Ask anything across your courses, notes, and uploaded files..."
                         }
                         onSubmit={(data) => sendMessage(data.prompt)}
                         isProcessing={isTyping}
-                        disabled={isTyping}
+                        disabled={isTyping || isUploadingFiles}
                     />
                 </div>
             </div>
