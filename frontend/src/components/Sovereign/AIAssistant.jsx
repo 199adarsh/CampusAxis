@@ -395,17 +395,14 @@ const AIAssistant = () => {
                     )}
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <AiLengthSlider currentMode={aiMode} onModeChange={setAiMode} />
-                    <button
-                        type="button"
-                        onClick={handleClearChat}
-                        className="p-1.5 text-[#6E6E73] hover:text-[#1D1D1F] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-                        title="Clear conversation"
-                    >
-                        <RefreshIcon size={16} />
-                    </button>
-                </div>
+                <button
+                    type="button"
+                    onClick={handleClearChat}
+                    className="p-1.5 text-[#6E6E73] hover:text-[#1D1D1F] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                    title="Clear conversation"
+                >
+                    <RefreshIcon size={16} />
+                </button>
             </header>
 
             {/* Main Chat Canvas (Full-width section scroll like ChatGPT) */}
@@ -567,6 +564,8 @@ const AIAssistant = () => {
                         compiledCount={compiledCount}
                         pendingCount={pendingCount}
                         subjectNotesCount={subjectNotes.length}
+                        aiMode={aiMode}
+                        onAiModeChange={setAiMode}
                         placeholder={
                             activeSubject
                                 ? `Ask anything about ${activeSubject.name}...`

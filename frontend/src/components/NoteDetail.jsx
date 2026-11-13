@@ -919,17 +919,14 @@ const NoteDetail = () => {
 
                             <div className="flex items-center gap-1">
                                 {activeTab === 'ai' && (
-                                    <>
-                                        <AiLengthSlider currentMode={aiMode} onModeChange={setAiMode} />
-                                        <button
-                                            type="button"
-                                            onClick={handleClearNoteChat}
-                                            className="p-1.5 text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#F5F5F7] rounded-lg transition-colors cursor-pointer"
-                                            title="Clear conversation"
-                                        >
-                                            <RefreshIcon size={16} />
-                                        </button>
-                                    </>
+                                    <button
+                                        type="button"
+                                        onClick={handleClearNoteChat}
+                                        className="p-1.5 text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#F5F5F7] rounded-lg transition-colors cursor-pointer"
+                                        title="Clear conversation"
+                                    >
+                                        <RefreshIcon size={16} />
+                                    </button>
                                 )}
                                 <button
                                     onClick={() => setIsPanelOpen(false)}
@@ -1096,10 +1093,10 @@ const NoteDetail = () => {
                                         className="w-full bg-transparent border-0 outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 shadow-none resize-none text-xs text-[#1D1D1F] placeholder:text-[#8E8E93] leading-relaxed p-1"
                                     />
 
-                                    <div className="flex items-center justify-between pt-1">
-                                        <span className="text-[10px] text-[#8E8E93] pl-1 select-none">
-                                            Grounded in document
-                                        </span>
+                                    <div className="flex items-center justify-between pt-1 gap-1">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <AiLengthSlider currentMode={aiMode} onModeChange={setAiMode} />
+                                        </div>
 
                                         <button
                                             type="submit"

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { DropdownDisclosure } from "../dropdown-disclosure";
 import { Book02Icon, BookOpen01Icon, Layers01Icon, ArrowUp02Icon, Loading01Icon, Cancel01Icon } from "hugeicons-react";
+import { AiLengthSlider } from "../AiLengthSlider";
 import { motion } from "motion/react";
 import {
   PiArrowUpBold,
@@ -133,6 +134,8 @@ export interface AiMascotInputProps {
   compiledCount?: number;
   pendingCount?: number;
   subjectNotesCount?: number;
+  aiMode?: string;
+  onAiModeChange?: (mode: string) => void;
 }
 
 export function AiMascotInput({
@@ -158,6 +161,8 @@ export function AiMascotInput({
   compiledCount = 0,
   pendingCount = 0,
   subjectNotesCount = 0,
+  aiMode = "high",
+  onAiModeChange,
 }: AiMascotInputProps) {
   const [isSubjectOpen, setIsSubjectOpen] = useState(false);
   const [isUnitOpen, setIsUnitOpen] = useState(false);
@@ -334,6 +339,9 @@ const [isListening, setIsListening] = useState(false);
 
           {/* Right: Actions */}
           <div className="flex items-center gap-1.5">
+            {onAiModeChange && (
+              <AiLengthSlider currentMode={aiMode} onModeChange={onAiModeChange} />
+            )}
             <button
               type="button"
               onClick={toggleVoice}
