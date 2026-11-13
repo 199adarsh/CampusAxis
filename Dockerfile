@@ -2,7 +2,7 @@
 FROM node:20-alpine AS frontend-build
 WORKDIR /frontend
 COPY frontend/package*.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --prefer-offline --no-audit
 COPY frontend/ ./
 RUN npm run build
 
@@ -10,13 +10,13 @@ RUN npm run build
 FROM maven:3.9.6-eclipse-temurin-21-alpine AS backend-build
 WORKDIR /app
 COPY backend/pom.xml .
-RUN mvn dependency:go-offline -B
+RUN --mount=type=cache,target=/root/.m2 mvn dependency:go-offline -B
 COPY backend/src ./src
 COPY --from=frontend-build /frontend/dist ./src/main/resources/static
-RUN mvn clean package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 mvn package -DskipTests -T 1C
 
 # Stage 3: Optimized Container Runtime
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 RUN mkdir -p /app/data
 COPY --from=backend-build /app/target/*.jar app.jar
