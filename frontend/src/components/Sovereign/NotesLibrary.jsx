@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -16,11 +16,7 @@ import {
     ArrowDown01Icon,
     Mortarboard01Icon,
     Download01Icon,
-    Delete02Icon,
-    AiChat02Icon,
-    Tick02Icon,
-    Layers01Icon,
-    Cancel01Icon
+    Delete02Icon
 } from 'hugeicons-react';
 import { cn } from '../../lib/utils';
 import DocumentLoadingBar from '../DocumentLoadingBar';
@@ -102,19 +98,7 @@ const matchesCategory = (note, cat) => {
     return false;
 };
 
-const NoteCard = React.memo(function NoteCard({
-    note,
-    subject,
-    subjectName,
-    onOpen,
-    onDownload,
-    onDelete,
-    canDelete = false,
-    showSubject = false,
-    selectable = false,
-    isSelected = false,
-    onToggleSelect
-}) {
+const NoteCard = React.memo(function NoteCard({ note, subject, subjectName, onOpen, onDownload, onDelete, canDelete = false, showSubject = false }) {
     const displayTitle = getCleanTitle(note.title);
     const resolvedSubjectName = subjectName || (typeof subject === 'object' ? subject?.name : subject) || 'Study Material';
 
@@ -140,22 +124,11 @@ const NoteCard = React.memo(function NoteCard({
 
     return (
         <div
-            onClick={() => {
-                if (selectable && onToggleSelect) {
-                    onToggleSelect(note);
-                } else {
-                    onOpen(note);
-                }
-            }}
-            className={cn(
-                "bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] rounded-xl p-3 sm:p-3.5 transition-all duration-150 cursor-pointer flex flex-col justify-between group shadow-2xs hover:shadow-xs active:scale-[0.99] select-none h-[152px] sm:h-[160px]",
-                isSelected
-                    ? "ring-2 ring-[#0071E3] border-[#0071E3] bg-[#DEEDFC]/20 dark:bg-[#0071E3]/10"
-                    : "hover:border-[#0071E3]/50 dark:hover:border-[#0071E3]/60"
-            )}
+            onClick={() => onOpen(note)}
+            className="bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] hover:border-[#0071E3]/50 dark:hover:border-[#0071E3]/60 rounded-xl p-3 sm:p-3.5 transition-all duration-150 cursor-pointer flex flex-col justify-between group shadow-2xs hover:shadow-xs active:scale-[0.99] select-none h-[152px] sm:h-[160px]"
         >
             <div className="flex-1 flex flex-col">
-                {/* Header: Document HugeIcon & Unit Pill & Optional Checkbox */}
+                {/* Header: Document HugeIcon & Unit Pill */}
                 <div className="flex items-center justify-between gap-1.5 mb-2 shrink-0">
                     <div className={cn("w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 border border-black/5 dark:border-white/5", iconContainerClass)}>
                         {note.thumbnailUrl || note.coverImage ? (
@@ -175,24 +148,6 @@ const NoteCard = React.memo(function NoteCard({
                         <span className="text-[10px] font-medium text-[#6E6E73] dark:text-[#AEAEB2] bg-[#F2F2F7] dark:bg-[#2C2C2E] px-2 py-0.5 rounded-md">
                             {note.unit || "General"}
                         </span>
-                        {selectable && (
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onToggleSelect?.(note);
-                                }}
-                                className={cn(
-                                    "w-5 h-5 rounded-md flex items-center justify-center border transition-all cursor-pointer ml-0.5",
-                                    isSelected
-                                        ? "bg-[#0071E3] border-[#0071E3] text-white shadow-xs"
-                                        : "bg-white dark:bg-[#2C2C2E] border-slate-300 dark:border-slate-600 hover:border-[#0071E3]"
-                                )}
-                                title={isSelected ? "Deselect note" : "Select note for Multi-File RAG"}
-                            >
-                                <Tick02Icon size={12} strokeWidth={3} className={isSelected ? "text-white" : "text-transparent"} />
-                            </button>
-                        )}
                     </div>
                 </div>
 
@@ -263,8 +218,6 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
     const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
     const [isPyqExamDropdownOpen, setIsPyqExamDropdownOpen] = useState(false);
     const [isPyqSubjectDropdownOpen, setIsPyqSubjectDropdownOpen] = useState(false);
-    const [isSelectMode, setIsSelectMode] = useState(false);
-    const [selectedNoteIds, setSelectedNoteIds] = useState(() => new Set());
 
     const isTeacher = profile
         ? (profile.dob === 'TEACHER' || String(profile.role || '').toUpperCase() === 'TEACHER')
@@ -691,47 +644,6 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
         });
     }, [notes, activeSubjectId, activeSubjectObj, selectedUnit, selectedCategory, searchQuery, resolveSubjectId]);
 
-    const handleToggleSelectNote = useCallback((note) => {
-        setSelectedNoteIds(prev => {
-            const next = new Set(prev);
-            if (next.has(note.id)) {
-                next.delete(note.id);
-            } else {
-                next.add(note.id);
-            }
-            return next;
-        });
-    }, []);
-
-    const handleSelectAllDisplayed = useCallback(() => {
-        setSelectedNoteIds(prev => {
-            const next = new Set(prev);
-            displayNotes.forEach(n => next.add(n.id));
-            return next;
-        });
-        toast.success(`Selected ${displayNotes.length} notes`);
-    }, [displayNotes]);
-
-    const handleSelectAllUnits = useCallback(() => {
-        const allIds = (subjectNotesForActive || []).map(n => n.id);
-        setSelectedNoteIds(new Set(allIds));
-        toast.success(`Selected all notes across all units (${allIds.length} notes)`);
-    }, [subjectNotesForActive]);
-
-    const handleClearSelection = useCallback(() => {
-        setSelectedNoteIds(new Set());
-    }, []);
-
-    const handleStartRagChat = useCallback(() => {
-        if (selectedNoteIds.size === 0) return;
-        const ids = Array.from(selectedNoteIds);
-        sessionStorage.setItem('eduvault_rag_selected_notes', JSON.stringify(ids));
-        toast.success(`Attached ${ids.length} note(s) for Multi-File RAG`);
-        navigate(`/ai-assistant?subjectId=${encodeURIComponent(activeSubjectId || 'all')}`, {
-            state: { selectedNoteIds: ids }
-        });
-    }, [selectedNoteIds, activeSubjectId, navigate]);
-
 
 
     return (
@@ -766,23 +678,6 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
                     </div>
 
                     <div className="flex items-center gap-2.5">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsSelectMode(prev => !prev);
-                                if (isSelectMode) setSelectedNoteIds(new Set());
-                            }}
-                            className={cn(
-                                "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shadow-2xs",
-                                isSelectMode
-                                    ? "bg-[#0073E6] text-white hover:bg-[#174073]"
-                                    : "bg-[#DEEDFC] text-[#0073E6] hover:bg-[#D0E5FA] border border-[#BBDCF9]"
-                            )}
-                            title="Select multiple notes or all units for Multi-File AI RAG"
-                        >
-                            <AiChat02Icon size={14} />
-                            <span>{isSelectMode ? `Selecting (${selectedNoteIds.size})` : "Multi-File AI RAG"}</span>
-                        </button>
                         {isTeacher && (
                             <button
                                 onClick={() => setShowLmsSync(true)}
@@ -965,9 +860,6 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
                                             onDownload={handleDownloadNote}
                                             onDelete={handleDeleteNote}
                                             canDelete={canDeleteNote(note)}
-                                            selectable={isSelectMode}
-                                            isSelected={selectedNoteIds.has(note.id)}
-                                            onToggleSelect={handleToggleSelectNote}
                                         />
                                     );
                                 })}
@@ -1015,74 +907,6 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
                     onSyncComplete={refreshData}
                     availableSubjects={allKnownSubjects || subjects || []}
                 />
-
-                {/* Floating Multi-File RAG Selection Bar */}
-                {isSelectMode && (
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/95 dark:bg-[#1C1C1E]/95 border border-[#0073E6]/30 dark:border-[#0073E6]/40 rounded-2xl px-4 py-2.5 shadow-2xl flex items-center gap-3 backdrop-blur-md animate-in slide-in-from-bottom-4">
-                        <div className="flex items-center gap-2 pr-2 border-r border-[#E5E5EA] dark:border-[#2C2C2E]">
-                            <span className="text-xs font-bold text-[#1D1D1F] dark:text-white">
-                                {selectedNoteIds.size} selected
-                            </span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                            <button
-                                type="button"
-                                onClick={handleSelectAllDisplayed}
-                                className="text-xs font-medium text-[#727272] hover:text-[#383838] dark:hover:text-white transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
-                            >
-                                This Unit ({displayNotes.length})
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={handleSelectAllUnits}
-                                className="inline-flex items-center gap-1 text-xs font-semibold text-[#0073E6] hover:text-[#174073] transition-colors cursor-pointer px-2.5 py-1 rounded-lg bg-[#DEEDFC] hover:bg-[#D0E5FA]"
-                                title="Select all notes across all units for this subject"
-                            >
-                                <Layers01Icon size={13} />
-                                <span>All Units ({subjectNotesForActive.length})</span>
-                            </button>
-
-                            {selectedNoteIds.size > 0 && (
-                                <button
-                                    type="button"
-                                    onClick={handleClearSelection}
-                                    className="text-xs font-medium text-rose-500 hover:text-rose-700 transition-colors cursor-pointer px-2 py-1"
-                                >
-                                    Clear
-                                </button>
-                            )}
-                        </div>
-
-                        <button
-                            type="button"
-                            disabled={selectedNoteIds.size === 0}
-                            onClick={handleStartRagChat}
-                            className={cn(
-                                "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs",
-                                selectedNoteIds.size > 0
-                                    ? "bg-[#0073E6] text-white hover:bg-[#174073] cursor-pointer"
-                                    : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
-                            )}
-                        >
-                            <AiChat02Icon size={14} />
-                            <span>Ask AI ({selectedNoteIds.size})</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsSelectMode(false);
-                                setSelectedNoteIds(new Set());
-                            }}
-                            className="p-1 rounded-lg text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer ml-1"
-                            title="Close selection"
-                        >
-                            <Cancel01Icon size={15} />
-                        </button>
-                    </div>
-                )}
             </main>
         </div>
     );
