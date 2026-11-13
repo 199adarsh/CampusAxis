@@ -443,6 +443,117 @@ const AIAssistant = () => {
         }
     }, [sessionId, location.state]);
 
+    // Sync picker state whenever modal opens
+    useEffect(() => {
+        if (isNotesPickerOpen) {
+            setPickerSelectedNoteIds(new Set(attachedFiles.map(f => f.id)));
+            if (selectedSubject && selectedSubject !== "all") {
+                setPickerSubjectId(selectedSubject);
+            }
+        }
+    }, [isNotesPickerOpen, attachedFiles, selectedSubject]);
+
+    const pickerNotes = useMemo(() => {
+        if (!notes || notes.length === 0) return [];
+        if (pickerSubjectId === "all") {
+            const enrolledIds = new Set(allKnownSubjects.map(s => s.id));
+            const enrolledCodes = new Set(allKnownSubjects.map(s => s.code?.toLowerCase()).filter(Boolean));
+            return notes.filter(n => {
+                if (!n) return false;
+                if (enrolledIds.has(n.subjectId)) return true;
+                if (n.subjectId && enrolledCodes.has(n.subjectId.toLowerCase())) return true;
+                return allKnownSubjects.some(s => s.name && isSubjectNameMatch(n.subjectName, s.name));
+            });
+        }
+        const targetSub = allKnownSubjects.find(s => s.id === pickerSubjectId || s.code === pickerSubjectId);
+        return notes.filter(n => {
+            if (!n) return false;
+            if (String(n.subjectId) === String(pickerSubjectId)) return true;
+            if (targetSub?.code && String(n.subjectId).toLowerCase() === String(targetSub.code).toLowerCase()) return true;
+            if (targetSub?.name && isSubjectNameMatch(n.subjectName, targetSub.name)) return true;
+            if (n.r2ObjectKey && targetSub?.code && n.r2ObjectKey.toUpperCase().includes(targetSub.code.toUpperCase())) return true;
+            return false;
+        });
+    }, [notes, pickerSubjectId, allKnownSubjects]);
+
+    const pickerNotesByUnit = useMemo(() => {
+        const groups = {};
+        pickerNotes.forEach(note => {
+            const uNum = normalizeUnitNum(note.unit);
+            const key = uNum ? `Unit ${uNum}` : (note.unit && note.unit.trim() ? note.unit : 'General / Other');
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(note);
+        });
+        return groups;
+    }, [pickerNotes]);
+
+    const isAllCurrentUnitsSelected = useMemo(() => {
+        if (pickerNotes.length === 0) return false;
+        return pickerNotes.every(n => pickerSelectedNoteIds.has(n.id));
+    }, [pickerNotes, pickerSelectedNoteIds]);
+
+    const handleToggleSelectAllUnits = useCallback(() => {
+        setPickerSelectedNoteIds(prev => {
+            const next = new Set(prev);
+            if (isAllCurrentUnitsSelected) {
+                pickerNotes.forEach(n => next.delete(n.id));
+            } else {
+                pickerNotes.forEach(n => next.add(n.id));
+            }
+            return next;
+        });
+    }, [isAllCurrentUnitsSelected, pickerNotes]);
+
+    const handleToggleUnit = useCallback((unitNotes) => {
+        setPickerSelectedNoteIds(prev => {
+            const next = new Set(prev);
+            const allInUnitSelected = unitNotes.every(n => next.has(n.id));
+            if (allInUnitSelected) {
+                unitNotes.forEach(n => next.delete(n.id));
+            } else {
+                unitNotes.forEach(n => next.add(n.id));
+            }
+            return next;
+        });
+    }, []);
+
+    const handleToggleNote = useCallback((noteId) => {
+        setPickerSelectedNoteIds(prev => {
+            const next = new Set(prev);
+            if (next.has(noteId)) {
+                next.delete(noteId);
+            } else {
+                next.add(noteId);
+            }
+            return next;
+        });
+    }, []);
+
+    const handleConfirmAttachSelected = async () => {
+        const ids = Array.from(pickerSelectedNoteIds);
+        if (ids.length === 0) {
+            setAttachedFiles([]);
+            setIsNotesPickerOpen(false);
+            return;
+        }
+        setIsAttachingSubjectNotes(true);
+        try {
+            const res = await axios.post(`${API_BASE}/ai/attach-notes`, {
+                noteIds: ids,
+                sessionId
+            });
+            if (res.data?.success && Array.isArray(res.data.files)) {
+                setAttachedFiles(res.data.files);
+                toast.success(`Attached ${res.data.files.length} note(s) across units for Multi-File RAG`);
+                setIsNotesPickerOpen(false);
+            }
+        } catch {
+            toast.error("Failed to attach selected notes");
+        } finally {
+            setIsAttachingSubjectNotes(false);
+        }
+    };
+
     // Attach all units / notes for the active subject directly
     const handleAttachAllSubjectNotes = async () => {
         if (!subjectNotes || subjectNotes.length === 0) {
@@ -984,7 +1095,7 @@ const AIAssistant = () => {
                         subjectNotesCount={subjectNotes.length}
                         aiMode={aiMode}
                         onAiModeChange={setAiMode}
-                        onAttachFiles={() => fileInputRef.current?.click()}
+                        onAttachFiles={() => setIsNotesPickerOpen(true)}
                         attachedFilesCount={attachedFiles.length}
                         placeholder={
                             attachedFiles.length > 0
@@ -999,6 +1110,233 @@ const AIAssistant = () => {
                     />
                 </div>
             </div>
+
+            {/* Notes Library Selection Modal for Multi-File RAG */}
+            {isNotesPickerOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in">
+                    <div className="bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+                        {/* Modal Header */}
+                        <div className="px-5 py-4 border-b border-[#E5E5EA] dark:border-white/10 flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-[#0073E6]/10 text-[#0073E6] flex items-center justify-center shrink-0">
+                                    <BookOpen01Icon size={18} />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-sm font-bold text-[#1D1D1F] dark:text-white">
+                                            Select Notes for Multi-File RAG
+                                        </h3>
+                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#DEEDFC] text-[#0073E6] dark:bg-[#0073E6]/20">
+                                            Library RAG
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-[#6E6E73] dark:text-[#AEAEB2] mt-0.5">
+                                        Select all units or pick specific notes from your enrolled courses for multi-document synthesis.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsNotesPickerOpen(false)}
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                                title="Close modal"
+                            >
+                                <Cancel01Icon size={16} />
+                            </button>
+                        </div>
+
+                        {/* Subject Filter Bar */}
+                        <div className="px-5 py-2.5 bg-[#F2F7FC] dark:bg-[#252528] border-b border-[#E5E5EA] dark:border-white/5 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#727272] shrink-0">
+                                Subject:
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setPickerSubjectId("all")}
+                                className={cn(
+                                    "px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer",
+                                    pickerSubjectId === "all"
+                                        ? "bg-[#0073E6] text-white shadow-2xs"
+                                        : "bg-white dark:bg-[#1C1C1E] text-[#383838] dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-[#E2E2E2] dark:border-white/10"
+                                )}
+                            >
+                                All My Subjects
+                            </button>
+                            {allKnownSubjects.map((s) => (
+                                <button
+                                    key={s.id}
+                                    type="button"
+                                    onClick={() => setPickerSubjectId(s.id)}
+                                    className={cn(
+                                        "px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer",
+                                        pickerSubjectId === s.id
+                                            ? "bg-[#0073E6] text-white shadow-2xs"
+                                            : "bg-white dark:bg-[#1C1C1E] text-[#383838] dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-[#E2E2E2] dark:border-white/10"
+                                    )}
+                                >
+                                    {s.name || s.code}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Action Header: Select All Units & Counter */}
+                        <div className="px-5 py-2 bg-white dark:bg-[#1C1C1E] border-b border-[#E5E5EA] dark:border-white/10 flex items-center justify-between shrink-0">
+                            <button
+                                type="button"
+                                onClick={handleToggleSelectAllUnits}
+                                disabled={pickerNotes.length === 0}
+                                className={cn(
+                                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                                    isAllCurrentUnitsSelected
+                                        ? "bg-[#0073E6] text-white"
+                                        : "bg-[#DEEDFC] text-[#0073E6] hover:bg-[#D0E5FA] border border-[#BBDCF9]"
+                                )}
+                                title="Toggle all units across this subject"
+                            >
+                                <CheckmarkCircle02Icon size={14} />
+                                <span>
+                                    {isAllCurrentUnitsSelected ? "Deselect All Units" : "Select All Units"} ({pickerNotes.length} notes)
+                                </span>
+                            </button>
+
+                            <div className="text-xs font-semibold text-[#0073E6]">
+                                {pickerSelectedNoteIds.size} note{pickerSelectedNoteIds.size !== 1 ? 's' : ''} selected
+                            </div>
+                        </div>
+
+                        {/* Notes List Grouped by Unit */}
+                        <div className="p-5 flex-1 overflow-y-auto space-y-4">
+                            {pickerNotes.length === 0 ? (
+                                <div className="py-12 text-center text-sm text-[#8E8E93]">
+                                    No notes found for this subject.
+                                </div>
+                            ) : (
+                                Object.entries(pickerNotesByUnit).map(([unitName, unitNotes]) => {
+                                    const allInUnitSelected = unitNotes.every(n => pickerSelectedNoteIds.has(n.id));
+                                    const someInUnitSelected = unitNotes.some(n => pickerSelectedNoteIds.has(n.id));
+
+                                    return (
+                                        <div key={unitName} className="border border-[#E5E5EA] dark:border-white/10 rounded-xl overflow-hidden">
+                                            {/* Unit Header */}
+                                            <div
+                                                onClick={() => handleToggleUnit(unitNotes)}
+                                                className="px-3.5 py-2 bg-[#F9FAFC] dark:bg-[#252528] flex items-center justify-between cursor-pointer hover:bg-[#F2F7FC] dark:hover:bg-[#2C2C2E] transition-colors"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={allInUnitSelected}
+                                                        ref={el => {
+                                                            if (el) el.indeterminate = someInUnitSelected && !allInUnitSelected;
+                                                        }}
+                                                        onChange={() => handleToggleUnit(unitNotes)}
+                                                        onClick={e => e.stopPropagation()}
+                                                        className="w-4 h-4 rounded text-[#0073E6] accent-[#0073E6] cursor-pointer"
+                                                    />
+                                                    <span className="text-xs font-bold text-[#1D1D1F] dark:text-white flex items-center gap-1.5">
+                                                        <Layers01Icon size={13} className="text-[#0073E6]" />
+                                                        {unitName}
+                                                    </span>
+                                                </div>
+                                                <span className="text-[11px] text-[#8E8E93] font-medium">
+                                                    {unitNotes.length} note{unitNotes.length !== 1 ? 's' : ''}
+                                                </span>
+                                            </div>
+
+                                            {/* Unit Notes Cards */}
+                                            <div className="p-2 space-y-1 bg-white dark:bg-[#1C1C1E]">
+                                                {unitNotes.map(n => {
+                                                    const isChecked = pickerSelectedNoteIds.has(n.id);
+                                                    return (
+                                                        <div
+                                                            key={n.id}
+                                                            onClick={() => handleToggleNote(n.id)}
+                                                            className={cn(
+                                                                "flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all border",
+                                                                isChecked
+                                                                    ? "bg-[#DEEDFC]/40 dark:bg-[#0073E6]/10 border-[#0073E6]/40 shadow-2xs"
+                                                                    : "border-transparent hover:bg-slate-50 dark:hover:bg-white/5"
+                                                            )}
+                                                        >
+                                                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isChecked}
+                                                                    onChange={() => handleToggleNote(n.id)}
+                                                                    onClick={e => e.stopPropagation()}
+                                                                    className="w-3.5 h-3.5 rounded text-[#0073E6] accent-[#0073E6] cursor-pointer shrink-0"
+                                                                />
+                                                                <File01Icon size={15} className="text-[#0073E6] shrink-0" />
+                                                                <div className="min-w-0 flex-1">
+                                                                    <div className="text-xs font-semibold text-[#1D1D1F] dark:text-zinc-200 truncate">
+                                                                        {n.title || n.originalFilename || "Untitled Note"}
+                                                                    </div>
+                                                                    {n.subjectName && (
+                                                                        <div className="text-[10px] text-[#8E8E93] truncate">
+                                                                            {n.subjectName}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-[#727272] shrink-0 ml-2">
+                                                                {n.unit || "Note"}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="px-5 py-3 border-t border-[#E5E5EA] dark:border-white/10 bg-[#FAFBFD] dark:bg-[#202022] flex items-center justify-between shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsNotesPickerOpen(false);
+                                    fileInputRef.current?.click();
+                                }}
+                                className="inline-flex items-center gap-1.5 text-xs text-[#0073E6] hover:underline font-semibold cursor-pointer"
+                                title="Upload custom PDF/DOCX from computer"
+                            >
+                                <Upload01Icon size={14} />
+                                <span className="hidden sm:inline">Upload external file instead</span>
+                            </button>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsNotesPickerOpen(false)}
+                                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleConfirmAttachSelected}
+                                    disabled={pickerSelectedNoteIds.size === 0 || isAttachingSubjectNotes}
+                                    className={cn(
+                                        "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-xs",
+                                        pickerSelectedNoteIds.size > 0 && !isAttachingSubjectNotes
+                                            ? "bg-[#0073E6] hover:bg-[#174073] text-white active:scale-95"
+                                            : "bg-[#E2E2E2] dark:bg-[#383838] text-[#727272] cursor-not-allowed opacity-70"
+                                    )}
+                                >
+                                    {isAttachingSubjectNotes ? (
+                                        <Loading01Icon size={14} className="animate-spin text-white" />
+                                    ) : (
+                                        <Attachment01Icon size={14} />
+                                    )}
+                                    <span>Attach Selected ({pickerSelectedNoteIds.size})</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
