@@ -47,6 +47,9 @@ public class AiController {
     @Autowired(required = false)
     private com.eduvault.service.OkfBatchService okfBatchService;
 
+    @Autowired(required = false)
+    private com.eduvault.service.R2StorageService r2StorageService;
+
     private static final Logger logger = LoggerFactory.getLogger(AiController.class);
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -148,6 +151,100 @@ public class AiController {
             multiFileDocumentStore.clearSession(sessionId);
         }
         return ResponseEntity.ok(Map.of("success", true, "message", "Session documents cleared"));
+    }
+
+    @PostMapping("/attach-notes")
+    public ResponseEntity<?> attachNotesToSession(@RequestBody Map<String, ?> body) {
+        try {
+            String sessionId = getParam(body, "sessionId");
+            if (sessionId == null || sessionId.isBlank()) {
+                sessionId = UUID.randomUUID().toString();
+            }
+
+            List<String> noteIds = new ArrayList<>();
+            Object noteIdsObj = body.get("noteIds");
+            if (noteIdsObj instanceof List<?>) {
+                for (Object o : (List<?>) noteIdsObj) {
+                    if (o != null && !String.valueOf(o).isBlank()) noteIds.add(String.valueOf(o).trim());
+                }
+            } else if (noteIdsObj instanceof String && !((String) noteIdsObj).isBlank()) {
+                for (String p : ((String) noteIdsObj).split(",")) {
+                    if (!p.trim().isEmpty()) noteIds.add(p.trim());
+                }
+            }
+
+            if (noteIds.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "No noteIds provided to attach"));
+            }
+
+            List<Map<String, Object>> attachedList = new ArrayList<>();
+
+            for (String nId : noteIds) {
+                Optional<Note> noteOpt = database.getNoteById(nId);
+                if (noteOpt.isEmpty()) continue;
+                Note note = noteOpt.get();
+
+                String extractedText = note.getExtractedText();
+                if (extractedText == null || extractedText.trim().isEmpty() || extractedText.startsWith("Failed to extract") || extractedText.startsWith("File not found")) {
+                    if (note.getFileUrl() != null && fileStorageService != null) {
+                        extractedText = fileStorageService.extractText(note.getFileUrl());
+                    }
+                    if ((extractedText == null || extractedText.isBlank() || extractedText.startsWith("File not found") || extractedText.startsWith("Failed to extract"))
+                            && note.getR2ObjectKey() != null && r2StorageService != null && fileStorageService != null) {
+                        try {
+                            byte[] bytes = r2StorageService.getObjectBytes(note.getR2ObjectKey());
+                            if (bytes != null && bytes.length > 0) {
+                                extractedText = fileStorageService.extractTextFromBytes(bytes, note.getOriginalFilename() != null ? note.getOriginalFilename() : note.getR2ObjectKey());
+                            }
+                        } catch (Exception ex) {
+                            logger.warn("attachNotes: R2 lazy extraction failed for noteId={}: {}", nId, ex.getMessage());
+                        }
+                    }
+                    if (extractedText != null && !extractedText.isBlank() && !extractedText.startsWith("File not found") && !extractedText.startsWith("Failed to extract")) {
+                        note.setExtractedText(extractedText);
+                        database.updateNote(note);
+                    }
+                }
+
+                String filename = note.getOriginalFilename();
+                if (filename == null || filename.isBlank()) {
+                    filename = (note.getTitle() != null && !note.getTitle().isBlank()) ? note.getTitle() : ("note_" + nId + ".pdf");
+                }
+                if (note.getUnit() != null && !note.getUnit().isBlank()) {
+                    String uTag = "[" + note.getUnit().trim() + "] ";
+                    if (!filename.startsWith(uTag)) {
+                        filename = uTag + filename;
+                    }
+                }
+
+                com.eduvault.model.UploadedDocument doc = new com.eduvault.model.UploadedDocument(
+                        nId,
+                        filename,
+                        extractedText != null ? (long) extractedText.length() : 0L,
+                        "application/pdf",
+                        extractedText != null ? extractedText : "",
+                        sessionId
+                );
+                multiFileDocumentStore.saveDocument(doc);
+
+                Map<String, Object> meta = new HashMap<>();
+                meta.put("id", nId);
+                meta.put("name", filename);
+                meta.put("unit", note.getUnit());
+                meta.put("subjectId", note.getSubjectId());
+                meta.put("charCount", extractedText != null ? extractedText.length() : 0);
+                attachedList.add(meta);
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "sessionId", sessionId,
+                    "files", attachedList
+            ));
+        } catch (Exception e) {
+            logger.error("Error attaching notes to multi-file store", e);
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to attach notes: " + e.getMessage()));
+        }
     }
 
     @PostMapping("/chat")
