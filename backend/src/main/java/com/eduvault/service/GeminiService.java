@@ -216,8 +216,8 @@ public class GeminiService {
                 truncatedContext = truncatedContext.substring(0, 6000) + "\n...[truncated]";
             }
 
-            String systemInstruction = "You are a knowledgeable AI tutor and institutional academic assistant for EduVault. Provide well-structured, detailed answers in 300-400 words. Synthesize information from context into a clear explanation. Use markdown formatting (bold, bullet points, headers) for readability. Return ONLY a JSON object with 'answer' and 'confidence' keys. No markdown code blocks around the JSON.";
-            String prompt = "Context:\n" + truncatedContext + "\n\nQuestion: " + question + "\n\nProvide a detailed, well-structured answer using markdown formatting. Return: {\"answer\": \"your detailed answer here\", \"confidence\": 0.95}";
+            String systemInstruction = "You are a knowledgeable AI tutor and institutional academic assistant for EduVault. Provide thorough, well-structured, comprehensive explanations (500-700 words). Use clear markdown formatting with bold headers (###), organized bullet points, formulas, and real-world examples. Return ONLY a JSON object with 'answer' and 'confidence' keys. No markdown code blocks around the JSON.";
+            String prompt = "Context:\n" + truncatedContext + "\n\nQuestion: " + question + "\n\nProvide an in-depth, structured academic explanation using rich markdown formatting. Return: {\"answer\": \"your detailed answer here\", \"confidence\": 0.95}";
 
             logger.info("askTutor prompt length: {} chars", prompt.length());
             String responseText = callGemini(systemInstruction, prompt, 0.2, customApiKey);
@@ -609,7 +609,7 @@ public class GeminiService {
         boolean isGroq = effectiveApiKey != null && effectiveApiKey.startsWith("gsk_");
         if (isGroq) {
             completionsUrl = "https://api.groq.com/openai/v1/chat/completions";
-            modelCascade = List.of("openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b");
+            modelCascade = List.of("llama-3.1-8b-instant", "llama-3.3-70b-versatile", "mixtral-8x7b-32768");
             headers.setBearerAuth(effectiveApiKey);
         } else if (effectiveApiKey != null && (effectiveApiKey.startsWith("AIza") || effectiveApiKey.length() > 30)) {
             completionsUrl = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
