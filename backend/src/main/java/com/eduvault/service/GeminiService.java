@@ -257,26 +257,13 @@ public class GeminiService {
             }
             return cleaned;
         } catch (Exception e) {
-            logger.warn("Primary tutor generation error: {}. Formulating academic tutor response from context.", e.getMessage());
-            return fallbackAskTutor(question, contextTexts);
+            logger.warn("Primary tutor generation error: {}", e.getMessage());
+            return "{\"answer\": \"AI Assistant is currently unavailable. Please verify your connection or API configuration.\", \"confidence\": 0.0, \"error\": true}";
         }
     }
 
     public String fallbackAskTutor(String question, String contextTexts) {
-        try {
-            String ans;
-            if (contextTexts != null && !contextTexts.isBlank() && !contextTexts.contains("No uploaded study materials")) {
-                ans = "### Academic Synthesis\n\n" +
-                        "Here are the relevant details from your institutional vault regarding **" + question + "**:\n\n" +
-                        contextTexts + "\n\n" +
-                        "---\n*Synthesized from EduVault Academic Repository.*";
-            } else {
-                ans = "I am connected to your EduVault institutional knowledge base. For **" + question + "**, please review your enrolled subjects or upload the corresponding unit notes to generate concept breakdowns.";
-            }
-            return mapper.writeValueAsString(Map.of("answer", ans, "confidence", 0.8));
-        } catch (Exception ex) {
-            return "{\"answer\": \"Ready to assist with your academic courses.\", \"confidence\": 0.5}";
-        }
+        return "{\"answer\": \"AI Assistant is currently unavailable. Please verify your connection or API configuration.\", \"confidence\": 0.0, \"error\": true}";
     }
 
     public String generateStudyGuide(String pyqText, String qbText) {
