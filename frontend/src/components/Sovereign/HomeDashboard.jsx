@@ -479,7 +479,7 @@ const HomeDashboard = () => {
     setCiePopupOpen(false);
   }, []);
 
-  if (loading) {
+  if (loading && !profile) {
     return (
       <div className="flex flex-col items-center justify-center h-[75vh] gap-3 bg-canvas-bg text-text-primary">
         <TetrisLoader columns={8} rows={14} cellSize={4} gap={1.5} speed={35} label="Loading dashboard..." />

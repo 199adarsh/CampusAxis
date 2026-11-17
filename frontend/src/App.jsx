@@ -3,8 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import SovereignLayout from './components/Sovereign/SovereignLayout';
 import LandingPage from './landing/LandingPage';
+import HomeDashboard from './components/Sovereign/HomeDashboard';
 
-const HomeDashboard = React.lazy(() => import('./components/Sovereign/HomeDashboard'));
 const NotesLibrary = React.lazy(() => import('./components/Sovereign/NotesLibrary'));
 const NoteDetail = React.lazy(() => import('./components/NoteDetail'));
 const Roadmaps = React.lazy(() => import('./components/Sovereign/Roadmaps'));
@@ -27,13 +27,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/landing" element={<LandingPage />} />
-        <Route
-          element={
-            <Suspense fallback={<RouteLoadingFallback />}>
-              <SovereignLayout />
-            </Suspense>
-          }
-        >
+        <Route element={<SovereignLayout />}>
           <Route path="/dashboard" element={<HomeDashboard />} />
           <Route path="/notes" element={<NotesLibrary />} />
           <Route path="/notes/:id" element={<NoteDetail />} />

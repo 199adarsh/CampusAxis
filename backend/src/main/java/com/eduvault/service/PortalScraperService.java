@@ -17,6 +17,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.regex.*;
@@ -77,6 +80,8 @@ public class PortalScraperService {
         }
     }
 
+    private final ConcurrentHashMap<String, CompletableFuture<PortalDashboardResponse>> inFlightScrapes = new ConcurrentHashMap<>();
+
     public PortalDashboardResponse fetchDashboard(String prn, String dob) throws Exception {
         String cacheKey = (prn != null ? prn.trim().toLowerCase() : "");
         CachedResponse cached = responseCache.get(cacheKey);
@@ -85,36 +90,58 @@ public class PortalScraperService {
             return cached.response;
         }
 
-        log.info("Starting student portal synchronization for PRN: {}", prn);
-        ScraperService service = new ScraperService();
-        ScrapeResult result = service.scrape(prn, dob);
-        
-        // Convert to DashboardSubject objects
-        List<DashboardSubject> dashboardSubjects = new ArrayList<>();
-        for (SubjectData data : result.getSubjects()) {
-            dashboardSubjects.add(DashboardSubject.builder()
-                .code(data.getCode())
-                .name(data.getName())
-                .attendance(data.getAttendance())
-                .cie(data.getCie())
-                .maxCie(data.getMaxCie())
-                .totalConducted(data.getTotalConducted())
-                .totalAttended(data.getTotalAttended())
-                .totalScheduled(data.getTotalScheduled())
-                .stillToGo(data.getStillToGo())
-                .credit(data.getCredit() > 0 ? data.getCredit() : 1)
-                .lecturesPerWeek(data.getLecturesPerWeek())
-                .detailedAttendance(data.getDetailedAttendance())
-                .build());
-        }
-        
-        PortalDashboardResponse response = PortalDashboardResponse.builder()
-            .profile(result.getProfile())
-            .subjects(dashboardSubjects)
-            .build();
+        CompletableFuture<PortalDashboardResponse> future = new CompletableFuture<>();
+        CompletableFuture<PortalDashboardResponse> existing = inFlightScrapes.putIfAbsent(cacheKey, future);
 
-        responseCache.put(cacheKey, new CachedResponse(response));
-        return response;
+        if (existing != null) {
+            log.info("Awaiting in-flight portal scrape for PRN: {}", prn);
+            try {
+                return existing.get(35, TimeUnit.SECONDS);
+            } catch (Exception ex) {
+                CachedResponse fallback = responseCache.get(cacheKey);
+                if (fallback != null && fallback.isValid()) return fallback.response;
+                throw (ex instanceof Exception ? (Exception) ex : new RuntimeException(ex));
+            }
+        }
+
+        try {
+            log.info("Starting student portal synchronization for PRN: {}", prn);
+            ScraperService service = new ScraperService();
+            ScrapeResult result = service.scrape(prn, dob);
+            
+            // Convert to DashboardSubject objects
+            List<DashboardSubject> dashboardSubjects = new ArrayList<>();
+            for (SubjectData data : result.getSubjects()) {
+                dashboardSubjects.add(DashboardSubject.builder()
+                    .code(data.getCode())
+                    .name(data.getName())
+                    .attendance(data.getAttendance())
+                    .cie(data.getCie())
+                    .maxCie(data.getMaxCie())
+                    .totalConducted(data.getTotalConducted())
+                    .totalAttended(data.getTotalAttended())
+                    .totalScheduled(data.getTotalScheduled())
+                    .stillToGo(data.getStillToGo())
+                    .credit(data.getCredit() > 0 ? data.getCredit() : 1)
+                    .lecturesPerWeek(data.getLecturesPerWeek())
+                    .detailedAttendance(data.getDetailedAttendance())
+                    .build());
+            }
+            
+            PortalDashboardResponse response = PortalDashboardResponse.builder()
+                .profile(result.getProfile())
+                .subjects(dashboardSubjects)
+                .build();
+
+            responseCache.put(cacheKey, new CachedResponse(response));
+            future.complete(response);
+            return response;
+        } catch (Exception ex) {
+            future.completeExceptionally(ex);
+            throw ex;
+        } finally {
+            inFlightScrapes.remove(cacheKey, future);
+        }
     }
     
         

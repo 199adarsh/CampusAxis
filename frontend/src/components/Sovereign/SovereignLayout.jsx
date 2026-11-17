@@ -1,5 +1,5 @@
 import { cn } from '../../lib/utils';
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 
 import { Outlet } from 'react-router-dom';
 
@@ -62,16 +62,36 @@ const SovereignLayout = () => {
 
     const navigate = useNavigate();
 
-    const [profile, setProfile] = useState(null);
+    const [profile, setProfile] = useState(() => {
+        try {
+            const saved = localStorage.getItem('eduvault_profile');
+            return saved ? JSON.parse(saved) : null;
+        } catch {
+            return null;
+        }
+    });
 
-    const [subjects, setSubjects] = useState([]);
+    const [subjects, setSubjects] = useState(() => {
+        try {
+            const saved = localStorage.getItem('eduvault_subjects');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
 
     const [catalogSubjects, setCatalogSubjects] = useState([]);
     const [isDockMinimized, setIsDockMinimized] = useState(false);
 
     const [notes, setNotes] = useState([]);
 
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(() => {
+        try {
+            return !localStorage.getItem('eduvault_profile');
+        } catch {
+            return true;
+        }
+    });
 
     const [showUpload, setShowUpload] = useState(false);
 
@@ -804,7 +824,7 @@ const SovereignLayout = () => {
 
                 <div className={`flex-1 w-full max-w-full min-w-0 relative ${location.pathname === '/ai-assistant' || location.pathname.startsWith('/notes/') ? 'h-full overflow-hidden flex flex-col' : 'overflow-y-auto overflow-x-hidden pb-24 md:pb-0'}`}>
 
-                    {loading ? (
+                    {loading && !profile ? (
 
                         <div className="h-full min-h-[60vh] flex flex-col items-center justify-center gap-3">
 
@@ -820,7 +840,14 @@ const SovereignLayout = () => {
 
                     ) : (
 
-                        <Outlet context={outletContextValue} />
+                        <Suspense fallback={
+                            <div className="h-full min-h-[60vh] flex flex-col items-center justify-center gap-3">
+                                <TetrisLoader columns={8} rows={14} cellSize={4} gap={1.5} speed={35} label="Loading page..." />
+                                <p className="text-xs font-bold uppercase tracking-widest text-[#727272]">Loading page...</p>
+                            </div>
+                        }>
+                            <Outlet context={outletContextValue} />
+                        </Suspense>
 
                     )}
 
