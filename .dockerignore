@@ -1,0 +1,17 @@
+.git
+.github
+.gemini
+evidence_package
+frontend/node_modules
+frontend/dist
+backend/target
+backend/data/*.pdf
+backend/data/*.docx
+backend/data/*.ppt*
+backend/data/*.php
+backend/data/*.db
+Test_Files
+logs
+*.log
+load-test.js
+load_test.py
