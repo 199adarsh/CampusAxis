@@ -81,3 +81,6 @@ backend/data/*.py
 data/
 backend/data/profile.json
 backend/data/faculty_accounts.json
+
+evidence_package/
+

@@ -23,7 +23,7 @@ import {
     File01Icon,
 } from "hugeicons-react";
 import AiMascotInput from "@/components/ui/ai-mascot-input";
-import { AiLengthSlider, getSavedAiMode } from "@/components/AiLengthSlider";
+import ThinkingAnimation from "./ThinkingAnimation";
 
 class AIAssistantErrorBoundary extends React.Component {
     constructor(props) {
@@ -89,7 +89,7 @@ const AIAssistant = () => {
     const [selectedUnit, setSelectedUnit] = useState("all");
     const [selectedUnits, setSelectedUnits] = useState(["all"]);
     const [copiedIndex, setCopiedIndex] = useState(null);
-    const [aiMode, setAiMode] = useState(() => getSavedAiMode());
+    const [aiMode, setAiMode] = useState("high");
     const [isAttachingSubjectNotes, setIsAttachingSubjectNotes] = useState(false);
     const [attachedFiles, setAttachedFiles] = useState([]);
 
@@ -251,6 +251,35 @@ const AIAssistant = () => {
         });
         return Array.from(set).sort((a, b) => a - b);
     }, [subjectNotes]);
+
+    const subjectBucketList = useMemo(() => {
+        return (allKnownSubjects || []).map((s) => {
+            if (!s) return null;
+            const sNotes = (notes || []).filter((n) => {
+                if (!n) return false;
+                if (String(n.subjectId) === String(s.id)) return true;
+                if (s.code && String(n.subjectId).toLowerCase() === String(s.code).toLowerCase()) return true;
+                if (n.subject && (String(n.subject) === String(s.id) || String(n.subject) === String(s.name))) return true;
+                if (n.subjectName && s.name && isSubjectNameMatch(n.subjectName, s.name)) return true;
+                return false;
+            });
+            if (sNotes.length === 0) return null;
+            const unitSet = new Set();
+            sNotes.forEach((n) => {
+                const uNum = normalizeUnitNum(n.unit);
+                if (uNum !== null && uNum >= 1 && uNum <= 6) {
+                    unitSet.add(uNum);
+                }
+            });
+            return {
+                id: String(s.id),
+                name: s.name,
+                code: s.code,
+                notesCount: sNotes.length,
+                units: Array.from(unitSet).sort((a, b) => a - b),
+            };
+        }).filter(Boolean);
+    }, [allKnownSubjects, notes]);
 
     // Auto-reset selectedUnits if not in availableUnits
     useEffect(() => {
@@ -423,6 +452,7 @@ const AIAssistant = () => {
                 prn: profile?.prn,
                 subjectId: currentSubjectId,
                 unit: currentUnit,
+                units: selectedUnits && !selectedUnits.includes("all") && selectedUnits.length > 0 ? selectedUnits : undefined,
                 lengthMode: aiMode,
                 mode: aiMode,
                 customApiKey: customApiKey || undefined,
@@ -568,7 +598,7 @@ const AIAssistant = () => {
                 className="flex-1 w-full overflow-y-auto select-text scroll-smooth relative"
                 id="chatStream"
             >
-                <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 flex flex-col gap-6 pt-6 pb-56 md:pb-48 min-h-full">
+                <div className="w-full max-w-3xl sm:max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-6 flex flex-col gap-6 pt-6 pb-56 md:pb-48 min-h-full">
                     {/* Empty State / Welcome Screen */}
                     {messages.length <= 1 && (
                         <div className="flex flex-col items-center justify-center my-auto py-8 text-center select-none">
@@ -716,18 +746,13 @@ const AIAssistant = () => {
 
                     {/* Searching / Thinking State */}
                     {isTyping && (
-                        <div className="flex items-start gap-3 w-full">
-                            <div className="w-7 h-7 rounded-full bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] flex items-center justify-center text-[#0071E3] shrink-0 mt-0.5 shadow-xs">
-                                <SparklesIcon size={14} />
-                            </div>
-                            <div className="flex items-center gap-2 py-1 text-xs text-[#6E6E73] dark:text-[#AEAEB2]">
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#0071E3] animate-pulse" />
-                                <span>
-                                    {attachedFiles.length > 0
-                                        ? `Searching & synthesizing across ${attachedFiles.length} uploaded files...`
-                                        : "Searching notes & syllabus context..."}
-                                </span>
-                            </div>
+                        <div className="w-full max-w-2xl py-2">
+                            <ThinkingAnimation
+                                activeSubject={activeSubject}
+                                selectedUnits={selectedUnits}
+                                attachedFiles={attachedFiles}
+                                aiMode={aiMode}
+                            />
                         </div>
                     )}
                 </div>
@@ -735,7 +760,7 @@ const AIAssistant = () => {
 
             {/* Grounding & Chat Input Area (Fixed at bottom) */}
             <div className="absolute bottom-0 left-0 right-0 pointer-events-none bg-gradient-to-t from-[#F5F5F7] via-[#F5F5F7]/95 to-transparent dark:from-black dark:via-black/95 pt-8 pb-20 md:pb-4 z-10">
-                <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 pointer-events-auto">
+                <div className="w-full max-w-3xl sm:max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-6 pointer-events-auto">
                     <AiMascotInput
                         selectedSubject={selectedSubject}
                         setSelectedSubject={setSelectedSubject}
@@ -745,13 +770,12 @@ const AIAssistant = () => {
                         setSelectedUnits={setSelectedUnits}
                         availableUnits={availableUnits}
                         allKnownSubjects={allKnownSubjects}
+                        subjectBucketList={subjectBucketList}
                         isInvalidSubject={isInvalidSubject}
                         hasCompiledOkf={hasCompiledOkf}
                         compiledCount={compiledCount}
                         pendingCount={pendingCount}
                         subjectNotesCount={subjectNotes.length}
-                        aiMode={aiMode}
-                        onAiModeChange={setAiMode}
                         placeholder={
                             activeSubject
                                 ? selectedUnits && !selectedUnits.includes("all") && selectedUnits.length > 0

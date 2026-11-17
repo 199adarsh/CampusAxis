@@ -1,12 +1,16 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { DropdownDisclosure } from "../dropdown-disclosure";
-import { Book02Icon, BookOpen01Icon, Layers01Icon, ArrowUp02Icon, Loading01Icon, Cancel01Icon, Mic01Icon, Attachment01Icon } from "hugeicons-react";
-import { AiLengthSlider } from "../AiLengthSlider";
-import { motion } from "motion/react";
+import React, { useMemo } from 'react';
+import PromptBar, {
+  type PromptBarProps,
+  type PromptBarSource,
+  type PromptBarModel,
+  type PromptBarCommand,
+  type PromptBarSendDetail,
+} from '../PromptBar/PromptBar';
+import { Book02Icon, BookOpen01Icon, Attachment01Icon } from 'hugeicons-react';
 
-export type RobotEmotion = "reading" | "thinking";
+export type RobotEmotion = 'reading' | 'thinking';
 
 export function EyeLED({
   emotion,
@@ -17,100 +21,26 @@ export function EyeLED({
   isBlinking: boolean;
   offsetX: number;
 }) {
-  const isThinking = emotion === "thinking";
-
-  if (isBlinking && !isThinking) {
-    return <div className="w-2 h-1 rounded-xs bg-emerald-400 shadow-[0_0_6px_#10b981]" />;
-  }
-
-  if (isThinking) {
-    return (
-      <motion.div
-        className="w-2 h-3.5 rounded-xs bg-amber-400 shadow-[0_0_8px_#facc15]"
-        animate={{ y: [-1, -3, -1] }}
-        transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
-      />
-    );
-  }
-
-  return (
-    <motion.div
-      className="w-2 h-4 rounded-xs bg-emerald-400 shadow-[0_0_8px_#34d399]"
-      animate={{ x: offsetX }}
-      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-    />
-  );
+  return <div className="w-2 h-1 rounded-xs bg-emerald-400" />;
 }
 
 export function RobotBeta({
-  emotion = "reading",
-  textLength = 0,
-  isListening = false,
-  className = "",
+  className = '',
 }: {
   emotion?: RobotEmotion;
   textLength?: number;
   isListening?: boolean;
   className?: string;
 }) {
-  const [isBlinking, setIsBlinking] = useState(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (emotion !== "thinking") {
-        setIsBlinking(true);
-        setTimeout(() => setIsBlinking(false), 140);
-      }
-    }, 2800 + Math.random() * 2200);
-    return () => clearInterval(interval);
-  }, [emotion]);
-
-  const eyeOffset = Math.sin(textLength * 0.45) * 5;
-
-  const getEarStyle = () => {
-    if (isListening) return "bg-red-500 shadow-[0_0_8px_#ef4444] animate-pulse";
-    if (emotion === "thinking") return "bg-amber-400 shadow-[0_0_6px_#facc15]";
-    return "bg-emerald-400 shadow-[0_0_6px_#10b981]";
-  };
-
-  return (
-    <motion.div
-      className={`relative flex items-center justify-center select-none ${className}`}
-      animate={{
-        y: emotion === "thinking" ? [0, -3, 0] : [0, -1.5, 0],
-      }}
-      transition={{
-        y: { duration: 2.2, repeat: Infinity, ease: "easeInOut" },
-      }}
-    >
-      <div className="relative flex items-center justify-center">
-        <div className={`absolute -left-1.5 w-1 h-4 rounded-l-xs transition-all duration-300 ${getEarStyle()}`} />
-        <div className={`absolute -right-1.5 w-1 h-4 rounded-r-xs transition-all duration-300 ${getEarStyle()}`} />
-
-        <div className="w-16 h-11 rounded-xl bg-white dark:bg-zinc-800 border-2 border-black/10 dark:border-white/20 flex items-center justify-center p-1.5 shadow-md">
-          <div className="relative w-full h-full bg-[#0a0a0c] rounded-lg flex items-center justify-center gap-2 overflow-hidden shadow-inner">
-            <div className="relative z-10 flex items-center justify-center gap-2">
-              <EyeLED emotion={emotion} isBlinking={isBlinking} offsetX={eyeOffset} />
-              <EyeLED emotion={emotion} isBlinking={isBlinking} offsetX={eyeOffset} />
-            </div>
-
-            <div
-              className="absolute inset-0 pointer-events-none z-20"
-              style={{
-                backgroundImage: "linear-gradient(rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.6) 50%)",
-                backgroundSize: "100% 3px",
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
+  return null;
 }
 
 export interface AiMascotInputProps {
-  onSubmit?: (data: { prompt: string }) => void;
+  onSubmit?: (data: { prompt: string; agentId?: string; effort?: string }) => void;
+  onSend?: () => void;
+  onClear?: () => void;
   isProcessing?: boolean;
+  isLoading?: boolean;
   value?: string;
   onChange?: (value: string) => void;
   disabled?: boolean;
@@ -125,299 +55,123 @@ export interface AiMascotInputProps {
   setSelectedUnits?: (units: string[]) => void;
   availableUnits?: (number | string)[];
   allKnownSubjects?: Array<{ id: string; name: string; code?: string }>;
+  subjectBucketList?: Array<{
+    id: string;
+    name: string;
+    code?: string;
+    notesCount: number;
+    units: number[];
+  }>;
   isInvalidSubject?: boolean;
   hasCompiledOkf?: boolean;
   compiledCount?: number;
   pendingCount?: number;
   subjectNotesCount?: number;
-  aiMode?: string;
-  onAiModeChange?: (mode: string) => void;
   onAttachFiles?: () => void;
   attachedFilesCount?: number;
+  width?: number;
 }
 
+const DEFAULT_AI_MODELS: PromptBarModel[] = [
+  { key: 'caxiee', name: 'Caxiee AI', tag: 'Campus' },
+  { key: 'gemini', name: 'Gemini 1.5', tag: 'Deep' },
+  { key: 'chatgpt', name: 'ChatGPT', tag: 'Fast' },
+  { key: 'claude', name: 'Claude', tag: 'Logic' },
+];
+
+const DEFAULT_COMMANDS: PromptBarCommand[] = [
+  { key: 'summarize', name: '/summarize', description: 'Digest the syllabus/notes' },
+  { key: 'explain', name: '/explain', description: 'Plain-language conceptual breakdown' },
+  { key: 'exam', name: '/exam', description: 'Generate high-probability exam questions' },
+  { key: 'flashcards', name: '/flashcards', description: 'Create key revision bullet points' },
+];
+
 export function AiMascotInput({
-  value,
-  onChange,
   onSubmit,
   onSend,
-  onClear,
   disabled = false,
   isProcessing = false,
   isLoading = false,
-  emotion = "reading",
-  placeholder = "Ask any academic question across your enrolled subjects...",
-  className = "",
-  selectedSubject = "all",
+  placeholder = 'Ask anything across your enrolled syllabus...',
+  className = '',
+  selectedSubject = 'all',
   setSelectedSubject,
-  selectedUnit = "all",
-  setSelectedUnit,
-  selectedUnits,
+  selectedUnits = ['all'],
   setSelectedUnits,
-  availableUnits,
   allKnownSubjects = [],
-  isInvalidSubject = false,
-  showVoice = false,
-  hasCompiledOkf = false,
-  compiledCount = 0,
-  pendingCount = 0,
-  subjectNotesCount = 0,
-  aiMode = "high",
-  onAiModeChange,
+  subjectBucketList = [],
   onAttachFiles,
-  attachedFilesCount = 0,
+  width = 860,
 }: AiMascotInputProps) {
-  const [isSubjectOpen, setIsSubjectOpen] = useState(false);
-  const [isUnitOpen, setIsUnitOpen] = useState(false);
-  const [internalPrompt, setInternalPrompt] = useState("");
-
-  const subjectItems = useMemo(() => [
-    {
-      id: "all",
-      name: "All My Subjects",
-      description: "Search across my enrolled courses",
-      icon: <BookOpen01Icon size={14} />,
-    },
-    ...(Array.isArray(allKnownSubjects) ? allKnownSubjects : []).filter(Boolean).map((s) => ({
-      id: typeof s === "string" ? s : (s.id || s.code || s.name || "sub"),
-      name: typeof s === "string" ? s : (s.name || s.code || "Subject"),
-      description: typeof s === "string" ? "" : (s.code ? `Course Code: ${s.code}` : "Enrolled Course"),
-      icon: <Book02Icon size={14} />,
-    })),
-  ], [allKnownSubjects]);
-
-  const unitItems = useMemo(() => {
-    if (Array.isArray(availableUnits) && availableUnits.length === 0) {
-      return [
-        {
-          id: "all",
-          name: "No units available",
-          description: "No notes uploaded for this subject yet",
-          icon: <Layers01Icon size={14} />,
-        },
-      ];
-    }
-    const items = [
-      { id: "all", name: "All Units", description: "Entire syllabus", icon: <Layers01Icon size={14} /> },
+  const sources: PromptBarSource[] = useMemo(() => {
+    const list: PromptBarSource[] = [
+      {
+        key: 'all-subjects',
+        name: 'All Enrolled Subjects',
+        description: 'Search across whole syllabus',
+        icon: <BookOpen01Icon size={15} />,
+      },
     ];
-    if (Array.isArray(availableUnits)) {
-      availableUnits.forEach((u) => {
-        const uNum = typeof u === "number" ? u : parseInt(String(u).replace(/[^0-9]/g, ""), 10);
-        if (!isNaN(uNum) && uNum >= 1 && uNum <= 6) {
-          items.push({
-            id: `UNIT 0${uNum}`,
-            name: `Unit ${uNum}`,
-            description: `Module ${uNum}`,
-            icon: <Layers01Icon size={14} />,
-          });
-        } else if (typeof u === "string" && u.trim().length > 0) {
-          items.push({
-            id: u,
-            name: u,
-            description: u,
-            icon: <Layers01Icon size={14} />,
-          });
-        }
+
+    if (Array.isArray(allKnownSubjects)) {
+      allKnownSubjects.filter(Boolean).forEach((s) => {
+        const id = typeof s === 'string' ? s : s.id || s.code || s.name || 'sub';
+        const name = typeof s === 'string' ? s : s.name || s.code || 'Subject';
+        const desc = typeof s === 'string' ? '' : s.code ? `Course: ${s.code}` : 'Subject notes';
+        list.push({
+          key: id,
+          name,
+          description: desc,
+          icon: <Book02Icon size={15} />,
+        });
       });
     }
-    return items;
-  }, [availableUnits]);
-  const [isListening, setIsListening] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const recognitionRef = useRef<any>(null);
 
-  const promptText = value !== undefined ? value : internalPrompt;
+    if (onAttachFiles) {
+      list.push({
+        key: 'attach-device',
+        name: 'Attach documents',
+        description: 'Multi-file RAG upload',
+        icon: <Attachment01Icon size={15} />,
+        attach: true,
+      });
+    }
 
-  const handlePromptChange = (val: string) => {
-    if (onChange) onChange(val);
-    if (value === undefined) setInternalPrompt(val);
-  };
+    return list;
+  }, [allKnownSubjects, onAttachFiles]);
 
-  const processing = isProcessing || isLoading;
-
-  const handleSend = () => {
-    if (disabled || !promptText.trim() || processing) return;
+  const handlePromptSend = (text: string, detail: PromptBarSendDetail) => {
+    if (!text.trim()) return;
     if (onSubmit) {
-      onSubmit({ prompt: promptText.trim() });
+      onSubmit({ prompt: text.trim(), agentId: detail.model?.key, effort: detail.effort });
     } else if (onSend) {
       onSend();
     }
-    if (value === undefined) setInternalPrompt("");
   };
-
-  const toggleVoice = () => {
-    if (disabled) return;
-    if (isListening) {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch { }
-        recognitionRef.current = null;
-      }
-      setIsListening(false);
-      return;
-    }
-
-    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRec) return;
-
-    try {
-      const recognition = new SpeechRec();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = "en-US";
-
-      recognition.onstart = () => setIsListening(true);
-      recognition.onresult = (e: any) => {
-        const transcript = Array.from(e.results)
-          .map((r: any) => r[0]?.transcript || "")
-          .join("");
-        if (transcript) {
-          handlePromptChange(promptText ? `${promptText.trim()} ${transcript}` : transcript);
-        }
-      };
-      recognition.onerror = () => setIsListening(false);
-      recognition.onend = () => setIsListening(false);
-
-      recognitionRef.current = recognition;
-      recognition.start();
-    } catch {
-      setIsListening(false);
-    }
-  };
-
-  const canSend = Boolean(promptText.trim()) && !disabled && !processing;
 
   return (
-    <div className={`relative w-full max-w-3xl mx-auto flex flex-col items-center ${className}`}>
-
-      {/* ChatGPT-Style Chatbar */}
-        <div className="w-full rounded-[24px] bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)] focus-within:border-[#D2D2D7] dark:focus-within:border-[#3A3A3C] transition-all p-3 sm:px-4 sm:py-3">
-
-          {/* Textarea: Clean, borderless input */}
-          <textarea
-            ref={textareaRef}
-            id="aiPromptInput"
-            value={promptText}
-            onChange={(e) => handlePromptChange(e.target.value)}
-            disabled={disabled}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder={placeholder}
-            rows={2}
-            style={{ outline: "none", border: "none", boxShadow: "none" }}
-            className="w-full bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus:border-0 shadow-none p-0 text-sm text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#8E8E93] leading-relaxed resize-none min-h-[44px] max-h-[140px]"
-          />
-
-          {/* Toolbar Row */}
-            <div className="flex items-center justify-between pt-2 mt-1 gap-2">
-              {/* Left: Scope Selection Pills */}
-                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                  {setSelectedSubject && (
-                    <>
-                      <DropdownDisclosure
-                        compact
-                        placement="top"
-                        title="My Subjects"
-                        items={subjectItems}
-                        isOpen={isSubjectOpen}
-                        onOpenChange={setIsSubjectOpen}
-                        selectedId={selectedSubject}
-                        onChange={(item) => setSelectedSubject(item.id)}
-                      />
-
-                      {selectedSubject !== "all" && (setSelectedUnits || setSelectedUnit) && (
-                        <DropdownDisclosure
-                          compact
-                          placement="top"
-                          title="Choose Units"
-                          items={unitItems}
-                          isOpen={isUnitOpen}
-                          onOpenChange={setIsUnitOpen}
-                          selectedId={selectedUnit}
-                          selectedIds={selectedUnits || (selectedUnit ? [selectedUnit] : ["all"])}
-                          multiSelect={Boolean(setSelectedUnits)}
-                          onChange={(item) => setSelectedUnit?.(item.id)}
-                          onMultiChange={(uList) => setSelectedUnits?.(uList)}
-                        />
-                      )}
-
-                      {selectedSubject !== "all" && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedSubject("all")}
-                          className="text-[#8E8E93] hover:text-[#FF3B30] p-1 transition-colors cursor-pointer"
-                          title="Reset to all enrolled"
-                        >
-                          <Cancel01Icon size={12} />
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* Right: Actions */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {onAttachFiles && (
-                      <button
-                        type="button"
-                        onClick={onAttachFiles}
-                        disabled={disabled}
-                        className="relative w-8 h-8 rounded-full flex items-center justify-center text-[#727272] hover:text-[#0073E6] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                        title="Select notes or attach documents for multi-file RAG"
-                      >
-                        <Attachment01Icon size={16} />
-                        {attachedFilesCount > 0 && (
-                          <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 rounded-full bg-[#0073E6] text-white text-[9px] font-bold flex items-center justify-center shadow-xs">
-                            {attachedFilesCount}
-                          </span>
-                        )}
-                      </button>
-                    )}
-                    {onAiModeChange && (
-                      <AiLengthSlider currentMode={aiMode} onModeChange={onAiModeChange} defaultCollapsed={true} />
-                    )}
-                    <button
-                      type="button"
-                      onClick={toggleVoice}
-                      disabled={disabled}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${isListening
-                        ? "bg-red-500 text-white shadow-[0_0_10px_#ef4444] animate-pulse"
-                        : "text-[#727272] hover:text-[#383838] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
-                        }`}
-                      title={isListening ? "Listening... click to stop" : "Voice dictation"}
-                    >
-                      <Mic01Icon size={16} className={isListening ? "animate-pulse" : ""} />
-                    </button>
-
-                    {/* ChatGPT Circular Send Button */}
-                    <button
-                      id="sendPromptBtn"
-                      type="button"
-                      onClick={handleSend}
-                      disabled={!canSend}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${canSend
-                          ? "bg-[#1D1D1F] dark:bg-white text-white dark:text-black shadow-xs active:scale-95"
-                          : "bg-black/5 dark:bg-white/10 text-[#8E8E93] cursor-not-allowed opacity-60"
-                        }`}
-                    >
-                      {processing ? (
-                <Loading01Icon className="animate-spin text-current" size={16} />
-                      ) : (
-                        <ArrowUp02Icon size={16} />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-
-
-
-            </div>
-            );
+    <div className={`w-full flex justify-center items-center ${className}`}>
+      <PromptBar
+        placeholder={placeholder}
+        sources={sources}
+        commands={DEFAULT_COMMANDS}
+        models={[]}
+        efforts={['Low', 'Medium', 'High', 'Extra', 'Max']}
+        defaultEffort="High"
+        busy={isProcessing || isLoading || disabled}
+        onSend={handlePromptSend}
+        onAttach={onAttachFiles}
+        width={width}
+        radius={22}
+        className="w-full"
+        subjectBucketList={subjectBucketList}
+        selectedSubject={selectedSubject}
+        onSelectSubject={setSelectedSubject}
+        selectedUnits={selectedUnits}
+        onSelectUnits={setSelectedUnits}
+      />
+    </div>
+  );
 }
 
-            export default AiMascotInput;
+export default AiMascotInput;

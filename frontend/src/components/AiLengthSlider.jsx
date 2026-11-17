@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { SlidersVerticalIcon, LockKeyIcon, CheckmarkCircle02Icon, ArrowRight01Icon, ArrowLeft01Icon } from 'hugeicons-react';
@@ -69,14 +70,14 @@ export const AiLengthSlider = ({ currentMode = 'high', onModeChange, className, 
     const [showPasscodeModal, setShowPasscodeModal] = useState(false);
     const [targetMode, setTargetMode] = useState(null);
     const [passcode, setPasscode] = useState('');
-    const isUnlocked = isAiTierUnlocked();
+    const [isUnlocked, setIsUnlocked] = useState(() => isAiTierUnlocked());
 
     const currentIndex = Math.max(0, AI_LENGTH_MODES.findIndex(m => m.id === currentMode));
     const activeModeObj = AI_LENGTH_MODES[currentIndex] || AI_LENGTH_MODES[1];
     const progressPercent = (currentIndex / (AI_LENGTH_MODES.length - 1)) * 100;
 
     const handleSelect = (mode) => {
-        if (mode.requiresPasscode && !isUnlocked) {
+        if (mode.requiresPasscode && !isUnlocked && !isAiTierUnlocked()) {
             setTargetMode(mode);
             setShowPasscodeModal(true);
             return;
@@ -94,9 +95,13 @@ export const AiLengthSlider = ({ currentMode = 'high', onModeChange, className, 
     };
 
     const handleUnlockSubmit = (e) => {
-        e.preventDefault();
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         if (passcode.trim() === PASSCODE) {
             setAiTierUnlocked(true);
+            setIsUnlocked(true);
             toast.success('Max & Ultra modes unlocked for this session!');
             if (targetMode) {
                 if (onModeChange) onModeChange(targetMode.id);
@@ -208,8 +213,11 @@ export const AiLengthSlider = ({ currentMode = 'high', onModeChange, className, 
             </button>
 
             {/* Passcode Modal Dialog */}
-            {showPasscodeModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in">
+            {showPasscodeModal && typeof document !== 'undefined' && createPortal(
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in"
+                    onClick={(e) => e.stopPropagation()}
+                >
                     <div className="bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] rounded-2xl p-5 max-w-xs w-full shadow-xl">
                         <div className="flex items-center gap-2 mb-2">
                             <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
@@ -223,33 +231,47 @@ export const AiLengthSlider = ({ currentMode = 'high', onModeChange, className, 
                             {targetMode?.desc}. Enter the passcode to enable extended generation for this session.
                         </p>
 
-                        <form onSubmit={handleUnlockSubmit} className="space-y-3">
+                        <div className="space-y-3">
                             <input
                                 type="password"
                                 autoFocus
                                 value={passcode}
                                 onChange={(e) => setPasscode(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handleUnlockSubmit(e);
+                                    }
+                                }}
                                 placeholder="Enter passcode"
                                 className="w-full px-3 py-1.5 text-xs rounded-lg border border-[#D2D2D7] dark:border-[#38383A] bg-transparent text-[#1D1D1F] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0071E3]"
                             />
                             <div className="flex items-center justify-end gap-2 pt-1">
                                 <button
                                     type="button"
-                                    onClick={() => { setShowPasscodeModal(false); setPasscode(''); }}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setShowPasscodeModal(false);
+                                        setPasscode('');
+                                    }}
                                     className="px-3 py-1 text-xs text-[#6E6E73] hover:text-[#1D1D1F] transition-colors cursor-pointer"
                                 >
                                     Cancel
                                 </button>
                                 <button
-                                    type="submit"
+                                    type="button"
+                                    onClick={handleUnlockSubmit}
                                     className="px-3 py-1 text-xs font-medium rounded-lg bg-[#0071E3] hover:bg-[#0077ED] text-white transition-colors cursor-pointer shadow-xs"
                                 >
                                     Unlock
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

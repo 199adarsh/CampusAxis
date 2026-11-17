@@ -25,13 +25,13 @@ import {
     Delete02Icon
 } from 'hugeicons-react';
 import DocumentLoadingBar from './DocumentLoadingBar';
+import PromptBar from './PromptBar/PromptBar';
 import PdfViewer from './PdfViewer';
 import DocxViewer from './DocxViewer';
 import FullScreenNoteViewer from './FullScreenNoteViewer';
 import { cn } from '@/lib/utils';
 import { getCachedNoteBlob, setCachedNoteBlob } from '@/lib/pdfCache';
 import { unpackAiAnswer } from '@/lib/noteUtils';
-import { AiLengthSlider, getSavedAiMode } from '@/components/AiLengthSlider';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
@@ -130,7 +130,7 @@ const NoteDetail = () => {
     const [loading, setLoading] = useState(() => !cachedNote);
     const [doubtQuery, setDoubtQuery] = useState('');
     const [isFullScreen, setIsFullScreen] = useState(false);
-    const [aiMode, setAiMode] = useState(() => getSavedAiMode());
+    const [aiMode, setAiMode] = useState('high');
 
     // Doubts access check: only teachers who selected this note's subject (and all students)
     const canViewDoubts = React.useMemo(() => {
@@ -1056,59 +1056,24 @@ const NoteDetail = () => {
                             )}
                         </div>
 
-                        {/* ChatGPT-style Minimalist Capsule Composer */}
-                        <div className="p-3 bg-white border-t border-[#E5E5EA] shrink-0">
+                        {/* React Bits PromptBar with 100% exact Slider */}
+                        <div className="p-2 sm:p-2.5 bg-white dark:bg-[#1C1C1E] border-t border-[#E5E5EA] dark:border-[#2C2C2E] shrink-0">
                             {activeTab === 'ai' ? (
-                                <form
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        if (!aiQuery.trim() || isSubmitting) return;
-                                        handleAIChat();
+                                <PromptBar
+                                    placeholder="Message study assistant..."
+                                    busy={isSubmitting}
+                                    width={640}
+                                    radius={18}
+                                    defaultEffort="High"
+                                    efforts={['Low', 'Medium', 'High', 'Extra', 'Max']}
+                                    onSend={(text, detail) => {
+                                        setAiQuery(text);
+                                        handleAIChat(text);
                                     }}
-                                    className="flex flex-col bg-[#F4F4F4] focus-within:bg-white rounded-3xl border border-[#E5E5EA] focus-within:border-[#D1D1D6] focus-within:shadow-xs px-3.5 py-2 transition-all"
-                                >
-                                    <textarea
-                                        ref={textareaRef}
-                                        value={aiQuery}
-                                        onChange={(e) => setAiQuery(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                if (aiQuery.trim() && !isSubmitting) {
-                                                    handleAIChat();
-                                                }
-                                            }
-                                        }}
-                                        rows={2}
-                                        placeholder="Message study assistant..."
-                                        style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
-                                        className="w-full bg-transparent border-0 outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 shadow-none resize-none text-xs text-[#1D1D1F] placeholder:text-[#8E8E93] leading-relaxed p-1"
-                                    />
-
-                                    <div className="flex items-center justify-between pt-1 gap-1">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                            <AiLengthSlider currentMode={aiMode} onModeChange={setAiMode} />
-                                        </div>
-
-                                        <button
-                                            type="submit"
-                                            disabled={!aiQuery.trim() || isSubmitting}
-                                            aria-label="Send message"
-                                            className={cn(
-                                                "w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0",
-                                                aiQuery.trim() && !isSubmitting
-                                                    ? "bg-[#1D1D1F] hover:bg-black text-white active:scale-95 shadow-xs"
-                                                    : "bg-[#E5E5EA] text-[#8E8E93] cursor-not-allowed opacity-60"
-                                            )}
-                                        >
-                                            {isSubmitting ? (
-                                                <Loading01Icon size={14} className="animate-spin" />
-                                            ) : (
-                                                <ArrowUp02Icon size={15} />
-                                            )}
-                                        </button>
-                                    </div>
-                                </form>
+                                    onStop={() => setIsSubmitting(false)}
+                                    models={[]}
+                                    className="w-full"
+                                />
                             ) : !canViewDoubts ? (
                                 <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-2xl text-center">
                                     <p className="text-xs font-medium text-amber-800">
