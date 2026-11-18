@@ -40,6 +40,9 @@ export default defineConfig({
             if (id.includes('motion')) {
               return 'vendor-motion';
             }
+            if (id.includes('hugeicons')) {
+              return 'vendor-icons';
+            }
           }
         }
       }
