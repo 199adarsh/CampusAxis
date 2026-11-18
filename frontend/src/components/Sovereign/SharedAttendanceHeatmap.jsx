@@ -217,7 +217,7 @@ const SharedAttendanceHeatmap = ({
   };
 
   return (
-    <div className={cn("w-full flex flex-col md:flex-row items-stretch gap-6 min-w-0", className)}>
+    <div className={cn("w-full flex flex-col md:flex-row items-stretch gap-3 sm:gap-4 min-w-0", className)}>
       {/* Edge-to-Edge Fitted Heatmap Grid */}
       <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
         {/* Month labels */}
@@ -236,126 +236,126 @@ const SharedAttendanceHeatmap = ({
         {/* Grid with Day of week labels */}
         <div className="flex items-start w-full gap-1.5 mt-1">
           {/* Day labels column */}
-            <div className="flex flex-col gap-1 pr-1 text-[8px] sm:text-[9px] font-bold text-[#727272] leading-none select-none shrink-0">
-              {DAY_LABELS.map((lbl, idx) => (
-                <div
-                  key={idx}
-                  className="h-3 sm:h-3.5 flex items-center justify-center w-2.5"
-                >
-                  {lbl}
-                </div>
+          <div className="flex flex-col gap-1 pr-1 text-[8px] font-bold text-[#727272] leading-none select-none shrink-0">
+            {DAY_LABELS.map((lbl, idx) => (
+              <div
+                key={idx}
+                className="h-3 sm:h-3.5 flex items-center justify-center w-2.5"
+              >
+                {lbl}
+              </div>
+            ))}
+          </div>
+
+          {/* Week columns spanning full available space */}
+          <div className="flex-1 flex justify-between gap-1 items-stretch min-w-0">
+            {visibleWeeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col gap-1 flex-1 min-w-[10px] sm:min-w-[12px]">
+                {week.map((cell) => {
+                  const isHovered = hoveredDay?.key === cell.key;
+                  return (
+                    <div
+                      key={cell.key}
+                      onMouseEnter={() => setHoveredDay(cell)}
+                      onClick={() => setHoveredDay(cell)}
+                      onTouchStart={() => setHoveredDay(cell)}
+                      className={cn(
+                        "w-full aspect-square rounded-[3px] transition-all cursor-pointer",
+                        getCellColor(cell),
+                        isHovered && "ring-2 ring-[#0073E6] ring-offset-1 scale-125 z-10"
+                      )}
+                      title={`${cell.key}: ${cell.entry ? `${cell.entry.present}/${cell.entry.total} present` : 'No classes'}`}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Seamless Integrated Inspector */}
+      <div className="w-full md:w-36 lg:w-40 shrink-0 flex flex-col justify-between pt-2 md:pt-0 md:border-l md:border-[#E2E2E2] md:pl-3.5 min-w-0">
+        {hoveredDay ? (
+          <div className="flex flex-col justify-between h-full gap-2 animate-in fade-in duration-100 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h4 className="font-semibold text-xs text-[#383838] leading-tight truncate">
+                  {formattedDate || hoveredDay.key}
+                </h4>
+                <p className="text-[10px] text-[#727272] mt-0.5">
+                  {hoveredDay.entry?.total
+                    ? `${hoveredDay.entry.total} ${hoveredDay.entry.total === 1 ? 'session' : 'sessions'}`
+                    : (hoveredDay.isFuture ? 'Future schedule' : 'No recorded sessions')}
+                </p>
+              </div>
+              <span className={cn(
+                "text-[9px] font-semibold px-2 py-0.5 rounded-full shrink-0 border",
+                dayType === '100% Present' && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                dayType === 'All Absent' && "bg-rose-50 text-rose-700 border-rose-200",
+                dayType?.includes('Present') && dayType !== '100% Present' && "bg-amber-50 text-amber-700 border-amber-200",
+                (dayType === 'Weekend' || dayType === 'Off Day') && "bg-slate-100 text-[#727272] border-slate-200",
+                dayType === 'Upcoming' && "bg-[#D9ECFF] text-[#0073E6] border-[#0073E6]/20"
+              )}>
+                {dayType}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 py-1">
+              {presentAbbrs.map(sub => (
+                <span key={sub} className="inline-flex items-center gap-1 text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.5 rounded">
+                  <PresentBadgeIcon size={12} className="text-emerald-600" />
+                  {sub}
+                </span>
+              ))}
+              {absentAbbrs.map(sub => (
+                <span key={sub} className="inline-flex items-center gap-1 text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200/60 px-1.5 py-0.5 rounded">
+                  <AbsentBadgeIcon size={12} className="text-rose-600" />
+                  {sub}
+                </span>
               ))}
             </div>
 
-            {/* Week columns spanning full available space */}
-            <div className="flex-1 flex justify-between gap-1 items-stretch min-w-0">
-              {visibleWeeks.map((week, wi) => (
-                  <div key={wi} className="flex flex-col gap-1 flex-1 min-w-[12px] sm:min-w-[14px]">
-                    {week.map((cell) => {
-                      const isHovered = hoveredDay?.key === cell.key;
-                      return (
-                        <div
-                          key={cell.key}
-                          onMouseEnter={() => setHoveredDay(cell)}
-                          onClick={() => setHoveredDay(cell)}
-                          onTouchStart={() => setHoveredDay(cell)}
-                          className={cn(
-                            "w-full aspect-square rounded-[3px] transition-all cursor-pointer min-h-[12px] sm:min-h-[14px]",
-                            getCellColor(cell),
-                            isHovered && "ring-2 ring-[#0073E6] ring-offset-1 scale-125 z-10"
-                          )}
-                          title={`${cell.key}: ${cell.entry ? `${cell.entry.present}/${cell.entry.total} present` : 'No classes'}`}
-                        />
-                      );
-                    })}
-                  </div>
-            ))}
-                </div>
-        </div>
+            <div className="text-[9px] text-[#727272]">
+              {hoveredDay.entry?.total > 0
+                ? `${hoveredDay.entry.present} of ${hoveredDay.entry.total} attended`
+                : 'Hover squares to inspect'}
+            </div>
           </div>
-
-          {/* Seamless Integrated Inspector */}
-          <div className="w-full md:w-48 lg:w-52 shrink-0 flex flex-col justify-between pt-2 md:pt-0 md:border-l md:border-[#E2E2E2] md:pl-5 min-w-0">
-            {hoveredDay ? (
-              <div className="flex flex-col justify-between h-full gap-2 animate-in fade-in duration-100 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h4 className="font-semibold text-xs text-[#383838] leading-tight truncate">
-                      {formattedDate || hoveredDay.key}
-                    </h4>
-                    <p className="text-[10px] text-[#727272] mt-0.5">
-                      {hoveredDay.entry?.total
-                        ? `${hoveredDay.entry.total} ${hoveredDay.entry.total === 1 ? 'session' : 'sessions'}`
-                        : (hoveredDay.isFuture ? 'Future schedule' : 'No recorded sessions')}
-                    </p>
-                  </div>
-                  <span className={cn(
-                    "text-[9px] font-semibold px-2 py-0.5 rounded-full shrink-0 border",
-                    dayType === '100% Present' && "bg-emerald-50 text-emerald-700 border-emerald-200",
-                    dayType === 'All Absent' && "bg-rose-50 text-rose-700 border-rose-200",
-                    dayType?.includes('Present') && dayType !== '100% Present' && "bg-amber-50 text-amber-700 border-amber-200",
-                    (dayType === 'Weekend' || dayType === 'Off Day') && "bg-slate-100 text-[#727272] border-slate-200",
-                    dayType === 'Upcoming' && "bg-[#D9ECFF] text-[#0073E6] border-[#0073E6]/20"
-                  )}>
-                    {dayType}
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 py-1">
-                  {presentAbbrs.map(sub => (
-                    <span key={sub} className="inline-flex items-center gap-1 text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.5 rounded">
-                      <PresentBadgeIcon size={12} className="text-emerald-600" />
-                      {sub}
-                    </span>
-                  ))}
-                  {absentAbbrs.map(sub => (
-                    <span key={sub} className="inline-flex items-center gap-1 text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200/60 px-1.5 py-0.5 rounded">
-                      <AbsentBadgeIcon size={12} className="text-rose-600" />
-                      {sub}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="text-[9px] text-[#727272]">
-                  {hoveredDay.entry?.total > 0
-                    ? `${hoveredDay.entry.present} of ${hoveredDay.entry.total} attended`
-                    : 'Hover squares to inspect'}
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col justify-between h-full gap-2 min-w-0">
-                <div>
-                  <span className="text-[10px] font-medium text-[#727272] uppercase tracking-wider block">
-                    Term Standing
-                  </span>
-                  <div className="flex items-baseline gap-2 mt-0.5">
-                    <span className="text-xl font-bold tracking-tight text-[#0073E6] tabular-nums">
-                      {overallStats.pct}%
-                    </span>
-                    <span className="text-[10px] text-[#727272]">attendance</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 text-xs">
-                  <div>
-                    <span className="text-[9px] text-[#727272] block">Attended</span>
-                    <span className="font-semibold text-[11px] text-emerald-600 tabular-nums">{overallStats.present}</span>
-                  </div>
-                  <div className="w-px h-5 bg-[#E2E2E2]" />
-                  <div>
-                    <span className="text-[9px] text-[#727272] block">Missed</span>
-                    <span className="font-semibold text-[11px] text-rose-600 tabular-nums">{overallStats.absent}</span>
-                  </div>
-                </div>
-
-                <span className="text-[9px] text-[#727272]">
-                  Hover square for daily log
+        ) : (
+          <div className="flex flex-col justify-between h-full gap-2 min-w-0">
+            <div>
+              <span className="text-[10px] font-medium text-[#727272] uppercase tracking-wider block">
+                Term Standing
+              </span>
+              <div className="flex items-baseline gap-2 mt-0.5">
+                <span className="text-xl font-bold tracking-tight text-[#0073E6] tabular-nums">
+                  {overallStats.pct}%
                 </span>
+                <span className="text-[10px] text-[#727272]">attendance</span>
               </div>
-            )}
+            </div>
+
+            <div className="flex items-center gap-3 text-xs">
+              <div>
+                <span className="text-[9px] text-[#727272] block">Attended</span>
+                <span className="font-semibold text-[11px] text-emerald-600 tabular-nums">{overallStats.present}</span>
+              </div>
+              <div className="w-px h-5 bg-[#E2E2E2]" />
+              <div>
+                <span className="text-[9px] text-[#727272] block">Missed</span>
+                <span className="font-semibold text-[11px] text-rose-600 tabular-nums">{overallStats.absent}</span>
+              </div>
+            </div>
+
+            <span className="text-[9px] text-[#727272]">
+              Hover square for daily log
+            </span>
           </div>
-        </div>
-        );
+        )}
+      </div>
+    </div>
+  );
 };
 
-        export default SharedAttendanceHeatmap;
+export default SharedAttendanceHeatmap;

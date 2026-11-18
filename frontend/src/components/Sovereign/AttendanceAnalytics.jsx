@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
 import SharedAttendanceHeatmap from './SharedAttendanceHeatmap';
+import AttendanceRadarSection from './dashboard/AttendanceRadarSection';
 import FacultyAttendance from './FacultyAttendance';
 import { FluidTabs } from '../fluid-tabs';
 import { cn } from '../../lib/utils';
@@ -504,6 +505,15 @@ const AttendanceAnalytics = () => {
     const theoryPercentage = getSimpleAvg(theorySubs);
     const labPercentage = getSimpleAvg(labSubs);
     const overallPercentage = getAverage(activeSubjects);
+
+    const totalSessionsRecorded = useMemo(() => {
+        let total = 0;
+        (activeSubjects || []).forEach(s => {
+            const cond = s.totalConducted > 0 ? s.totalConducted : (s.detailedAttendance?.length || 0);
+            total += cond;
+        });
+        return total;
+    }, [activeSubjects]);
 
     const validSubjects = activeSubjects.filter(hasAttendance);
     const riskSubjects = validSubjects.filter(r => getPrecisePct(r) < 75);
@@ -1241,8 +1251,8 @@ const AttendanceAnalytics = () => {
                     </section>
                 ) : (
                     <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4" data-purpose="summary-ribbon">
-                        {/* Master Attendance Card (Apple Minimal) */}
-                        <div className="col-span-1 sm:col-span-1 lg:col-span-6 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-1">
+                        {/* 1. Master Attendance Card (Left: 3 Cols) */}
+                        <div className="col-span-1 sm:col-span-1 lg:col-span-3 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-1">
                             <div>
                                 <div className="flex items-center justify-between gap-1">
                                     <span className="text-xs font-semibold text-[#6E6E73] font-sans">
@@ -1311,8 +1321,44 @@ const AttendanceAnalytics = () => {
                             </div>
                         </div>
 
-                        {/* Risk Nodes Summary */}
-                        <div className="col-span-1 sm:col-span-1 lg:col-span-6 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-2">
+                        {/* 2. Attendance Activity Heatmap (MIDDLE: 6 Cols, Matching Home Page) */}
+                        <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-3 lg:order-2 overflow-hidden">
+                            <div className="flex flex-wrap items-center justify-between pb-2.5 border-b border-[#E5E5EA] gap-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-7 h-7 rounded-lg bg-[#D9ECFF] text-[#0073E6] flex items-center justify-center shrink-0">
+                                        <Calendar03Icon size={16} />
+                                    </div>
+                                    <h2 className="text-xs font-semibold text-[#1D1D1F] font-sans">Attendance Activity</h2>
+                                </div>
+                                <div className="flex items-center gap-2.5">
+                                    <div className="flex items-center gap-2 text-[10px] text-[#727272] font-medium font-sans">
+                                        <div className="flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-[#30a14e]" />
+                                            <span>Present</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-[#E11D48]" />
+                                            <span>Absent</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-[#DEEDFC]" />
+                                            <span>Off Day</span>
+                                        </div>
+                                    </div>
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#DEEDFC]/60 text-[#174073] border border-[#D9ECFF]">
+                                        <span className="tabular-nums font-bold text-[#0073E6] mr-1">{totalSessionsRecorded}</span> Sessions
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Weekly Matrix Representation with Abbreviation Hover */}
+                            <div className="my-auto py-2 overflow-x-auto no-scrollbar">
+                                <SharedAttendanceHeatmap subjects={activeSubjects} />
+                            </div>
+                        </div>
+
+                        {/* 3. Shortage Alerts (Right: 3 Cols) */}
+                        <div className="col-span-1 sm:col-span-1 lg:col-span-3 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-2 lg:order-3">
                             <div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-semibold text-[#6E6E73] font-sans">
@@ -1362,27 +1408,6 @@ const AttendanceAnalytics = () => {
 
                             <div className="text-[11px] text-[#8E8E93] font-sans pt-2 border-t border-[#E5E5EA]/40">
                                 {riskSubjects.length > 0 ? 'Minimum 75% presence required for exams' : 'Good attendance standing'}
-                            </div>
-                        </div>
-
-                        {/* Activity Overview Heatmap (Full Width: 12 Cols) */}
-                        <div className="col-span-1 sm:col-span-2 lg:col-span-12 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-3 overflow-hidden">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-semibold text-[#6E6E73] font-sans">
-                                    Activity Overview
-                                </span>
-                                <div className="flex items-center gap-1.5 text-[10px] text-[#727272] font-sans">
-                                    <span>Less</span>
-                                    <span className="w-2.5 h-2.5 rounded-xs bg-slate-100 border border-[#E2E2E2] inline-block" />
-                                    <span className="w-2.5 h-2.5 rounded-xs bg-emerald-300 inline-block" />
-                                    <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600 inline-block" />
-                                    <span>More</span>
-                                </div>
-                            </div>
-
-                            {/* Weekly Matrix Representation with Abbreviation Hover */}
-                            <div className="my-auto py-2 overflow-x-auto no-scrollbar">
-                                <SharedAttendanceHeatmap subjects={activeSubjects} />
                             </div>
                         </div>
                     </section>
