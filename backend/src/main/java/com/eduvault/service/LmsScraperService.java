@@ -64,10 +64,29 @@ public class LmsScraperService {
         return baseUrl + "/lib/ajax/service.php";
     }
 
-    private static final Duration TIMEOUT = Duration.ofSeconds(90);
+    private static final Duration TIMEOUT = Duration.ofSeconds(30);
+    private static final Duration FILE_TIMEOUT = Duration.ofSeconds(45);
     private static final Pattern COURSE_CODE_PATTERN = Pattern.compile("(?i)\\b([0-9]{2}[A-Z]{2,6}[0-9]{3,4}[A-Z]?)\\b");
     private static final Pattern SESSKEY_PATTERN = Pattern.compile("\"sesskey\":\"([^\"]+)\"");
     private static final Pattern ID_PARAM_PATTERN = Pattern.compile("id=(\\d+)");
+
+    private final Map<String, Document> courseDocumentCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private Document getCourseDocument(LmsSession session, String courseId) throws Exception {
+        Document cached = courseDocumentCache.get(courseId);
+        if (cached != null) return cached;
+        String courseUrl = baseUrl + "/course/view.php?id=" + courseId;
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(courseUrl))
+                .timeout(TIMEOUT)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                .GET()
+                .build();
+        HttpResponse<String> resp = session.client.send(req, HttpResponse.BodyHandlers.ofString());
+        Document doc = Jsoup.parse(resp.body());
+        courseDocumentCache.put(courseId, doc);
+        return doc;
+    }
 
     @Autowired
     private LocalJsonDatabase database;
@@ -504,15 +523,7 @@ public class LmsScraperService {
 
     private int countImportableMaterials(LmsSession session, String courseId) {
         try {
-            String courseUrl = baseUrl + "/course/view.php?id=" + courseId;
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(courseUrl))
-                    .timeout(TIMEOUT)
-                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                    .GET()
-                    .build();
-            HttpResponse<String> resp = session.client.send(req, HttpResponse.BodyHandlers.ofString());
-            Document doc = Jsoup.parse(resp.body());
+            Document doc = getCourseDocument(session, courseId);
             Elements sectionEls = doc.select("li.section");
             if (sectionEls.isEmpty()) {
                 sectionEls = doc.select(".section");
@@ -765,8 +776,6 @@ public class LmsScraperService {
                         .message(ex.getMessage())
                         .build());
             }
-
-            sleep(300);
         }
 
         if (cachedAvailability.get() != null) {
@@ -817,17 +826,7 @@ public class LmsScraperService {
                                                     int initialSkipped,
                                                     int initialFailed) throws Exception {
         CourseScrapeResult result = new CourseScrapeResult();
-        String courseUrl = baseUrl + "/course/view.php?id=" + courseInfo.getId();
-
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(courseUrl))
-                .timeout(TIMEOUT)
-                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = session.client.send(req, HttpResponse.BodyHandlers.ofString());
-        Document doc = Jsoup.parse(resp.body());
+        Document doc = getCourseDocument(session, courseInfo.getId());
 
         Elements sectionEls = doc.select("li.section");
         if (sectionEls.isEmpty()) {
@@ -921,8 +920,6 @@ public class LmsScraperService {
                             initialSkipped + result.skippedCount, initialFailed + result.failureCount,
                             currentPct, "Failed: " + title + " (" + e.getMessage() + ")");
                 }
-
-                sleep(200);
             }
         }
 
@@ -948,7 +945,7 @@ public class LmsScraperService {
             // Download the file
             HttpRequest fileReq = HttpRequest.newBuilder()
                     .uri(URI.create(targetUrl))
-                    .timeout(TIMEOUT)
+                    .timeout(FILE_TIMEOUT)
                     .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
                     .GET()
                     .build();
@@ -978,7 +975,7 @@ public class LmsScraperService {
                     if (realFileUrl.startsWith("/")) realFileUrl = baseUrl + realFileUrl;
                     HttpRequest realReq = HttpRequest.newBuilder()
                             .uri(URI.create(realFileUrl))
-                            .timeout(TIMEOUT)
+                            .timeout(FILE_TIMEOUT)
                             .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
                             .GET()
                             .build();

@@ -54,4 +54,17 @@ public class AsyncConfig {
         
         return executor;
     }
+
+    @Bean(name = "scrapingTaskExecutor")
+    public Executor scrapingTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("scrape-async-");
+        executor.initialize();
+        logger.info("Scraping async executor initialized with core={}, max={}, queue={}",
+                   executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity());
+        return executor;
+    }
 }

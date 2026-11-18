@@ -687,16 +687,24 @@ public class PortalScraperService {
             Map<String, Integer> explicitMaxMap = extractExplicitMaxCie(doc);
             boolean hasAnyAbove50 = cieMap.values().stream().anyMatch(val -> val != null && val > 50);
 
-            // 1. Pre-fetch all bundles to find global start date
-            Map<String, AttendanceDetailsBundle> bundles = new HashMap<>();
-            LocalDate globalStart = LocalDate.now();
-            boolean foundStart = false;
+            // 1. Pre-fetch all bundles in parallel to find global start date
+            Map<String, AttendanceDetailsBundle> bundles = new ConcurrentHashMap<>();
+            Map<String, CompletableFuture<AttendanceDetailsBundle>> futures = new LinkedHashMap<>();
 
             for (String code : allCodes) {
                 SubjectLink linkData = subjectLinks.get(code);
                 if (linkData != null && linkData.url != null) {
-                    AttendanceDetailsBundle b = fetchSubjectAttendanceDetails(linkData.url);
-                    bundles.put(code, b);
+                    futures.put(code, CompletableFuture.supplyAsync(() -> fetchSubjectAttendanceDetails(linkData.url)));
+                }
+            }
+
+            LocalDate globalStart = LocalDate.now();
+            boolean foundStart = false;
+
+            for (Map.Entry<String, CompletableFuture<AttendanceDetailsBundle>> entry : futures.entrySet()) {
+                try {
+                    AttendanceDetailsBundle b = entry.getValue().join();
+                    bundles.put(entry.getKey(), b);
                     for (DashboardSubject.AttendanceRecord rec : b.records) {
                         LocalDate d = parseDate(rec.getDate());
                         if (d != null && (!foundStart || d.isBefore(globalStart))) {
@@ -704,6 +712,8 @@ public class PortalScraperService {
                             foundStart = true;
                         }
                     }
+                } catch (Exception ex) {
+                    log.warn("Failed retrieving parallel attendance details for {}: {}", entry.getKey(), ex.getMessage());
                 }
             }
 
