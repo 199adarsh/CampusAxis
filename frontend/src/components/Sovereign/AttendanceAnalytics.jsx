@@ -1242,172 +1242,150 @@ const AttendanceAnalytics = () => {
                 ) : (
                     <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4" data-purpose="summary-ribbon">
                         {/* Master Attendance Card (Apple Minimal) */}
-                            <div className="col-span-1 sm:col-span-1 lg:col-span-6 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-1">
-                                <div>
-                                    <div className="flex items-center justify-between gap-1">
-                                        <span className="text-xs font-semibold text-[#6E6E73] font-sans">
-                                            Overall Attendance
-                                        </span>
-                                        <span className={cn(
-                                            "text-[11px] font-semibold px-2 py-0.5 rounded-full border font-sans",
-                                            parseFloat(overallPercentage) >= 75
-                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
-                                                : "bg-rose-50 text-rose-700 border-rose-200/80"
-                                        )}>
-                                            {parseFloat(overallPercentage) >= 75 ? 'Safe' : 'At Risk'}
-                                        </span>
-                                    </div>
-
-                                    <div className="mt-3 mb-1 flex items-baseline gap-2">
-                                        <span className="text-3xl sm:text-[34px] font-bold text-[#1D1D1F] tracking-tight font-sans tabular-nums leading-none">
-                                            {overallPercentage}%
-                                        </span>
-                                        <span className="text-xs text-[#8E8E93] font-normal font-sans">aggregate</span>
-                                    </div>
-                                    <p className="text-[11px] text-[#8E8E93] font-sans">
-                                        Across {activeSubjects.length} enrolled subjects
-                                    </p>
+                        <div className="col-span-1 sm:col-span-1 lg:col-span-6 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-1">
+                            <div>
+                                <div className="flex items-center justify-between gap-1">
+                                    <span className="text-xs font-semibold text-[#6E6E73] font-sans">
+                                        Overall Attendance
+                                    </span>
+                                    <span className={cn(
+                                        "text-[11px] font-semibold px-2 py-0.5 rounded-full border font-sans",
+                                        parseFloat(overallPercentage) >= 75
+                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
+                                            : "bg-rose-50 text-rose-700 border-rose-200/80"
+                                    )}>
+                                        {parseFloat(overallPercentage) >= 75 ? 'Safe' : 'At Risk'}
+                                    </span>
                                 </div>
 
-                                {/* Clean Inline Breakdown: Theory & Labs */}
-                                <div className="pt-3 border-t border-[#E5E5EA] space-y-2.5">
-                                    <div>
-                                        <div className="flex items-center justify-between text-xs mb-1 font-sans">
-                                            <div className="flex items-center gap-1.5 min-w-0">
-                                                <Quiz03Icon size={14} className="text-[#0071E3] shrink-0" />
-                                                <span className="text-[#6E6E73] font-medium text-[11px]">Lectures</span>
-                                            </div>
-                                            <span className="font-semibold text-[#1D1D1F] text-[11px] tabular-nums">{theoryPercentage}%</span>
-                                        </div>
-                                        <div className="w-full bg-[#E5E5EA] rounded-full h-1.5 overflow-hidden">
-                                            <div
-                                                className={cn(
-                                                    "h-full rounded-full transition-all duration-500",
-                                                    parseFloat(theoryPercentage) >= 75 ? "bg-[#0071E3]" : "bg-[#FF9F0A]"
-                                                )}
-                                                style={{ width: `${Math.min(100, Math.max(0, parseFloat(theoryPercentage)))}%` }}
-                                            />
-                                        </div>
-                                    </div>
+                                <div className="mt-3 mb-1 flex items-baseline gap-2">
+                                    <span className="text-3xl sm:text-[34px] font-bold text-[#1D1D1F] tracking-tight font-sans tabular-nums leading-none">
+                                        {overallPercentage}%
+                                    </span>
+                                    <span className="text-xs text-[#8E8E93] font-normal font-sans">aggregate</span>
+                                </div>
+                                <p className="text-[11px] text-[#8E8E93] font-sans">
+                                    Across {activeSubjects.length} enrolled subjects
+                                </p>
+                            </div>
 
-                                    <div>
-                                        <div className="flex items-center justify-between text-xs mb-1 font-sans">
-                                            <div className="flex items-center gap-1.5 min-w-0">
-                                                <ComputerProgramming01Icon size={14} className="text-[#174073] shrink-0" />
-                                                <span className="text-[#6E6E73] font-medium text-[11px]">Labs</span>
-                                            </div>
-                                            <span className="font-semibold text-[#1D1D1F] text-[11px] tabular-nums">{labPercentage}%</span>
+                            {/* Clean Inline Breakdown: Theory & Labs */}
+                            <div className="pt-3 border-t border-[#E5E5EA] space-y-2.5">
+                                <div>
+                                    <div className="flex items-center justify-between text-xs mb-1 font-sans">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <Quiz03Icon size={14} className="text-[#0071E3] shrink-0" />
+                                            <span className="text-[#6E6E73] font-medium text-[11px]">Lectures</span>
                                         </div>
-                                        <div className="w-full bg-[#E5E5EA] rounded-full h-1.5 overflow-hidden">
-                                            <div
-                                                className={cn(
-                                                    "h-full rounded-full transition-all duration-500",
-                                                    parseFloat(labPercentage) >= 75 ? "bg-[#0071E3]" : "bg-[#FF9F0A]"
-                                                )}
-                                                style={{ width: `${Math.min(100, Math.max(0, parseFloat(labPercentage)))}%` }}
-                                            />
+                                        <span className="font-semibold text-[#1D1D1F] text-[11px] tabular-nums">{theoryPercentage}%</span>
+                                    </div>
+                                    <div className="w-full bg-[#E5E5EA] rounded-full h-1.5 overflow-hidden">
+                                        <div
+                                            className={cn(
+                                                "h-full rounded-full transition-all duration-500",
+                                                parseFloat(theoryPercentage) >= 75 ? "bg-[#0071E3]" : "bg-[#FF9F0A]"
+                                            )}
+                                            style={{ width: `${Math.min(100, Math.max(0, parseFloat(theoryPercentage)))}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex items-center justify-between text-xs mb-1 font-sans">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <ComputerProgramming01Icon size={14} className="text-[#174073] shrink-0" />
+                                            <span className="text-[#6E6E73] font-medium text-[11px]">Labs</span>
                                         </div>
+                                        <span className="font-semibold text-[#1D1D1F] text-[11px] tabular-nums">{labPercentage}%</span>
+                                    </div>
+                                    <div className="w-full bg-[#E5E5EA] rounded-full h-1.5 overflow-hidden">
+                                        <div
+                                            className={cn(
+                                                "h-full rounded-full transition-all duration-500",
+                                                parseFloat(labPercentage) >= 75 ? "bg-[#0071E3]" : "bg-[#FF9F0A]"
+                                            )}
+                                            style={{ width: `${Math.min(100, Math.max(0, parseFloat(labPercentage)))}%` }}
+                                        />
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Activity Overview Heatmap (Wider Layout: 6 Cols) */}
-                            <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-3 lg:order-2 overflow-hidden">
+                        {/* Risk Nodes Summary */}
+                        <div className="col-span-1 sm:col-span-1 lg:col-span-6 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-2">
+                            <div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-semibold text-[#6E6E73] font-sans">
-                                        Activity Overview
+                                        Shortage Alerts
                                     </span>
-                                    <div className="flex items-center gap-1.5 text-[10px] text-[#727272] font-sans">
-                                        <span>Less</span>
-                                        <span className="w-2.5 h-2.5 rounded-xs bg-slate-100 border border-[#E2E2E2] inline-block" />
-                                        <span className="w-2.5 h-2.5 rounded-xs bg-emerald-300 inline-block" />
-                                        <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600 inline-block" />
-                                        <span>More</span>
-                                    </div>
+                                    <span className={cn(
+                                        "text-[11px] font-semibold px-2 py-0.5 rounded-full border font-sans",
+                                        riskSubjects.length > 0 ? "bg-rose-50 text-rose-700 border-rose-200/80" : "bg-emerald-50 text-emerald-700 border-emerald-200/80"
+                                    )}>
+                                        {riskSubjects.length > 0 ? `${riskSubjects.length} At Risk` : 'All Clear'}
+                                    </span>
                                 </div>
 
-                                {/* Weekly Matrix Representation with Abbreviation Hover */}
-                                <div className="my-auto py-2 overflow-x-auto no-scrollbar">
-                                    <SharedAttendanceHeatmap subjects={activeSubjects} weeksCount={18} />
+                                <div className="mt-3 space-y-2 text-xs">
+                                    {riskSubjects.length > 0 ? (
+                                        riskSubjects.slice(0, 3).map(sub => {
+                                            const pct = getPrecisePct(sub);
+                                            const conducted = sub.totalConducted > 0 ? sub.totalConducted : (sub.detailedAttendance?.length || 0);
+                                            const attended = sub.totalAttended > 0 ? sub.totalAttended : (sub.detailedAttendance?.filter(r => r.status === 'Present').length || 0);
+                                            const needed = Math.max(0, Math.ceil((0.75 * conducted - attended) / 0.25));
+
+                                            return (
+                                                <div key={sub.id} className="flex items-center justify-between py-1 border-b border-[#E5E5EA]/60 font-sans">
+                                                    <div className="min-w-0 pr-2">
+                                                        <span className="text-[#1D1D1F] truncate block font-medium" title={sub.name}>
+                                                            {sub.name}
+                                                        </span>
+                                                        {needed > 0 && (
+                                                            <span className="text-[10px] text-[#8E8E93]">
+                                                                Need +{needed} {needed === 1 ? 'class' : 'classes'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className="font-semibold text-[#FF3B30] tabular-nums text-xs shrink-0">
+                                                        {pct}%
+                                                    </span>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="py-6 text-center text-xs text-[#6E6E73] font-sans">
+                                            All courses meet the 75% attendance threshold.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Risk Nodes Summary */}
-                            <div className="col-span-1 sm:col-span-1 lg:col-span-3 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-2 lg:order-3">
-                                <div className="col-span-1 sm:col-span-1 lg:col-span-6 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-2">
-                                    <div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-semibold text-[#6E6E73] font-sans">
-                                                Shortage Alerts
-                                            </span>
-                                            <span className={cn(
-                                                "text-[11px] font-semibold px-2 py-0.5 rounded-full border font-sans",
-                                                riskSubjects.length > 0 ? "bg-rose-50 text-rose-700 border-rose-200/80" : "bg-emerald-50 text-emerald-700 border-emerald-200/80"
-                                            )}>
-                                                {riskSubjects.length > 0 ? `${riskSubjects.length} At Risk` : 'All Clear'}
-                                            </span>
-                                        </div>
+                            <div className="text-[11px] text-[#8E8E93] font-sans pt-2 border-t border-[#E5E5EA]/40">
+                                {riskSubjects.length > 0 ? 'Minimum 75% presence required for exams' : 'Good attendance standing'}
+                            </div>
+                        </div>
 
-                                        <div className="mt-3 space-y-2 text-xs">
-                                            {riskSubjects.length > 0 ? (
-                                                riskSubjects.slice(0, 3).map(sub => {
-                                                    const pct = getPrecisePct(sub);
-                                                    const conducted = sub.totalConducted > 0 ? sub.totalConducted : (sub.detailedAttendance?.length || 0);
-                                                    const attended = sub.totalAttended > 0 ? sub.totalAttended : (sub.detailedAttendance?.filter(r => r.status === 'Present').length || 0);
-                                                    const needed = Math.max(0, Math.ceil((0.75 * conducted - attended) / 0.25));
-
-                                                    return (
-                                                        <div key={sub.id} className="flex items-center justify-between py-1 border-b border-[#E5E5EA]/60 font-sans">
-                                                            <div className="min-w-0 pr-2">
-                                                                <span className="text-[#1D1D1F] truncate block font-medium" title={sub.name}>
-                                                                    {sub.name}
-                                                                </span>
-                                                                {needed > 0 && (
-                                                                    <span className="text-[10px] text-[#8E8E93]">
-                                                                        Need +{needed} {needed === 1 ? 'class' : 'classes'}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <span className="font-semibold text-[#FF3B30] tabular-nums text-xs shrink-0">
-                                                                {pct}%
-                                                            </span>
-                                                        </div>
-                                                    );
-                                                })
-                                            ) : (
-                                                <div className="py-6 text-center text-xs text-[#6E6E73] font-sans">
-                                                    All courses meet the 75% attendance threshold.
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="text-[11px] text-[#8E8E93] font-sans pt-2 border-t border-[#E5E5EA]/40">
-                                        {riskSubjects.length > 0 ? 'Minimum 75% presence required for exams' : 'Good attendance standing'}
-                                    </div>
+                        {/* Activity Overview Heatmap (Full Width: 12 Cols) */}
+                        <div className="col-span-1 sm:col-span-2 lg:col-span-12 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-3 overflow-hidden">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold text-[#6E6E73] font-sans">
+                                    Activity Overview
+                                </span>
+                                <div className="flex items-center gap-1.5 text-[10px] text-[#727272] font-sans">
+                                    <span>Less</span>
+                                    <span className="w-2.5 h-2.5 rounded-xs bg-slate-100 border border-[#E2E2E2] inline-block" />
+                                    <span className="w-2.5 h-2.5 rounded-xs bg-emerald-300 inline-block" />
+                                    <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600 inline-block" />
+                                    <span>More</span>
                                 </div>
+                            </div>
 
-                                {/* Activity Overview Heatmap (Full Width: 12 Cols) */}
-                                <div className="col-span-1 sm:col-span-2 lg:col-span-12 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-3 overflow-hidden">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-semibold text-[#6E6E73] font-sans">
-                                            Activity Overview
-                                        </span>
-                                        <div className="flex items-center gap-1.5 text-[10px] text-[#727272] font-sans">
-                                            <span>Less</span>
-                                            <span className="w-2.5 h-2.5 rounded-xs bg-slate-100 border border-[#E2E2E2] inline-block" />
-                                            <span className="w-2.5 h-2.5 rounded-xs bg-emerald-300 inline-block" />
-                                            <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600 inline-block" />
-                                            <span>More</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Weekly Matrix Representation with Abbreviation Hover */}
-                                    <div className="my-auto py-2 overflow-x-auto no-scrollbar">
-                                        <SharedAttendanceHeatmap subjects={activeSubjects} />
-                                    </div>
-                                </div>
-                            </section>
+                            {/* Weekly Matrix Representation with Abbreviation Hover */}
+                            <div className="my-auto py-2 overflow-x-auto no-scrollbar">
+                                <SharedAttendanceHeatmap subjects={activeSubjects} />
+                            </div>
+                        </div>
+                    </section>
                 )}
 
                             {isTeacher ? (
