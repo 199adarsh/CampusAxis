@@ -58,10 +58,15 @@ public class AsyncConfig {
     @Bean(name = "scrapingTaskExecutor")
     public Executor scrapingTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(4);
-        executor.setMaxPoolSize(8);
-        executor.setQueueCapacity(100);
+        // 0.25 vCPU constraint: scraping is I/O-bound so we allow slightly more threads
+        // than the CPU fraction, but keep it very conservative to avoid starving Gemini/RAG.
+        // Rule of thumb: (0.25 vCPU) × IO-wait-factor(~8) = 2 → cap at 3 max.
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(3);
+        executor.setQueueCapacity(50);
         executor.setThreadNamePrefix("scrape-async-");
+        executor.setRejectedExecutionHandler((r, ex) ->
+            logger.warn("Scraping task rejected — executor at capacity (0.25 vCPU constraint)."));
         executor.initialize();
         logger.info("Scraping async executor initialized with core={}, max={}, queue={}",
                    executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity());

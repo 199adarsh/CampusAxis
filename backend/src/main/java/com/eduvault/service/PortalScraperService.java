@@ -19,17 +19,24 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.regex.*;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PortalScraperService {
 
     private static final Logger log = LoggerFactory.getLogger(PortalScraperService.class);
+
+    @Autowired
+    @Qualifier("scrapingTaskExecutor")
+    private Executor scrapingExecutor;
 
     // URLs
     private static final String BASE_URL      = "https://online.dkte.contineo.in:8081/parents/";
@@ -106,7 +113,7 @@ public class PortalScraperService {
 
         try {
             log.info("Starting student portal synchronization for PRN: {}", prn);
-            ScraperService service = new ScraperService();
+            ScraperService service = new ScraperService(scrapingExecutor);
             ScrapeResult result = service.scrape(prn, dob);
             
             // Convert to DashboardSubject objects
@@ -171,8 +178,10 @@ public class PortalScraperService {
         private static final Logger log = LoggerFactory.getLogger(ScraperService.class);
         private final CookieManager cookieManager;
         private final HttpClient httpClient;
+        private final Executor executor;
 
-        public ScraperService() {
+        public ScraperService(Executor executor) {
+            this.executor = executor;
             this.cookieManager = new CookieManager();
             this.cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
             this.httpClient = HttpClient.newBuilder()
@@ -694,7 +703,9 @@ public class PortalScraperService {
             for (String code : allCodes) {
                 SubjectLink linkData = subjectLinks.get(code);
                 if (linkData != null && linkData.url != null) {
-                    futures.put(code, CompletableFuture.supplyAsync(() -> fetchSubjectAttendanceDetails(linkData.url)));
+                    futures.put(code, executor != null
+                            ? CompletableFuture.supplyAsync(() -> fetchSubjectAttendanceDetails(linkData.url), executor)
+                            : CompletableFuture.supplyAsync(() -> fetchSubjectAttendanceDetails(linkData.url)));
                 }
             }
 

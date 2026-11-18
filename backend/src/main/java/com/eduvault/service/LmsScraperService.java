@@ -401,6 +401,8 @@ public class LmsScraperService {
             updateProgress(user, "FAILED", "Availability check failed: " + e.getMessage(), null, 0, 0, null, 0, 0, 0, 0, 100,
                     "Availability check error: " + e.getMessage());
             throw e;
+        } finally {
+            courseDocumentCache.clear();
         }
     }
 
@@ -788,19 +790,23 @@ public class LmsScraperService {
                 totalMaterialsFound, totalImported, totalSkipped, totalFailed, 100,
                 "Ingestion complete: " + totalImported + " imported, " + totalSkipped + " duplicates skipped.");
 
-        return LmsSyncResponse.builder()
-                .totalDiscoveredCourses(discovered.size())
-                .matchedCoursesCount(matchedCount)
-                .unmatchedCoursesCount(unmatchedCount)
-                .totalMaterialsFound(totalMaterialsFound)
-                .importedCount(totalImported)
-                .skippedDuplicatesCount(totalSkipped)
-                .failureCount(totalFailed)
-                .courses(courseSummaries)
-                .allDiscoveredCourses(enrichWithAvailability(discovered, database.getAllSubjects()))
-                .unmatchedCourses(unmatchedCourses)
-                .errors(errors)
-                .build();
+        try {
+            return LmsSyncResponse.builder()
+                    .totalDiscoveredCourses(discovered.size())
+                    .matchedCoursesCount(matchedCount)
+                    .unmatchedCoursesCount(unmatchedCount)
+                    .totalMaterialsFound(totalMaterialsFound)
+                    .importedCount(totalImported)
+                    .skippedDuplicatesCount(totalSkipped)
+                    .failureCount(totalFailed)
+                    .courses(courseSummaries)
+                    .allDiscoveredCourses(enrichWithAvailability(discovered, database.getAllSubjects()))
+                    .unmatchedCourses(unmatchedCourses)
+                    .errors(errors)
+                    .build();
+        } finally {
+            courseDocumentCache.clear();
+        }
     }
 
     private static class CourseScrapeResult {
