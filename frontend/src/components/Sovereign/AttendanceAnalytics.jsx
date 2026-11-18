@@ -1242,1877 +1242,1899 @@ const AttendanceAnalytics = () => {
                 ) : (
                     <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4" data-purpose="summary-ribbon">
                         {/* Master Attendance Card (Apple Minimal) */}
-                        <div className="col-span-1 sm:col-span-1 lg:col-span-3 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
-                            <div>
-                                <div className="flex items-center justify-between gap-1">
-                                    <span className="text-xs font-semibold text-[#6E6E73] font-sans">
-                                        Overall Attendance
-                                    </span>
-                                    <span className={cn(
-                                        "text-[11px] font-semibold px-2 py-0.5 rounded-full border font-sans",
-                                        parseFloat(overallPercentage) >= 75
-                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
-                                            : "bg-rose-50 text-rose-700 border-rose-200/80"
-                                    )}>
-                                        {parseFloat(overallPercentage) >= 75 ? 'Safe' : 'At Risk'}
-                                    </span>
-                                </div>
-
-                                <div className="mt-3 mb-1 flex items-baseline gap-2">
-                                    <span className="text-3xl sm:text-[34px] font-bold text-[#1D1D1F] tracking-tight font-sans tabular-nums leading-none">
-                                        {overallPercentage}%
-                                    </span>
-                                    <span className="text-xs text-[#8E8E93] font-normal font-sans">aggregate</span>
-                                </div>
-                                <p className="text-[11px] text-[#8E8E93] font-sans">
-                                    Across {activeSubjects.length} enrolled subjects
-                                </p>
-                            </div>
-
-                            {/* Clean Inline Breakdown: Theory & Labs */}
-                            <div className="pt-3 border-t border-[#E5E5EA] space-y-2.5">
+                            <div className="col-span-1 sm:col-span-1 lg:col-span-6 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-1">
                                 <div>
-                                    <div className="flex items-center justify-between text-xs mb-1 font-sans">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                            <Quiz03Icon size={14} className="text-[#0071E3] shrink-0" />
-                                            <span className="text-[#6E6E73] font-medium text-[11px]">Lectures</span>
-                                        </div>
-                                        <span className="font-semibold text-[#1D1D1F] text-[11px] tabular-nums">{theoryPercentage}%</span>
+                                    <div className="flex items-center justify-between gap-1">
+                                        <span className="text-xs font-semibold text-[#6E6E73] font-sans">
+                                            Overall Attendance
+                                        </span>
+                                        <span className={cn(
+                                            "text-[11px] font-semibold px-2 py-0.5 rounded-full border font-sans",
+                                            parseFloat(overallPercentage) >= 75
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
+                                                : "bg-rose-50 text-rose-700 border-rose-200/80"
+                                        )}>
+                                            {parseFloat(overallPercentage) >= 75 ? 'Safe' : 'At Risk'}
+                                        </span>
                                     </div>
-                                    <div className="w-full bg-[#E5E5EA] rounded-full h-1.5 overflow-hidden">
-                                        <div
-                                            className={cn(
-                                                "h-full rounded-full transition-all duration-500",
-                                                parseFloat(theoryPercentage) >= 75 ? "bg-[#0071E3]" : "bg-[#FF9F0A]"
-                                            )}
-                                            style={{ width: `${Math.min(100, Math.max(0, parseFloat(theoryPercentage)))}%` }}
-                                        />
+
+                                    <div className="mt-3 mb-1 flex items-baseline gap-2">
+                                        <span className="text-3xl sm:text-[34px] font-bold text-[#1D1D1F] tracking-tight font-sans tabular-nums leading-none">
+                                            {overallPercentage}%
+                                        </span>
+                                        <span className="text-xs text-[#8E8E93] font-normal font-sans">aggregate</span>
                                     </div>
+                                    <p className="text-[11px] text-[#8E8E93] font-sans">
+                                        Across {activeSubjects.length} enrolled subjects
+                                    </p>
                                 </div>
 
-                                <div>
-                                    <div className="flex items-center justify-between text-xs mb-1 font-sans">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                            <ComputerProgramming01Icon size={14} className="text-[#174073] shrink-0" />
-                                            <span className="text-[#6E6E73] font-medium text-[11px]">Labs</span>
-                                        </div>
-                                        <span className="font-semibold text-[#1D1D1F] text-[11px] tabular-nums">{labPercentage}%</span>
-                                    </div>
-                                    <div className="w-full bg-[#E5E5EA] rounded-full h-1.5 overflow-hidden">
-                                        <div
-                                            className={cn(
-                                                "h-full rounded-full transition-all duration-500",
-                                                parseFloat(labPercentage) >= 75 ? "bg-[#0071E3]" : "bg-[#FF9F0A]"
-                                            )}
-                                            style={{ width: `${Math.min(100, Math.max(0, parseFloat(labPercentage)))}%` }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Activity Overview Heatmap (Wider Layout: 6 Cols) */}
-                        <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-3 lg:order-2 overflow-hidden">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-semibold text-[#6E6E73] font-sans">
-                                    Activity Overview
-                                </span>
-                                <div className="flex items-center gap-1.5 text-[10px] text-[#727272] font-sans">
-                                    <span>Less</span>
-                                    <span className="w-2.5 h-2.5 rounded-xs bg-slate-100 border border-[#E2E2E2] inline-block" />
-                                    <span className="w-2.5 h-2.5 rounded-xs bg-emerald-300 inline-block" />
-                                    <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600 inline-block" />
-                                    <span>More</span>
-                                </div>
-                            </div>
-
-                            {/* Weekly Matrix Representation with Abbreviation Hover */}
-                            <div className="my-auto py-2 overflow-x-auto no-scrollbar">
-                                <SharedAttendanceHeatmap subjects={activeSubjects} weeksCount={18} />
-                            </div>
-                        </div>
-
-                        {/* Risk Nodes Summary */}
-                        <div className="col-span-1 sm:col-span-1 lg:col-span-3 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-2 lg:order-3">
-                            <div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-[#6E6E73] font-sans">
-                                        Shortage Alerts
-                                    </span>
-                                    <span className={cn(
-                                        "text-[11px] font-semibold px-2 py-0.5 rounded-full border font-sans",
-                                        riskSubjects.length > 0 ? "bg-rose-50 text-rose-700 border-rose-200/80" : "bg-emerald-50 text-emerald-700 border-emerald-200/80"
-                                    )}>
-                                        {riskSubjects.length > 0 ? `${riskSubjects.length} At Risk` : 'All Clear'}
-                                    </span>
-                                </div>
-
-                                <div className="mt-3 space-y-2 text-xs">
-                                    {riskSubjects.length > 0 ? (
-                                        riskSubjects.slice(0, 3).map(sub => {
-                                            const pct = getPrecisePct(sub);
-                                            const conducted = sub.totalConducted > 0 ? sub.totalConducted : (sub.detailedAttendance?.length || 0);
-                                            const attended = sub.totalAttended > 0 ? sub.totalAttended : (sub.detailedAttendance?.filter(r => r.status === 'Present').length || 0);
-                                            const needed = Math.max(0, Math.ceil((0.75 * conducted - attended) / 0.25));
-
-                                            return (
-                                                <div key={sub.id} className="flex items-center justify-between py-1 border-b border-[#E5E5EA]/60 font-sans">
-                                                    <div className="min-w-0 pr-2">
-                                                        <span className="text-[#1D1D1F] truncate block font-medium" title={sub.name}>
-                                                            {sub.name}
-                                                        </span>
-                                                        {needed > 0 && (
-                                                            <span className="text-[10px] text-[#8E8E93]">
-                                                                Need +{needed} {needed === 1 ? 'class' : 'classes'}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <span className="font-semibold text-[#FF3B30] tabular-nums text-xs shrink-0">
-                                                        {pct}%
-                                                    </span>
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="py-6 text-center text-xs text-[#6E6E73] font-sans">
-                                            All courses meet the 75% attendance threshold.
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="text-[11px] text-[#8E8E93] font-sans pt-2 border-t border-[#E5E5EA]/40">
-                                {riskSubjects.length > 0 ? 'Minimum 75% presence required for exams' : 'Good attendance standing'}
-                            </div>
-                        </div>
-                    </section>
-                )}
-
-                {isTeacher ? (
-                    <div className="space-y-6">
-                        {/* Navigation Tabs for Faculty */}
-                        <div className="border-b border-[#E2E2E2] pb-2">
-                            <FluidTabs
-                                value={teacherActiveTab}
-                                onChange={setTeacherActiveTab}
-                                size="sm"
-                                layoutId="faculty-nav-tabs"
-                                tabs={[
-                                    {
-                                        id: 'nc',
-                                        label: `Leave Requests Queue (${allFacultyNc.length})`,
-                                        icon: <CheckmarkCircle02Icon size={16} className="mr-1" />
-                                    },
-                                    {
-                                        id: 'courses',
-                                        label: `Class Attendance Registers (${subjects?.length || 0})`,
-                                        icon: <File01Icon size={16} className="mr-1" />
-                                    }
-                                ]}
-                            />
-                        </div>
-
-                        {teacherActiveTab === 'nc' ? (
-                            <section className="bg-white border border-[#E2E2E2] rounded-2xl shadow-xs p-5 space-y-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E2E2E2]">
+                                {/* Clean Inline Breakdown: Theory & Labs */}
+                                <div className="pt-3 border-t border-[#E5E5EA] space-y-2.5">
                                     <div>
-                                        <div className="flex items-center gap-2">
-                                            <h2 className="text-base font-bold text-[#383838]">Student Leave &amp; Absence Requests</h2>
-                                            <span className="text-[10px] font-sans font-semibold px-2 py-0.5 rounded-full bg-[#DEEDFC] text-[#174073] border border-[#D9ECFF]/60">
-                                                Verified Documents
-                                            </span>
+                                        <div className="flex items-center justify-between text-xs mb-1 font-sans">
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                <Quiz03Icon size={14} className="text-[#0071E3] shrink-0" />
+                                                <span className="text-[#6E6E73] font-medium text-[11px]">Lectures</span>
+                                            </div>
+                                            <span className="font-semibold text-[#1D1D1F] text-[11px] tabular-nums">{theoryPercentage}%</span>
                                         </div>
-                                        <p className="text-xs text-[#727272] mt-0.5">Review medical certificates and absence reasons submitted by students.</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={fetchAllFacultyNc}
-                                            className="px-3 py-1.5 rounded-xl border border-[#E2E2E2] text-xs font-semibold text-[#383838] hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer transition"
-                                        >
-                                            <RefreshIcon size={14} className="text-[#727272]" />
-                                            <span>Refresh</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50/70 p-2.5 rounded-xl border border-[#E2E2E2]/70">
-                                    <div className="flex items-center gap-1">
-                                        {[
-                                            { id: 'ALL', label: 'All', count: allFacultyNc.length },
-                                            { id: 'PENDING', label: 'Pending', count: allFacultyNc.filter(r => r.status === 'PENDING').length },
-                                            { id: 'APPROVED', label: 'Approved', count: allFacultyNc.filter(r => r.status === 'APPROVED').length },
-                                            { id: 'REJECTED', label: 'Rejected', count: allFacultyNc.filter(r => r.status === 'REJECTED').length }
-                                        ].map(st => (
-                                            <button
-                                                key={st.id}
-                                                type="button"
-                                                onClick={() => setGlobalNcFilterStatus(st.id)}
-                                                className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${globalNcFilterStatus === st.id
-                                                    ? 'bg-[#0073E6] text-white shadow-xs'
-                                                    : 'text-[#383838] hover:bg-slate-200/60'
-                                                    }`}
-                                            >
-                                                <span>{st.label}</span>
-                                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${globalNcFilterStatus === st.id ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-[#383838]'
-                                                    }`}>
-                                                    {st.count}
-                                                </span>
-                                            </button>
-                                        ))}
+                                        <div className="w-full bg-[#E5E5EA] rounded-full h-1.5 overflow-hidden">
+                                            <div
+                                                className={cn(
+                                                    "h-full rounded-full transition-all duration-500",
+                                                    parseFloat(theoryPercentage) >= 75 ? "bg-[#0071E3]" : "bg-[#FF9F0A]"
+                                                )}
+                                                style={{ width: `${Math.min(100, Math.max(0, parseFloat(theoryPercentage)))}%` }}
+                                            />
+                                        </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                                        <select
-                                            value={globalNcFilterSubject}
-                                            onChange={e => setGlobalNcFilterSubject(e.target.value)}
-                                            className="text-xs bg-white border border-[#E2E2E2] rounded-lg px-2.5 py-1.5 font-medium text-[#383838] outline-none focus:ring-1 focus:ring-blue-500"
-                                        >
-                                            <option value="ALL">All Assigned Courses</option>
-                                            {subjects?.map(s => (
-                                                <option key={s.id} value={s.name}>{s.name}</option>
-                                            ))}
-                                        </select>
-                                        <div className="relative">
-                                            <Search01Icon size={14} className="text-[#727272] absolute left-2.5 top-2.5" />
-                                            <input
-                                                type="text"
-                                                value={globalNcSearch}
-                                                onChange={e => setGlobalNcSearch(e.target.value)}
-                                                placeholder="Search PRN or name..."
-                                                className="text-xs bg-white border border-[#E2E2E2] rounded-lg pl-8 pr-3 py-1.5 outline-none w-44 focus:ring-1 focus:ring-blue-500"
+                                    <div>
+                                        <div className="flex items-center justify-between text-xs mb-1 font-sans">
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                <ComputerProgramming01Icon size={14} className="text-[#174073] shrink-0" />
+                                                <span className="text-[#6E6E73] font-medium text-[11px]">Labs</span>
+                                            </div>
+                                            <span className="font-semibold text-[#1D1D1F] text-[11px] tabular-nums">{labPercentage}%</span>
+                                        </div>
+                                        <div className="w-full bg-[#E5E5EA] rounded-full h-1.5 overflow-hidden">
+                                            <div
+                                                className={cn(
+                                                    "h-full rounded-full transition-all duration-500",
+                                                    parseFloat(labPercentage) >= 75 ? "bg-[#0071E3]" : "bg-[#FF9F0A]"
+                                                )}
+                                                style={{ width: `${Math.min(100, Math.max(0, parseFloat(labPercentage)))}%` }}
                                             />
                                         </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div className="space-y-3 pt-1">
-                                    {allFacultyNcLoading ? (
-                                        <div className="py-14 text-center text-xs text-[#727272] flex flex-col items-center justify-center gap-2">
-                                            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                            <span>Loading student leave requests...</span>
-                                        </div>
-                                    ) : allFacultyNc.filter(r => {
-                                        if (globalNcFilterStatus !== 'ALL' && r.status !== globalNcFilterStatus) return false;
-                                        if (globalNcFilterSubject !== 'ALL' && !r.missedSubjects?.some(ms => ms.subjectName === globalNcFilterSubject)) return false;
-                                        if (globalNcSearch.trim()) {
-                                            const q = globalNcSearch.toLowerCase();
-                                            return r.studentName?.toLowerCase().includes(q) || r.studentPrn?.toLowerCase().includes(q);
-                                        }
-                                        return true;
-                                    }).length === 0 ? (
-                                        <div className="py-14 text-center bg-slate-50/60 rounded-2xl border border-dashed border-[#E2E2E2] p-6 space-y-2">
-                                            <CheckmarkCircle02Icon size={32} className="text-[#727272] mx-auto" />
-                                            <h4 className="font-bold text-sm text-[#383838]">No Leave Requests Found</h4>
-                                            <p className="text-xs text-[#727272] max-w-sm mx-auto">
-                                                There are no student leave requests matching the selected filter.
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        allFacultyNc.filter(r => {
-                                            if (globalNcFilterStatus !== 'ALL' && r.status !== globalNcFilterStatus) return false;
-                                            if (globalNcFilterSubject !== 'ALL' && !r.missedSubjects?.some(ms => ms.subjectName === globalNcFilterSubject)) return false;
-                                            if (globalNcSearch.trim()) {
-                                                const q = globalNcSearch.toLowerCase();
-                                                return r.studentName?.toLowerCase().includes(q) || r.studentPrn?.toLowerCase().includes(q);
-                                            }
-                                            return true;
-                                        }).map(req => {
-                                            const initials = (req.studentName || 'ST')
-                                                .split(' ')
-                                                .filter(Boolean)
-                                                .slice(0, 2)
-                                                .map(p => p[0])
-                                                .join('')
-                                                .toUpperCase();
-
-                                            return (
-                                                <div
-                                                    key={req.id}
-                                                    className="p-4 rounded-2xl border border-[#E2E2E2] bg-white hover:border-slate-300 hover:shadow-xs transition flex flex-col md:flex-row md:items-center justify-between gap-4"
-                                                >
-                                                    <div className="flex items-start gap-3.5 min-w-0">
-                                                        <div className="w-10 h-10 rounded-xl bg-slate-100 text-[#383838] font-bold text-xs flex items-center justify-center shrink-0 border border-[#E2E2E2]">
-                                                            {initials}
-                                                        </div>
-                                                        <div className="space-y-1 min-w-0">
-                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                <span className="font-bold text-sm text-[#383838]">{req.studentName}</span>
-                                                                <span className="text-[10px] font-sans font-semibold bg-slate-100 text-[#383838] px-2 py-0.5 rounded-md border border-[#E2E2E2]">
-                                                                    {req.studentPrn}
-                                                                </span>
-                                                                {req.missedSubjects && req.missedSubjects.length > 0 && (
-                                                                    <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#DEEDFC] text-[#174073] border border-[#D9ECFF]/60">
-                                                                        {req.missedSubjects[0].subjectName}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="text-xs text-[#383838] flex items-center gap-2 flex-wrap pt-0.5">
-                                                                <span className="inline-flex items-center gap-1 font-sans text-[11px] bg-slate-50 border border-[#E2E2E2] px-2 py-0.5 rounded-md text-[#383838]">
-                                                                    <Calendar03Icon size={14} className="text-[#0073E6]" />
-                                                                    <span>{(req.absentDates || []).join(', ')}</span>
-                                                                </span>
-                                                                <span className="text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200/60 px-2 py-0.5 rounded-md">
-                                                                    {req.reason}
-                                                                </span>
-                                                                {req.description && (
-                                                                    <span className="text-[#727272] italic max-w-sm truncate" title={req.description}>
-                                                                        "{req.description}"
-                                                                    </span>
-                                                                )}
-                                                            </div>
-
-                                                            {req.reviewComment && (
-                                                                <div className="text-[11px] text-[#383838] bg-slate-50 border border-[#E2E2E2] p-2 rounded-xl mt-1.5 flex items-start gap-1.5">
-                                                                    <CheckmarkCircle02Icon size={14} className="text-emerald-600 shrink-0 mt-0.5" />
-                                                                    <span><strong>Faculty Note ({req.reviewedBy}):</strong> "{req.reviewComment}"</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-2.5 shrink-0 self-end md:self-center">
-                                                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 ${req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' :
-                                                            req.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border border-rose-200/80' :
-                                                                'bg-amber-50 text-amber-700 border border-amber-200/80'
-                                                            }`}>
-                                                            {req.status === 'PENDING' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>}
-                                                            {req.status === 'APPROVED' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
-                                                            {req.status === 'REJECTED' && <XCircle className="w-3.5 h-3.5 text-rose-600" />}
-                                                            <span>{req.status}</span>
-                                                        </span>
-
-                                                        {req.proofFileName && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setDocPreviewUrl(getNcProofUrl(req));
-                                                                    setDocPreviewName(req.proofFileName);
-                                                                }}
-                                                                className="px-3 py-1.5 rounded-xl border border-[#E2E2E2] text-[#383838] hover:text-[#0073E6] hover:border-[#D9ECFF] hover:bg-[#DEEDFC]/50 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition"
-                                                            >
-                                                                <Eye className="w-3.5 h-3.5 text-[#0073E6]" />
-                                                                <span>Document</span>
-                                                            </button>
-                                                        )}
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setReviewingReq(req);
-                                                                setReviewDecision(req.status === 'REJECTED' ? 'REJECTED' : 'APPROVED');
-                                                                setReviewComment(req.reviewComment || '');
-                                                            }}
-                                                            className="px-4 py-1.5 rounded-xl bg-[#0073E6] hover:bg-[#174073] text-white font-semibold text-xs shadow-xs hover:shadow transition flex items-center gap-1.5 cursor-pointer"
-                                                        >
-                                                            <FileCheck className="w-3.5 h-3.5" />
-                                                            <span>Review</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                            </section>
-                        ) : (
-                            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {subjects?.map(sub => {
-                                    const conducted = sub.totalConducted > 0 ? sub.totalConducted : (sub.detailedAttendance?.length || 0);
-                                    return (
-                                        <div
-                                            key={sub.id}
-                                            onClick={() => {
-                                                setSelectedSubject(sub);
-                                                setShowDetailModal(true);
-                                                setModalTab('presence');
-                                                fetchSubjectNcRequests(sub);
-                                            }}
-                                            className="p-5 rounded-2xl bg-white border border-[#E2E2E2] hover:border-blue-500 hover:shadow-md transition cursor-pointer space-y-3"
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[10px] font-sans font-bold px-2 py-0.5 rounded bg-slate-100 text-[#383838]">
-                                                    {sub.code || 'COURSE'}
-                                                </span>
-                                                <span className="text-xs font-bold text-[#0073E6] bg-[#DEEDFC] px-2 py-0.5 rounded-full">
-                                                    {conducted} Lectures Logged
-                                                </span>
-                                            </div>
-                                            <h3 className="font-bold text-sm text-[#383838] leading-tight">{sub.name}</h3>
-                                            <p className="text-[11px] text-[#727272]">{sub.department} • {sub.semester}</p>
-                                            <div className="pt-2 border-t border-[#E2E2E2] flex items-center justify-between text-xs text-[#0073E6] font-bold">
-                                                <span>View Attendance &amp; Leave Requests</span>
-                                                <ArrowRight01Icon size={16} />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </section>
-                        )}
-                    </div>
-                ) : (
-                    <div className="space-y-6 w-full min-w-0">
-                        {/* Main Two-Column Responsive Layout */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                            {/* Left Column: Primary Subject Attendance Table & Planner */}
-                            <div className="lg:col-span-8 space-y-6">
-                                <section className="bg-white border border-[#E2E2E2] rounded-xl shadow-xs overflow-hidden">
-                                    {/* Filter Bar */}
-                                    <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-[#E2E2E2] flex flex-wrap items-center justify-between gap-3">
-                                        <FluidTabs
-                                            value={filterTab}
-                                            onChange={setFilterTab}
-                                            size="xs"
-                                            layoutId="attendance-filter-tabs-desktop"
-                                            tabs={[
-                                                { id: 'all', label: `All Subjects (${activeSubjects.length})` },
-                                                { id: 'attention', label: `Needs Attention (${riskSubjects.length})` },
-                                                { id: 'safe', label: `Safe (${safeSubjects.length})` }
-                                            ]}
-                                        />
-
-                                        <span className="text-xs text-[#727272] font-medium hidden sm:inline">Minimum Threshold: 75.0%</span>
+                            {/* Activity Overview Heatmap (Wider Layout: 6 Cols) */}
+                            <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-3 lg:order-2 overflow-hidden">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-[#6E6E73] font-sans">
+                                        Activity Overview
+                                    </span>
+                                    <div className="flex items-center gap-1.5 text-[10px] text-[#727272] font-sans">
+                                        <span>Less</span>
+                                        <span className="w-2.5 h-2.5 rounded-xs bg-slate-100 border border-[#E2E2E2] inline-block" />
+                                        <span className="w-2.5 h-2.5 rounded-xs bg-emerald-300 inline-block" />
+                                        <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600 inline-block" />
+                                        <span>More</span>
                                     </div>
+                                </div>
 
-                                    {/* Subject Rows List */}
-                                    <div className="divide-y divide-[#E2E2E2]">
-                                        {displayedSubjects.map(sub => {
-                                            const conducted = sub.totalConducted > 0 ? sub.totalConducted : (sub.detailedAttendance?.length || 0);
-                                            const attended = sub.totalAttended > 0 ? sub.totalAttended : (sub.detailedAttendance?.filter(r => r.status === 'Present').length || 0);
-                                            const pct = getPrecisePct(sub);
-                                            const isSafe = pct >= 75;
-                                            const isLab = getCategory(sub) === 'LAB';
+                                {/* Weekly Matrix Representation with Abbreviation Hover */}
+                                <div className="my-auto py-2 overflow-x-auto no-scrollbar">
+                                    <SharedAttendanceHeatmap subjects={activeSubjects} weeksCount={18} />
+                                </div>
+                            </div>
 
-                                            // Skips vs Recovery
-                                            const SkipsAvailable = Math.max(0, Math.floor((attended - 0.75 * conducted) / 0.75));
-                                            const sessionsNeeded = Math.max(0, Math.ceil((0.75 * conducted - attended) / 0.25));
+                            {/* Risk Nodes Summary */}
+                            <div className="col-span-1 sm:col-span-1 lg:col-span-3 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-2 lg:order-3">
+                                <div className="col-span-1 sm:col-span-1 lg:col-span-6 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-2">
+                                    <div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-semibold text-[#6E6E73] font-sans">
+                                                Shortage Alerts
+                                            </span>
+                                            <span className={cn(
+                                                "text-[11px] font-semibold px-2 py-0.5 rounded-full border font-sans",
+                                                riskSubjects.length > 0 ? "bg-rose-50 text-rose-700 border-rose-200/80" : "bg-emerald-50 text-emerald-700 border-emerald-200/80"
+                                            )}>
+                                                {riskSubjects.length > 0 ? `${riskSubjects.length} At Risk` : 'All Clear'}
+                                            </span>
+                                        </div>
 
-                                            return (
-                                                <div
-                                                    key={sub.id}
-                                                    onClick={() => {
-                                                        setSelectedSubject(sub);
-                                                        setShowDetailModal(true);
-                                                        setModalTab('presence');
-                                                        fetchSubjectNcRequests(sub);
-                                                        setSelectedNcDates([]);
-                                                        setReviewingReq(null);
-                                                    }}
-                                                    className={`p-3.5 sm:px-6 sm:py-4 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer ${!isSafe ? 'bg-amber-50/20' : ''
-                                                        }`}
-                                                >
-                                                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                                                        <div className={`p-2 rounded-lg mt-0.5 shrink-0 ${isSafe ? 'bg-[#DEEDFC] text-[#0073E6]' : 'bg-amber-100/60 text-amber-700'
-                                                            }`}>
-                                                            {isLab ? <ComputerProgramming01Icon size={18} /> : <Quiz03Icon size={18} />}
-                                                        </div>
+                                        <div className="mt-3 space-y-2 text-xs">
+                                            {riskSubjects.length > 0 ? (
+                                                riskSubjects.slice(0, 3).map(sub => {
+                                                    const pct = getPrecisePct(sub);
+                                                    const conducted = sub.totalConducted > 0 ? sub.totalConducted : (sub.detailedAttendance?.length || 0);
+                                                    const attended = sub.totalAttended > 0 ? sub.totalAttended : (sub.detailedAttendance?.filter(r => r.status === 'Present').length || 0);
+                                                    const needed = Math.max(0, Math.ceil((0.75 * conducted - attended) / 0.25));
 
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-start justify-between gap-2">
-                                                                <h3 className="text-sm font-semibold text-[#383838] truncate min-w-0 flex-1">
+                                                    return (
+                                                        <div key={sub.id} className="flex items-center justify-between py-1 border-b border-[#E5E5EA]/60 font-sans">
+                                                            <div className="min-w-0 pr-2">
+                                                                <span className="text-[#1D1D1F] truncate block font-medium" title={sub.name}>
                                                                     {sub.name}
-                                                                </h3>
-                                                                <span className={`text-base font-bold sm:hidden shrink-0 tabular-nums ${isSafe ? 'text-[#383838]' : 'text-amber-600'}`}>
-                                                                    {pct}%
                                                                 </span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 text-xs text-[#727272] mt-0.5 flex-wrap">
-                                                                <span>{attended} / {conducted} sessions</span>
-
-                                                                {sub.faculty && (
-                                                                    <>
-                                                                        <span className="text-[#E2E2E2]">•</span>
-                                                                        <span className="text-[#727272] truncate">{sub.faculty}</span>
-                                                                    </>
+                                                                {needed > 0 && (
+                                                                    <span className="text-[10px] text-[#8E8E93]">
+                                                                        Need +{needed} {needed === 1 ? 'class' : 'classes'}
+                                                                    </span>
                                                                 )}
                                                             </div>
-                                                            {/* Minimal Progress Bar */}
-                                                            <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
-                                                                <div
-                                                                    className={`h-1.5 rounded-full ${isSafe ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                                                                    style={{ width: `${Math.min(100, pct)}%` }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-end sm:flex-col sm:items-end sm:justify-center shrink-0 gap-1.5 pt-1 sm:pt-0">
-                                                        <div className="text-right hidden sm:block">
-                                                            <span className={`text-base font-bold ${isSafe ? 'text-[#383838]' : 'text-amber-600'}`}>
+                                                            <span className="font-semibold text-[#FF3B30] tabular-nums text-xs shrink-0">
                                                                 {pct}%
                                                             </span>
                                                         </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            {isSafe ? (
-                                                                <span className="inline-flex items-center text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                                                                    {SkipsAvailable} {SkipsAvailable === 1 ? 'Skip' : 'Skips'} Available
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                                                                    Attend {sessionsNeeded} More
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
+                                                    );
+                                                })
+                                            ) : (
+                                                <div className="py-6 text-center text-xs text-[#6E6E73] font-sans">
+                                                    All courses meet the 75% attendance threshold.
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                </section>
-
-                                {/* Attendance Calculator & Planner below All Attendances */}
-                                {renderOptimizationPanel()}
-                            </div>
-
-                            {/* Right Column: Session Audit Rail */}
-                            <section className="lg:col-span-4 space-y-4">
-
-                                <div className="bg-white border border-[#E2E2E2] rounded-xl shadow-xs p-4 sm:p-5">
-                                    <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-[#E2E2E2]">
-                                        <div>
-                                            <h2 className="text-sm font-bold text-[#383838]">Recent Classes</h2>
-                                            <p className="text-[11px] text-[#727272]">Recent attendance records</p>
+                                            )}
                                         </div>
                                     </div>
 
-                                    {/* Log timeline list */}
-                                    <div className="py-2 space-y-2 max-h-[400px] sm:max-h-[500px] overflow-y-auto no-scrollbar">
-                                        {sessionLogs.length > 0 ? (
-                                            sessionLogs.map((log, idx) => {
-                                                const isPresent = log.status === 'Present';
-                                                return (
-                                                    <div
-                                                        key={idx}
-                                                        className={`p-2.5 sm:p-3 rounded-lg border transition ${isPresent
-                                                            ? 'border-[#E2E2E2] bg-slate-50/50 hover:bg-slate-50'
-                                                            : 'border-rose-100 bg-rose-50/30 hover:bg-rose-50/50'
-                                                            }`}
-                                                    >
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <span className="text-[11px] font-sans text-[#727272]">
-                                                                {log.date} {log.time ? `• ${log.time}` : ''}
-                                                            </span>
-                                                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${isPresent
-                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
-                                                                : 'bg-rose-50 text-[#E11D48] border-rose-200/80'
-                                                                }`}>
-                                                                {isPresent ? <PresentBadgeIcon size={13} className="text-emerald-600 shrink-0" /> : <AbsentBadgeIcon size={13} className="text-[#E11D48] shrink-0" />}
-                                                                <span>{log.status.toUpperCase()}</span>
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-xs font-semibold text-[#383838] truncate">
-                                                            {log.subjectName}
-                                                        </p>
-                                                    </div>
-                                                );
-                                            })
-                                        ) : (
-                                            <div className="py-8 text-center text-xs text-[#727272]">
-                                                No recent attendance records found
-                                            </div>
-                                        )}
+                                    <div className="text-[11px] text-[#8E8E93] font-sans pt-2 border-t border-[#E5E5EA]/40">
+                                        {riskSubjects.length > 0 ? 'Minimum 75% presence required for exams' : 'Good attendance standing'}
+                                    </div>
+                                </div>
+
+                                {/* Activity Overview Heatmap (Full Width: 12 Cols) */}
+                                <div className="col-span-1 sm:col-span-2 lg:col-span-12 bg-white border border-[#E5E5EA] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all order-3 overflow-hidden">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-semibold text-[#6E6E73] font-sans">
+                                            Activity Overview
+                                        </span>
+                                        <div className="flex items-center gap-1.5 text-[10px] text-[#727272] font-sans">
+                                            <span>Less</span>
+                                            <span className="w-2.5 h-2.5 rounded-xs bg-slate-100 border border-[#E2E2E2] inline-block" />
+                                            <span className="w-2.5 h-2.5 rounded-xs bg-emerald-300 inline-block" />
+                                            <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600 inline-block" />
+                                            <span>More</span>
+                                        </div>
                                     </div>
 
-                                    {/* Regulatory Policy Notice Footer */}
-                                    <div className="mt-3 pt-3 border-t border-[#E2E2E2] text-[11px] text-[#727272] leading-relaxed bg-slate-50/80 p-3 rounded-lg">
-                                        <div className="flex items-center gap-1.5 font-semibold text-[#383838] mb-1">
-                                            <InformationCircleIcon size={15} className="text-[#0073E6]" />
-                                            <span>College Attendance Policy</span>
-                                        </div>
-                                        75% minimum physical presence is mandatory for End-Semester Examination eligibility. Medical condonation forms must be submitted within 7 calendar days of recovery.
+                                    {/* Weekly Matrix Representation with Abbreviation Hover */}
+                                    <div className="my-auto py-2 overflow-x-auto no-scrollbar">
+                                        <SharedAttendanceHeatmap subjects={activeSubjects} />
                                     </div>
                                 </div>
                             </section>
-                        </div>
-                    </div>
                 )}
-            </div>
 
-            {/* Subject Detail & NC Management Modal */}
-            {showDetailModal && selectedSubject && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
-                    onClick={() => {
-                        setShowDetailModal(false);
-                        setReviewingReq(null);
-                        setDocPreviewUrl(null);
-                    }}
-                >
-                    <div
-                        className="bg-white rounded-2xl border border-[#E2E2E2] shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {/* Modal Header (Mobile First & Aligned) */}
-                        <div className="p-4 sm:p-5 border-b border-[#E2E2E2] bg-white">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <h3 className="text-base sm:text-lg font-bold text-[#1D1D1F] leading-tight font-sans tracking-tight truncate">
-                                            {selectedSubject.name}
-                                        </h3>
-                                        <span className="px-2 py-0.5 rounded-md bg-[#F1F3F5] text-[#1D1D1F] text-[11px] font-semibold font-sans border border-[#E2E2E2]">
-                                            {selectedSubject.code || 'COURSE'}
-                                        </span>
-                                        <span className="px-2 py-0.5 rounded-md bg-[#DEEDFC] text-[#0073E6] text-[11px] font-bold font-sans border border-[#D9ECFF]">
-                                            {getPrecisePct(selectedSubject)}%
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-[#727272] font-sans mt-1">
-                                        {isTeacher ? `Faculty: ${teacherName}` : `PRN: ${profile?.prn || 'Student'}`}
-                                    </p>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowDetailModal(false);
-                                        setReviewingReq(null);
-                                        setDocPreviewUrl(null);
-                                    }}
-                                    className="p-1.5 rounded-lg text-[#727272] hover:text-[#1D1D1F] hover:bg-[#F1F3F5] cursor-pointer transition shrink-0 -mr-1 -mt-1"
-                                    title="Close"
-                                >
-                                    <Cancel01Icon size={18} />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Modal Navigation Tabs */}
-                        <div className="px-4 sm:px-5 py-2.5 border-b border-[#E2E2E2] bg-[#FBFBFD] flex items-center justify-between gap-2">
-                            <FluidTabs
-                                value={modalTab}
-                                onChange={setModalTab}
-                                size="xs"
-                                layoutId="attendance-modal-tabs"
-                                tabs={[
-                                    {
-                                        id: 'presence',
-                                        label: 'Attendance',
-                                        icon: <File01Icon size={15} className="mr-1" />
-                                    },
-                                    {
-                                        id: 'nc',
-                                        label: 'NC Request',
-                                        icon: <Shield01Icon size={14} className="text-[#0073E6] mr-1" />,
-                                        badge: subjectNcRequests.length > 0 ? subjectNcRequests.length : undefined
-                                    }
-                                ]}
-                            />
-
-                            <button
-                                type="button"
-                                onClick={() => fetchSubjectNcRequests(selectedSubject)}
-                                className="p-1.5 text-[#727272] hover:text-[#1D1D1F] rounded-lg hover:bg-[#F1F3F5] transition cursor-pointer shrink-0"
-                                title="Refresh data"
-                            >
-                                <RefreshCw className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-                        {/* Modal Body */}
-                        <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
-                            {/* TAB 1: PRESENCE LOG */}
-                            {/* TAB 1: PRESENCE LOG */}
-                            {modalTab === 'presence' && (
-                                <div className="space-y-3.5">
-                                    {/* Filter & Action Header (Mobile Responsive) */}
-                                    <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                            {[
-                                                { id: 'all', label: `All (${sortedSubjectRecords.length})` },
-                                                { id: 'Present', label: `Present (${subjectPresentCount})` },
-                                                { id: 'Absent', label: `Absent (${subjectAbsentCount})` }
-                                            ].map(tab => (
-                                                <button
-                                                    key={tab.id}
-                                                    type="button"
-                                                    onClick={() => setSubjectFilterTab(tab.id)}
-                                                    className={cn(
-                                                        "px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold font-sans transition-colors cursor-pointer",
-                                                        subjectFilterTab === tab.id
-                                                            ? "bg-[#0073E6] text-white shadow-2xs"
-                                                            : "bg-white text-[#727272] hover:text-[#383838] border border-[#E2E2E2] hover:bg-slate-50"
-                                                    )}
-                                                >
-                                                    {tab.label}
-                                                </button>
-                                            ))}
-                                        </div>
-
-                                        {!isTeacher && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setModalTab('nc')}
-                                                className="text-xs font-semibold text-[#0073E6] hover:text-blue-800 flex items-center gap-1 cursor-pointer font-sans shrink-0 ml-auto"
-                                            >
-                                                <UploadCloud className="w-3.5 h-3.5" />
-                                                <span>Apply Leave</span>
-                                            </button>
-                                        )}
+                            {isTeacher ? (
+                                <div className="space-y-6">
+                                    {/* Navigation Tabs for Faculty */}
+                                    <div className="border-b border-[#E2E2E2] pb-2">
+                                        <FluidTabs
+                                            value={teacherActiveTab}
+                                            onChange={setTeacherActiveTab}
+                                            size="sm"
+                                            layoutId="faculty-nav-tabs"
+                                            tabs={[
+                                                {
+                                                    id: 'nc',
+                                                    label: `Leave Requests Queue (${allFacultyNc.length})`,
+                                                    icon: <CheckmarkCircle02Icon size={16} className="mr-1" />
+                                                },
+                                                {
+                                                    id: 'courses',
+                                                    label: `Class Attendance Registers (${subjects?.length || 0})`,
+                                                    icon: <File01Icon size={16} className="mr-1" />
+                                                }
+                                            ]}
+                                        />
                                     </div>
 
-                                    {/* Session Logs List (Mobile Optimized Single Row) */}
-                                    {filteredSubjectRecords && filteredSubjectRecords.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {filteredSubjectRecords.map((rec, i) => {
-                                                const isAbsent = rec.status === 'Absent' || rec.effectiveStatus === 'Absent';
-                                                const existingNc = rec.matchingNc || subjectNcRequests.find(r =>
-                                                    r.absentDates && r.absentDates.includes(rec.date)
-                                                );
+                                    {teacherActiveTab === 'nc' ? (
+                                        <section className="bg-white border border-[#E2E2E2] rounded-2xl shadow-xs p-5 space-y-4">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E2E2E2]">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <h2 className="text-base font-bold text-[#383838]">Student Leave &amp; Absence Requests</h2>
+                                                        <span className="text-[10px] font-sans font-semibold px-2 py-0.5 rounded-full bg-[#DEEDFC] text-[#174073] border border-[#D9ECFF]/60">
+                                                            Verified Documents
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-[#727272] mt-0.5">Review medical certificates and absence reasons submitted by students.</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={fetchAllFacultyNc}
+                                                        className="px-3 py-1.5 rounded-xl border border-[#E2E2E2] text-xs font-semibold text-[#383838] hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer transition"
+                                                    >
+                                                        <RefreshIcon size={14} className="text-[#727272]" />
+                                                        <span>Refresh</span>
+                                                    </button>
+                                                </div>
+                                            </div>
 
+                                            <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50/70 p-2.5 rounded-xl border border-[#E2E2E2]/70">
+                                                <div className="flex items-center gap-1">
+                                                    {[
+                                                        { id: 'ALL', label: 'All', count: allFacultyNc.length },
+                                                        { id: 'PENDING', label: 'Pending', count: allFacultyNc.filter(r => r.status === 'PENDING').length },
+                                                        { id: 'APPROVED', label: 'Approved', count: allFacultyNc.filter(r => r.status === 'APPROVED').length },
+                                                        { id: 'REJECTED', label: 'Rejected', count: allFacultyNc.filter(r => r.status === 'REJECTED').length }
+                                                    ].map(st => (
+                                                        <button
+                                                            key={st.id}
+                                                            type="button"
+                                                            onClick={() => setGlobalNcFilterStatus(st.id)}
+                                                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${globalNcFilterStatus === st.id
+                                                                ? 'bg-[#0073E6] text-white shadow-xs'
+                                                                : 'text-[#383838] hover:bg-slate-200/60'
+                                                                }`}
+                                                        >
+                                                            <span>{st.label}</span>
+                                                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${globalNcFilterStatus === st.id ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-[#383838]'
+                                                                }`}>
+                                                                {st.count}
+                                                            </span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                <div className="flex items-center gap-2 w-full sm:w-auto">
+                                                    <select
+                                                        value={globalNcFilterSubject}
+                                                        onChange={e => setGlobalNcFilterSubject(e.target.value)}
+                                                        className="text-xs bg-white border border-[#E2E2E2] rounded-lg px-2.5 py-1.5 font-medium text-[#383838] outline-none focus:ring-1 focus:ring-blue-500"
+                                                    >
+                                                        <option value="ALL">All Assigned Courses</option>
+                                                        {subjects?.map(s => (
+                                                            <option key={s.id} value={s.name}>{s.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="relative">
+                                                        <Search01Icon size={14} className="text-[#727272] absolute left-2.5 top-2.5" />
+                                                        <input
+                                                            type="text"
+                                                            value={globalNcSearch}
+                                                            onChange={e => setGlobalNcSearch(e.target.value)}
+                                                            placeholder="Search PRN or name..."
+                                                            className="text-xs bg-white border border-[#E2E2E2] rounded-lg pl-8 pr-3 py-1.5 outline-none w-44 focus:ring-1 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3 pt-1">
+                                                {allFacultyNcLoading ? (
+                                                    <div className="py-14 text-center text-xs text-[#727272] flex flex-col items-center justify-center gap-2">
+                                                        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                                        <span>Loading student leave requests...</span>
+                                                    </div>
+                                                ) : allFacultyNc.filter(r => {
+                                                    if (globalNcFilterStatus !== 'ALL' && r.status !== globalNcFilterStatus) return false;
+                                                    if (globalNcFilterSubject !== 'ALL' && !r.missedSubjects?.some(ms => ms.subjectName === globalNcFilterSubject)) return false;
+                                                    if (globalNcSearch.trim()) {
+                                                        const q = globalNcSearch.toLowerCase();
+                                                        return r.studentName?.toLowerCase().includes(q) || r.studentPrn?.toLowerCase().includes(q);
+                                                    }
+                                                    return true;
+                                                }).length === 0 ? (
+                                                    <div className="py-14 text-center bg-slate-50/60 rounded-2xl border border-dashed border-[#E2E2E2] p-6 space-y-2">
+                                                        <CheckmarkCircle02Icon size={32} className="text-[#727272] mx-auto" />
+                                                        <h4 className="font-bold text-sm text-[#383838]">No Leave Requests Found</h4>
+                                                        <p className="text-xs text-[#727272] max-w-sm mx-auto">
+                                                            There are no student leave requests matching the selected filter.
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    allFacultyNc.filter(r => {
+                                                        if (globalNcFilterStatus !== 'ALL' && r.status !== globalNcFilterStatus) return false;
+                                                        if (globalNcFilterSubject !== 'ALL' && !r.missedSubjects?.some(ms => ms.subjectName === globalNcFilterSubject)) return false;
+                                                        if (globalNcSearch.trim()) {
+                                                            const q = globalNcSearch.toLowerCase();
+                                                            return r.studentName?.toLowerCase().includes(q) || r.studentPrn?.toLowerCase().includes(q);
+                                                        }
+                                                        return true;
+                                                    }).map(req => {
+                                                        const initials = (req.studentName || 'ST')
+                                                            .split(' ')
+                                                            .filter(Boolean)
+                                                            .slice(0, 2)
+                                                            .map(p => p[0])
+                                                            .join('')
+                                                            .toUpperCase();
+
+                                                        return (
+                                                            <div
+                                                                key={req.id}
+                                                                className="p-4 rounded-2xl border border-[#E2E2E2] bg-white hover:border-slate-300 hover:shadow-xs transition flex flex-col md:flex-row md:items-center justify-between gap-4"
+                                                            >
+                                                                <div className="flex items-start gap-3.5 min-w-0">
+                                                                    <div className="w-10 h-10 rounded-xl bg-slate-100 text-[#383838] font-bold text-xs flex items-center justify-center shrink-0 border border-[#E2E2E2]">
+                                                                        {initials}
+                                                                    </div>
+                                                                    <div className="space-y-1 min-w-0">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                            <span className="font-bold text-sm text-[#383838]">{req.studentName}</span>
+                                                                            <span className="text-[10px] font-sans font-semibold bg-slate-100 text-[#383838] px-2 py-0.5 rounded-md border border-[#E2E2E2]">
+                                                                                {req.studentPrn}
+                                                                            </span>
+                                                                            {req.missedSubjects && req.missedSubjects.length > 0 && (
+                                                                                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#DEEDFC] text-[#174073] border border-[#D9ECFF]/60">
+                                                                                    {req.missedSubjects[0].subjectName}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        <div className="text-xs text-[#383838] flex items-center gap-2 flex-wrap pt-0.5">
+                                                                            <span className="inline-flex items-center gap-1 font-sans text-[11px] bg-slate-50 border border-[#E2E2E2] px-2 py-0.5 rounded-md text-[#383838]">
+                                                                                <Calendar03Icon size={14} className="text-[#0073E6]" />
+                                                                                <span>{(req.absentDates || []).join(', ')}</span>
+                                                                            </span>
+                                                                            <span className="text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200/60 px-2 py-0.5 rounded-md">
+                                                                                {req.reason}
+                                                                            </span>
+                                                                            {req.description && (
+                                                                                <span className="text-[#727272] italic max-w-sm truncate" title={req.description}>
+                                                                                    "{req.description}"
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {req.reviewComment && (
+                                                                            <div className="text-[11px] text-[#383838] bg-slate-50 border border-[#E2E2E2] p-2 rounded-xl mt-1.5 flex items-start gap-1.5">
+                                                                                <CheckmarkCircle02Icon size={14} className="text-emerald-600 shrink-0 mt-0.5" />
+                                                                                <span><strong>Faculty Note ({req.reviewedBy}):</strong> "{req.reviewComment}"</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-2.5 shrink-0 self-end md:self-center">
+                                                                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 ${req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' :
+                                                                        req.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border border-rose-200/80' :
+                                                                            'bg-amber-50 text-amber-700 border border-amber-200/80'
+                                                                        }`}>
+                                                                        {req.status === 'PENDING' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>}
+                                                                        {req.status === 'APPROVED' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                                                                        {req.status === 'REJECTED' && <XCircle className="w-3.5 h-3.5 text-rose-600" />}
+                                                                        <span>{req.status}</span>
+                                                                    </span>
+
+                                                                    {req.proofFileName && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setDocPreviewUrl(getNcProofUrl(req));
+                                                                                setDocPreviewName(req.proofFileName);
+                                                                            }}
+                                                                            className="px-3 py-1.5 rounded-xl border border-[#E2E2E2] text-[#383838] hover:text-[#0073E6] hover:border-[#D9ECFF] hover:bg-[#DEEDFC]/50 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition"
+                                                                        >
+                                                                            <Eye className="w-3.5 h-3.5 text-[#0073E6]" />
+                                                                            <span>Document</span>
+                                                                        </button>
+                                                                    )}
+
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setReviewingReq(req);
+                                                                            setReviewDecision(req.status === 'REJECTED' ? 'REJECTED' : 'APPROVED');
+                                                                            setReviewComment(req.reviewComment || '');
+                                                                        }}
+                                                                        className="px-4 py-1.5 rounded-xl bg-[#0073E6] hover:bg-[#174073] text-white font-semibold text-xs shadow-xs hover:shadow transition flex items-center gap-1.5 cursor-pointer"
+                                                                    >
+                                                                        <FileCheck className="w-3.5 h-3.5" />
+                                                                        <span>Review</span>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
+                                                )}
+                                            </div>
+                                        </section>
+                                    ) : (
+                                        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {subjects?.map(sub => {
+                                                const conducted = sub.totalConducted > 0 ? sub.totalConducted : (sub.detailedAttendance?.length || 0);
                                                 return (
                                                     <div
-                                                        key={rec.origIdx !== undefined ? rec.origIdx : i}
-                                                        className="bg-white rounded-xl p-3 border border-[#E2E2E2] hover:border-[#0073E6]/40 hover:shadow-2xs transition-all flex items-center justify-between gap-2.5"
+                                                        key={sub.id}
+                                                        onClick={() => {
+                                                            setSelectedSubject(sub);
+                                                            setShowDetailModal(true);
+                                                            setModalTab('presence');
+                                                            fetchSubjectNcRequests(sub);
+                                                        }}
+                                                        className="p-5 rounded-2xl bg-white border border-[#E2E2E2] hover:border-blue-500 hover:shadow-md transition cursor-pointer space-y-3"
                                                     >
-                                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                            {/* Rosette Indicator */}
-                                                            <div className={cn(
-                                                                "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border",
-                                                                isAbsent
-                                                                    ? "bg-rose-50 text-[#E11D48] border-rose-200/80"
-                                                                    : "bg-emerald-50 text-emerald-600 border-emerald-200/80"
-                                                            )}>
-                                                                {isAbsent ? (
-                                                                    <AbsentBadgeIcon size={16} className="text-[#E11D48] shrink-0" />
-                                                                ) : (
-                                                                    <PresentBadgeIcon size={16} className="text-emerald-600 shrink-0" />
-                                                                )}
-                                                            </div>
-
-                                                            <div className="min-w-0 flex-1">
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <span className="font-semibold text-xs text-[#1D1D1F] font-sans truncate">
-                                                                        {rec.date}
-                                                                    </span>
-                                                                    {rec.dayName && (
-                                                                        <span className="text-[10px] text-[#727272] font-sans shrink-0">
-                                                                            {rec.dayName}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                {(rec.slot || rec.time) && (
-                                                                    <p className="text-[11px] text-[#727272] font-sans truncate mt-0.5">
-                                                                        {String(rec.slot || rec.time).replace(/\s+TO\s+/gi, ' – ')}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="flex items-center gap-1.5 shrink-0">
-                                                            {/* Status Badge */}
-                                                            <span className={cn(
-                                                                "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-sans border",
-                                                                isAbsent
-                                                                    ? "bg-rose-50 text-[#E11D48] border-rose-200/80"
-                                                                    : "bg-emerald-50 text-emerald-700 border-emerald-200/80"
-                                                            )}>
-                                                                {isAbsent ? (
-                                                                    <AbsentBadgeIcon size={12} className="text-[#E11D48] shrink-0" />
-                                                                ) : (
-                                                                    <PresentBadgeIcon size={12} className="text-emerald-600 shrink-0" />
-                                                                )}
-                                                                <span>{rec.status}</span>
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[10px] font-sans font-bold px-2 py-0.5 rounded bg-slate-100 text-[#383838]">
+                                                                {sub.code || 'COURSE'}
                                                             </span>
-
-                                                            {/* NC Status / Apply Action */}
-                                                            {isAbsent && (
-                                                                <>
-                                                                    {existingNc ? (
-                                                                        existingNc.status === 'APPROVED' ? (
-                                                                            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold flex items-center gap-1 font-sans">
-                                                                                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Approved
-                                                                            </span>
-                                                                        ) : existingNc.status === 'PENDING' ? (
-                                                                            <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-semibold flex items-center gap-1 font-sans">
-                                                                                <Clock className="w-3 h-3 text-amber-600" /> Pending
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-semibold flex items-center gap-1 font-sans">
-                                                                                <XCircle className="w-3 h-3 text-rose-600" /> Rejected
-                                                                            </span>
-                                                                        )
-                                                                    ) : (
-                                                                        !isTeacher && (
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => {
-                                                                                    setSelectedNcDates([rec.date]);
-                                                                                    setModalTab('nc');
-                                                                                }}
-                                                                                className="px-2 py-0.5 rounded-full bg-[#DEEDFC] hover:bg-[#0073E6] hover:text-white text-[#0073E6] border border-[#D9ECFF] text-[10px] font-semibold transition font-sans cursor-pointer"
-                                                                            >
-                                                                                Request NC
-                                                                            </button>
-                                                                        )
-                                                                    )}
-                                                                </>
-                                                            )}
+                                                            <span className="text-xs font-bold text-[#0073E6] bg-[#DEEDFC] px-2 py-0.5 rounded-full">
+                                                                {conducted} Lectures Logged
+                                                            </span>
+                                                        </div>
+                                                        <h3 className="font-bold text-sm text-[#383838] leading-tight">{sub.name}</h3>
+                                                        <p className="text-[11px] text-[#727272]">{sub.department} • {sub.semester}</p>
+                                                        <div className="pt-2 border-t border-[#E2E2E2] flex items-center justify-between text-xs text-[#0073E6] font-bold">
+                                                            <span>View Attendance &amp; Leave Requests</span>
+                                                            <ArrowRight01Icon size={16} />
                                                         </div>
                                                     </div>
                                                 );
                                             })}
-                                        </div>
-                                    ) : (
-                                        <div className="bg-white rounded-xl p-8 border border-[#E2E2E2] text-center text-[#727272]">
-                                            <p className="text-xs font-semibold text-[#1D1D1F] font-sans">No attendance records found</p>
-                                            <p className="text-[11px] text-[#727272] mt-0.5 font-sans">
-                                                {subjectFilterTab !== 'all' ? `No ${subjectFilterTab.toLowerCase()} sessions recorded for this course.` : 'No lecture or lab logs available yet.'}
-                                            </p>
-                                        </div>
+                                        </section>
                                     )}
                                 </div>
-                            )}
-                            {/* TAB 2: NC MANAGEMENT */}
-                            {modalTab === 'nc' && (
-                                <div className="space-y-5">
-                                    {/* STUDENT VIEW */}
-                                    {!isTeacher ? (
-                                        <div className="space-y-6">
-                                            {/* Submit NC Form */}
-                                            <form onSubmit={handleSubmitSubjectNc} className="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-[#E2E2E2] space-y-4">
-                                                <div className="flex items-center justify-between border-b border-[#E2E2E2] pb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <Shield className="w-4 h-4 text-[#0073E6]" />
-                                                        <span className="font-bold text-xs sm:text-sm text-[#383838]">
-                                                            Submit Leave / Absence Request
-                                                        </span>
-                                                    </div>
-                                                    <span className="text-[11px] text-[#727272] font-sans">
-                                                        Course: {selectedSubject.code || selectedSubject.name}
-                                                    </span>
+                            ) : (
+                                <div className="space-y-6 w-full min-w-0">
+                                    {/* Main Two-Column Responsive Layout */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                                        {/* Left Column: Primary Subject Attendance Table & Planner */}
+                                        <div className="lg:col-span-8 space-y-6">
+                                            <section className="bg-white border border-[#E2E2E2] rounded-xl shadow-xs overflow-hidden">
+                                                {/* Filter Bar */}
+                                                <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-[#E2E2E2] flex flex-wrap items-center justify-between gap-3">
+                                                    <FluidTabs
+                                                        value={filterTab}
+                                                        onChange={setFilterTab}
+                                                        size="xs"
+                                                        layoutId="attendance-filter-tabs-desktop"
+                                                        tabs={[
+                                                            { id: 'all', label: `All Subjects (${activeSubjects.length})` },
+                                                            { id: 'attention', label: `Needs Attention (${riskSubjects.length})` },
+                                                            { id: 'safe', label: `Safe (${safeSubjects.length})` }
+                                                        ]}
+                                                    />
+
+                                                    <span className="text-xs text-[#727272] font-medium hidden sm:inline">Minimum Threshold: 75.0%</span>
                                                 </div>
 
-                                                {/* 1. Pick Absent Date(s) */}
-                                                <div className="space-y-1.5">
-                                                    <label className="text-xs font-bold text-[#383838] flex items-center justify-between">
-                                                        <span>1. Select Absent Date(s)</span>
-                                                        <span className="text-[11px] font-normal text-[#727272] font-sans">
-                                                            {selectedNcDates.length} selected
-                                                        </span>
-                                                    </label>
+                                                {/* Subject Rows List */}
+                                                <div className="divide-y divide-[#E2E2E2]">
+                                                    {displayedSubjects.map(sub => {
+                                                        const conducted = sub.totalConducted > 0 ? sub.totalConducted : (sub.detailedAttendance?.length || 0);
+                                                        const attended = sub.totalAttended > 0 ? sub.totalAttended : (sub.detailedAttendance?.filter(r => r.status === 'Present').length || 0);
+                                                        const pct = getPrecisePct(sub);
+                                                        const isSafe = pct >= 75;
+                                                        const isLab = getCategory(sub) === 'LAB';
 
-                                                    {(() => {
-                                                        const absentRecords = (selectedSubject.detailedAttendance || []).filter(r => r.status === 'Absent');
-                                                        const activeDateSet = new Set(
-                                                            (subjectNcRequests || [])
-                                                                .filter(r => r.status !== 'REJECTED')
-                                                                .flatMap(r => r.absentDates || [])
-                                                        );
-
-                                                        if (absentRecords.length === 0) {
-                                                            return (
-                                                                <p className="text-xs text-[#727272] italic py-2">
-                                                                    No absence records registered for this subject.
-                                                                </p>
-                                                            );
-                                                        }
+                                                        // Skips vs Recovery
+                                                        const SkipsAvailable = Math.max(0, Math.floor((attended - 0.75 * conducted) / 0.75));
+                                                        const sessionsNeeded = Math.max(0, Math.ceil((0.75 * conducted - attended) / 0.25));
 
                                                         return (
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1">
-                                                                {absentRecords.map((rec, idx) => {
-                                                                    const isAlreadyFiled = activeDateSet.has(rec.date);
-                                                                    const isSelected = selectedNcDates.includes(rec.date);
+                                                            <div
+                                                                key={sub.id}
+                                                                onClick={() => {
+                                                                    setSelectedSubject(sub);
+                                                                    setShowDetailModal(true);
+                                                                    setModalTab('presence');
+                                                                    fetchSubjectNcRequests(sub);
+                                                                    setSelectedNcDates([]);
+                                                                    setReviewingReq(null);
+                                                                }}
+                                                                className={`p-3.5 sm:px-6 sm:py-4 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer ${!isSafe ? 'bg-amber-50/20' : ''
+                                                                    }`}
+                                                            >
+                                                                <div className="flex items-start gap-3 flex-1 min-w-0">
+                                                                    <div className={`p-2 rounded-lg mt-0.5 shrink-0 ${isSafe ? 'bg-[#DEEDFC] text-[#0073E6]' : 'bg-amber-100/60 text-amber-700'
+                                                                        }`}>
+                                                                        {isLab ? <ComputerProgramming01Icon size={18} /> : <Quiz03Icon size={18} />}
+                                                                    </div>
 
-                                                                    return (
-                                                                        <div
-                                                                            key={idx}
-                                                                            onClick={() => {
-                                                                                if (isAlreadyFiled) {
-                                                                                    toast.warning(`NC already requested for ${rec.date}`);
-                                                                                    return;
-                                                                                }
-                                                                                setSelectedNcDates(prev =>
-                                                                                    prev.includes(rec.date)
-                                                                                        ? prev.filter(d => d !== rec.date)
-                                                                                        : [...prev, rec.date]
-                                                                                );
-                                                                            }}
-                                                                            className={`p-2 rounded-xl border text-xs cursor-pointer transition ${isAlreadyFiled
-                                                                                ? 'opacity-50 bg-slate-100 border-[#E2E2E2] cursor-not-allowed'
-                                                                                : isSelected
-                                                                                    ? 'bg-[#DEEDFC] border-blue-400 text-blue-900 shadow-xs'
-                                                                                    : 'bg-white border-[#E2E2E2] hover:border-slate-300'
-                                                                                }`}
-                                                                        >
-                                                                            <div className="flex items-center justify-between">
-                                                                                <span className="font-bold flex items-center gap-1.5 font-sans">
-                                                                                    <Calendar03Icon size={14} className="text-[#0073E6]" />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex items-start justify-between gap-2">
+                                                                            <h3 className="text-sm font-semibold text-[#383838] truncate min-w-0 flex-1">
+                                                                                {sub.name}
+                                                                            </h3>
+                                                                            <span className={`text-base font-bold sm:hidden shrink-0 tabular-nums ${isSafe ? 'text-[#383838]' : 'text-amber-600'}`}>
+                                                                                {pct}%
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 text-xs text-[#727272] mt-0.5 flex-wrap">
+                                                                            <span>{attended} / {conducted} sessions</span>
+
+                                                                            {sub.faculty && (
+                                                                                <>
+                                                                                    <span className="text-[#E2E2E2]">•</span>
+                                                                                    <span className="text-[#727272] truncate">{sub.faculty}</span>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                        {/* Minimal Progress Bar */}
+                                                                        <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+                                                                            <div
+                                                                                className={`h-1.5 rounded-full ${isSafe ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                                                                style={{ width: `${Math.min(100, pct)}%` }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex items-center justify-end sm:flex-col sm:items-end sm:justify-center shrink-0 gap-1.5 pt-1 sm:pt-0">
+                                                                    <div className="text-right hidden sm:block">
+                                                                        <span className={`text-base font-bold ${isSafe ? 'text-[#383838]' : 'text-amber-600'}`}>
+                                                                            {pct}%
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        {isSafe ? (
+                                                                            <span className="inline-flex items-center text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                                                                {SkipsAvailable} {SkipsAvailable === 1 ? 'Skip' : 'Skips'} Available
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="inline-flex items-center text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                                                                                Attend {sessionsNeeded} More
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </section>
+
+                                            {/* Attendance Calculator & Planner below All Attendances */}
+                                            {renderOptimizationPanel()}
+                                        </div>
+
+                                        {/* Right Column: Session Audit Rail */}
+                                        <section className="lg:col-span-4 space-y-4">
+
+                                            <div className="bg-white border border-[#E2E2E2] rounded-xl shadow-xs p-4 sm:p-5">
+                                                <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-[#E2E2E2]">
+                                                    <div>
+                                                        <h2 className="text-sm font-bold text-[#383838]">Recent Classes</h2>
+                                                        <p className="text-[11px] text-[#727272]">Recent attendance records</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Log timeline list */}
+                                                <div className="py-2 space-y-2 max-h-[400px] sm:max-h-[500px] overflow-y-auto no-scrollbar">
+                                                    {sessionLogs.length > 0 ? (
+                                                        sessionLogs.map((log, idx) => {
+                                                            const isPresent = log.status === 'Present';
+                                                            return (
+                                                                <div
+                                                                    key={idx}
+                                                                    className={`p-2.5 sm:p-3 rounded-lg border transition ${isPresent
+                                                                        ? 'border-[#E2E2E2] bg-slate-50/50 hover:bg-slate-50'
+                                                                        : 'border-rose-100 bg-rose-50/30 hover:bg-rose-50/50'
+                                                                        }`}
+                                                                >
+                                                                    <div className="flex items-center justify-between mb-1">
+                                                                        <span className="text-[11px] font-sans text-[#727272]">
+                                                                            {log.date} {log.time ? `• ${log.time}` : ''}
+                                                                        </span>
+                                                                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${isPresent
+                                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
+                                                                            : 'bg-rose-50 text-[#E11D48] border-rose-200/80'
+                                                                            }`}>
+                                                                            {isPresent ? <PresentBadgeIcon size={13} className="text-emerald-600 shrink-0" /> : <AbsentBadgeIcon size={13} className="text-[#E11D48] shrink-0" />}
+                                                                            <span>{log.status.toUpperCase()}</span>
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-xs font-semibold text-[#383838] truncate">
+                                                                        {log.subjectName}
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <div className="py-8 text-center text-xs text-[#727272]">
+                                                            No recent attendance records found
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Regulatory Policy Notice Footer */}
+                                                <div className="mt-3 pt-3 border-t border-[#E2E2E2] text-[11px] text-[#727272] leading-relaxed bg-slate-50/80 p-3 rounded-lg">
+                                                    <div className="flex items-center gap-1.5 font-semibold text-[#383838] mb-1">
+                                                        <InformationCircleIcon size={15} className="text-[#0073E6]" />
+                                                        <span>College Attendance Policy</span>
+                                                    </div>
+                                                    75% minimum physical presence is mandatory for End-Semester Examination eligibility. Medical condonation forms must be submitted within 7 calendar days of recovery.
+                                                </div>
+                                            </div>
+                                        </section>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Subject Detail & NC Management Modal */}
+                        {showDetailModal && selectedSubject && (
+                            <div
+                                className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+                                onClick={() => {
+                                    setShowDetailModal(false);
+                                    setReviewingReq(null);
+                                    setDocPreviewUrl(null);
+                                }}
+                            >
+                                <div
+                                    className="bg-white rounded-2xl border border-[#E2E2E2] shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    {/* Modal Header (Mobile First & Aligned) */}
+                                    <div className="p-4 sm:p-5 border-b border-[#E2E2E2] bg-white">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <h3 className="text-base sm:text-lg font-bold text-[#1D1D1F] leading-tight font-sans tracking-tight truncate">
+                                                        {selectedSubject.name}
+                                                    </h3>
+                                                    <span className="px-2 py-0.5 rounded-md bg-[#F1F3F5] text-[#1D1D1F] text-[11px] font-semibold font-sans border border-[#E2E2E2]">
+                                                        {selectedSubject.code || 'COURSE'}
+                                                    </span>
+                                                    <span className="px-2 py-0.5 rounded-md bg-[#DEEDFC] text-[#0073E6] text-[11px] font-bold font-sans border border-[#D9ECFF]">
+                                                        {getPrecisePct(selectedSubject)}%
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-[#727272] font-sans mt-1">
+                                                    {isTeacher ? `Faculty: ${teacherName}` : `PRN: ${profile?.prn || 'Student'}`}
+                                                </p>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowDetailModal(false);
+                                                    setReviewingReq(null);
+                                                    setDocPreviewUrl(null);
+                                                }}
+                                                className="p-1.5 rounded-lg text-[#727272] hover:text-[#1D1D1F] hover:bg-[#F1F3F5] cursor-pointer transition shrink-0 -mr-1 -mt-1"
+                                                title="Close"
+                                            >
+                                                <Cancel01Icon size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Modal Navigation Tabs */}
+                                    <div className="px-4 sm:px-5 py-2.5 border-b border-[#E2E2E2] bg-[#FBFBFD] flex items-center justify-between gap-2">
+                                        <FluidTabs
+                                            value={modalTab}
+                                            onChange={setModalTab}
+                                            size="xs"
+                                            layoutId="attendance-modal-tabs"
+                                            tabs={[
+                                                {
+                                                    id: 'presence',
+                                                    label: 'Attendance',
+                                                    icon: <File01Icon size={15} className="mr-1" />
+                                                },
+                                                {
+                                                    id: 'nc',
+                                                    label: 'NC Request',
+                                                    icon: <Shield01Icon size={14} className="text-[#0073E6] mr-1" />,
+                                                    badge: subjectNcRequests.length > 0 ? subjectNcRequests.length : undefined
+                                                }
+                                            ]}
+                                        />
+
+                                        <button
+                                            type="button"
+                                            onClick={() => fetchSubjectNcRequests(selectedSubject)}
+                                            className="p-1.5 text-[#727272] hover:text-[#1D1D1F] rounded-lg hover:bg-[#F1F3F5] transition cursor-pointer shrink-0"
+                                            title="Refresh data"
+                                        >
+                                            <RefreshCw className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                    {/* Modal Body */}
+                                    <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+                                        {/* TAB 1: PRESENCE LOG */}
+                                        {/* TAB 1: PRESENCE LOG */}
+                                        {modalTab === 'presence' && (
+                                            <div className="space-y-3.5">
+                                                {/* Filter & Action Header (Mobile Responsive) */}
+                                                <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        {[
+                                                            { id: 'all', label: `All (${sortedSubjectRecords.length})` },
+                                                            { id: 'Present', label: `Present (${subjectPresentCount})` },
+                                                            { id: 'Absent', label: `Absent (${subjectAbsentCount})` }
+                                                        ].map(tab => (
+                                                            <button
+                                                                key={tab.id}
+                                                                type="button"
+                                                                onClick={() => setSubjectFilterTab(tab.id)}
+                                                                className={cn(
+                                                                    "px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold font-sans transition-colors cursor-pointer",
+                                                                    subjectFilterTab === tab.id
+                                                                        ? "bg-[#0073E6] text-white shadow-2xs"
+                                                                        : "bg-white text-[#727272] hover:text-[#383838] border border-[#E2E2E2] hover:bg-slate-50"
+                                                                )}
+                                                            >
+                                                                {tab.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    {!isTeacher && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setModalTab('nc')}
+                                                            className="text-xs font-semibold text-[#0073E6] hover:text-blue-800 flex items-center gap-1 cursor-pointer font-sans shrink-0 ml-auto"
+                                                        >
+                                                            <UploadCloud className="w-3.5 h-3.5" />
+                                                            <span>Apply Leave</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {/* Session Logs List (Mobile Optimized Single Row) */}
+                                                {filteredSubjectRecords && filteredSubjectRecords.length > 0 ? (
+                                                    <div className="space-y-2">
+                                                        {filteredSubjectRecords.map((rec, i) => {
+                                                            const isAbsent = rec.status === 'Absent' || rec.effectiveStatus === 'Absent';
+                                                            const existingNc = rec.matchingNc || subjectNcRequests.find(r =>
+                                                                r.absentDates && r.absentDates.includes(rec.date)
+                                                            );
+
+                                                            return (
+                                                                <div
+                                                                    key={rec.origIdx !== undefined ? rec.origIdx : i}
+                                                                    className="bg-white rounded-xl p-3 border border-[#E2E2E2] hover:border-[#0073E6]/40 hover:shadow-2xs transition-all flex items-center justify-between gap-2.5"
+                                                                >
+                                                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                                        {/* Rosette Indicator */}
+                                                                        <div className={cn(
+                                                                            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border",
+                                                                            isAbsent
+                                                                                ? "bg-rose-50 text-[#E11D48] border-rose-200/80"
+                                                                                : "bg-emerald-50 text-emerald-600 border-emerald-200/80"
+                                                                        )}>
+                                                                            {isAbsent ? (
+                                                                                <AbsentBadgeIcon size={16} className="text-[#E11D48] shrink-0" />
+                                                                            ) : (
+                                                                                <PresentBadgeIcon size={16} className="text-emerald-600 shrink-0" />
+                                                                            )}
+                                                                        </div>
+
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <span className="font-semibold text-xs text-[#1D1D1F] font-sans truncate">
                                                                                     {rec.date}
                                                                                 </span>
-                                                                                {isAlreadyFiled ? (
-                                                                                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-                                                                                        Already Filed
+                                                                                {rec.dayName && (
+                                                                                    <span className="text-[10px] text-[#727272] font-sans shrink-0">
+                                                                                        {rec.dayName}
                                                                                     </span>
-                                                                                ) : (
-                                                                                    <input
-                                                                                        type="checkbox"
-                                                                                        checked={isSelected}
-                                                                                        onChange={() => { }}
-                                                                                        className="rounded text-[#0073E6]"
-                                                                                    />
                                                                                 )}
                                                                             </div>
                                                                             {(rec.slot || rec.time) && (
-                                                                                <span className="text-[10px] text-[#727272] font-sans block mt-1">
-                                                                                    Slot: {rec.slot || rec.time}
+                                                                                <p className="text-[11px] text-[#727272] font-sans truncate mt-0.5">
+                                                                                    {String(rec.slot || rec.time).replace(/\s+TO\s+/gi, ' – ')}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                                        {/* Status Badge */}
+                                                                        <span className={cn(
+                                                                            "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-sans border",
+                                                                            isAbsent
+                                                                                ? "bg-rose-50 text-[#E11D48] border-rose-200/80"
+                                                                                : "bg-emerald-50 text-emerald-700 border-emerald-200/80"
+                                                                        )}>
+                                                                            {isAbsent ? (
+                                                                                <AbsentBadgeIcon size={12} className="text-[#E11D48] shrink-0" />
+                                                                            ) : (
+                                                                                <PresentBadgeIcon size={12} className="text-emerald-600 shrink-0" />
+                                                                            )}
+                                                                            <span>{rec.status}</span>
+                                                                        </span>
+
+                                                                        {/* NC Status / Apply Action */}
+                                                                        {isAbsent && (
+                                                                            <>
+                                                                                {existingNc ? (
+                                                                                    existingNc.status === 'APPROVED' ? (
+                                                                                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold flex items-center gap-1 font-sans">
+                                                                                            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Approved
+                                                                                        </span>
+                                                                                    ) : existingNc.status === 'PENDING' ? (
+                                                                                        <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-semibold flex items-center gap-1 font-sans">
+                                                                                            <Clock className="w-3 h-3 text-amber-600" /> Pending
+                                                                                        </span>
+                                                                                    ) : (
+                                                                                        <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-semibold flex items-center gap-1 font-sans">
+                                                                                            <XCircle className="w-3 h-3 text-rose-600" /> Rejected
+                                                                                        </span>
+                                                                                    )
+                                                                                ) : (
+                                                                                    !isTeacher && (
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => {
+                                                                                                setSelectedNcDates([rec.date]);
+                                                                                                setModalTab('nc');
+                                                                                            }}
+                                                                                            className="px-2 py-0.5 rounded-full bg-[#DEEDFC] hover:bg-[#0073E6] hover:text-white text-[#0073E6] border border-[#D9ECFF] text-[10px] font-semibold transition font-sans cursor-pointer"
+                                                                                        >
+                                                                                            Request NC
+                                                                                        </button>
+                                                                                    )
+                                                                                )}
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-white rounded-xl p-8 border border-[#E2E2E2] text-center text-[#727272]">
+                                                        <p className="text-xs font-semibold text-[#1D1D1F] font-sans">No attendance records found</p>
+                                                        <p className="text-[11px] text-[#727272] mt-0.5 font-sans">
+                                                            {subjectFilterTab !== 'all' ? `No ${subjectFilterTab.toLowerCase()} sessions recorded for this course.` : 'No lecture or lab logs available yet.'}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        {/* TAB 2: NC MANAGEMENT */}
+                                        {modalTab === 'nc' && (
+                                            <div className="space-y-5">
+                                                {/* STUDENT VIEW */}
+                                                {!isTeacher ? (
+                                                    <div className="space-y-6">
+                                                        {/* Submit NC Form */}
+                                                        <form onSubmit={handleSubmitSubjectNc} className="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-[#E2E2E2] space-y-4">
+                                                            <div className="flex items-center justify-between border-b border-[#E2E2E2] pb-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Shield className="w-4 h-4 text-[#0073E6]" />
+                                                                    <span className="font-bold text-xs sm:text-sm text-[#383838]">
+                                                                        Submit Leave / Absence Request
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-[11px] text-[#727272] font-sans">
+                                                                    Course: {selectedSubject.code || selectedSubject.name}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* 1. Pick Absent Date(s) */}
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-xs font-bold text-[#383838] flex items-center justify-between">
+                                                                    <span>1. Select Absent Date(s)</span>
+                                                                    <span className="text-[11px] font-normal text-[#727272] font-sans">
+                                                                        {selectedNcDates.length} selected
+                                                                    </span>
+                                                                </label>
+
+                                                                {(() => {
+                                                                    const absentRecords = (selectedSubject.detailedAttendance || []).filter(r => r.status === 'Absent');
+                                                                    const activeDateSet = new Set(
+                                                                        (subjectNcRequests || [])
+                                                                            .filter(r => r.status !== 'REJECTED')
+                                                                            .flatMap(r => r.absentDates || [])
+                                                                    );
+
+                                                                    if (absentRecords.length === 0) {
+                                                                        return (
+                                                                            <p className="text-xs text-[#727272] italic py-2">
+                                                                                No absence records registered for this subject.
+                                                                            </p>
+                                                                        );
+                                                                    }
+
+                                                                    return (
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1">
+                                                                            {absentRecords.map((rec, idx) => {
+                                                                                const isAlreadyFiled = activeDateSet.has(rec.date);
+                                                                                const isSelected = selectedNcDates.includes(rec.date);
+
+                                                                                return (
+                                                                                    <div
+                                                                                        key={idx}
+                                                                                        onClick={() => {
+                                                                                            if (isAlreadyFiled) {
+                                                                                                toast.warning(`NC already requested for ${rec.date}`);
+                                                                                                return;
+                                                                                            }
+                                                                                            setSelectedNcDates(prev =>
+                                                                                                prev.includes(rec.date)
+                                                                                                    ? prev.filter(d => d !== rec.date)
+                                                                                                    : [...prev, rec.date]
+                                                                                            );
+                                                                                        }}
+                                                                                        className={`p-2 rounded-xl border text-xs cursor-pointer transition ${isAlreadyFiled
+                                                                                            ? 'opacity-50 bg-slate-100 border-[#E2E2E2] cursor-not-allowed'
+                                                                                            : isSelected
+                                                                                                ? 'bg-[#DEEDFC] border-blue-400 text-blue-900 shadow-xs'
+                                                                                                : 'bg-white border-[#E2E2E2] hover:border-slate-300'
+                                                                                            }`}
+                                                                                    >
+                                                                                        <div className="flex items-center justify-between">
+                                                                                            <span className="font-bold flex items-center gap-1.5 font-sans">
+                                                                                                <Calendar03Icon size={14} className="text-[#0073E6]" />
+                                                                                                {rec.date}
+                                                                                            </span>
+                                                                                            {isAlreadyFiled ? (
+                                                                                                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                                                                                                    Already Filed
+                                                                                                </span>
+                                                                                            ) : (
+                                                                                                <input
+                                                                                                    type="checkbox"
+                                                                                                    checked={isSelected}
+                                                                                                    onChange={() => { }}
+                                                                                                    className="rounded text-[#0073E6]"
+                                                                                                />
+                                                                                            )}
+                                                                                        </div>
+                                                                                        {(rec.slot || rec.time) && (
+                                                                                            <span className="text-[10px] text-[#727272] font-sans block mt-1">
+                                                                                                Slot: {rec.slot || rec.time}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </div>
+
+                                                            {/* 2. Select Reason */}
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-xs font-bold text-[#383838]">2. Reason for Absence</label>
+                                                                <select
+                                                                    value={ncReason}
+                                                                    onChange={(e) => setNcReason(e.target.value)}
+                                                                    className="w-full text-xs bg-white border border-[#E2E2E2] rounded-xl px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500"
+                                                                >
+                                                                    {NC_REASONS.map(r => (
+                                                                        <option key={r} value={r}>{r}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+
+                                                            {/* 3. Description */}
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-xs font-bold text-[#383838]">3. Description / Explanation (Optional)</label>
+                                                                <textarea
+                                                                    value={ncDescription}
+                                                                    onChange={(e) => setNcDescription(e.target.value)}
+                                                                    placeholder="Provide brief context or doctor / hospital / event reference..."
+                                                                    rows={2}
+                                                                    className="w-full text-xs bg-white border border-[#E2E2E2] rounded-xl p-2.5 outline-none focus:ring-1 focus:ring-blue-500"
+                                                                />
+                                                            </div>
+
+                                                            {/* 4. Upload Proof File to Cloudflare R2 */}
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-xs font-bold text-[#383838]">
+                                                                    4. Supporting Document (PDF, PNG, JPG)
+                                                                </label>
+                                                                <div className="border border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-3 text-center bg-white transition cursor-pointer relative">
+                                                                    <input
+                                                                        type="file"
+                                                                        accept=".pdf,.png,.jpg,.jpeg,.webp"
+                                                                        onChange={(e) => {
+                                                                            if (e.target.files && e.target.files[0]) {
+                                                                                setNcProofFile(e.target.files[0]);
+                                                                            }
+                                                                        }}
+                                                                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                                                    />
+                                                                    <div className="space-y-0.5">
+                                                                        <UploadCloud className="w-5 h-5 text-[#0073E6] mx-auto" />
+                                                                        <p className="text-xs font-semibold text-[#383838]">
+                                                                            {ncProofFile ? ncProofFile.name : 'Upload Medical / Event Certificate'}
+                                                                        </p>
+                                                                        <p className="text-[10px] text-[#727272]">
+                                                                            Files are securely stored and viewable by your faculty
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Submit Button */}
+                                                            <div className="flex justify-end pt-1">
+                                                                <button
+                                                                    type="submit"
+                                                                    disabled={isSubmittingNc || selectedNcDates.length === 0 || !ncProofFile}
+                                                                    className="px-4 py-2 rounded-xl bg-[#0073E6] hover:bg-[#174073] disabled:opacity-50 text-white font-semibold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer"
+                                                                >
+                                                                    {isSubmittingNc ? (
+                                                                        <>
+                                                                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                                            <span>Uploading document...</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <span>Submit Leave Request</span>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        </form>
+
+                                                        {/* Student's Existing NC Requests for this Subject */}
+                                                        <div className="space-y-2">
+                                                            <span className="text-[11px] font-bold text-[#727272] uppercase tracking-wider block">
+                                                                Your Leave Requests for this Course ({subjectNcRequests.length})
+                                                            </span>
+                                                            {subjectNcRequests.length === 0 ? (
+                                                                <p className="text-xs text-[#727272] py-3 text-center">No leave requests submitted yet for this course.</p>
+                                                            ) : (
+                                                                subjectNcRequests.map((req) => (
+                                                                    <div key={req.id} className="p-3 rounded-xl border border-[#E2E2E2] bg-white text-xs space-y-1.5 shadow-xs">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className="font-bold text-[#383838] font-sans">
+                                                                                Dates: {(req.absentDates || []).join(', ')}
+                                                                            </span>
+                                                                            {req.status === 'APPROVED' ? (
+                                                                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px] flex items-center gap-1">
+                                                                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Approved
+                                                                                </span>
+                                                                            ) : req.status === 'PENDING' ? (
+                                                                                <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px] flex items-center gap-1">
+                                                                                    <Clock className="w-3 h-3 text-amber-600" /> Pending Review
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[10px] flex items-center gap-1">
+                                                                                    <XCircle className="w-3 h-3 text-rose-600" /> Rejected
                                                                                 </span>
                                                                             )}
                                                                         </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </div>
-
-                                                {/* 2. Select Reason */}
-                                                <div className="space-y-1.5">
-                                                    <label className="text-xs font-bold text-[#383838]">2. Reason for Absence</label>
-                                                    <select
-                                                        value={ncReason}
-                                                        onChange={(e) => setNcReason(e.target.value)}
-                                                        className="w-full text-xs bg-white border border-[#E2E2E2] rounded-xl px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500"
-                                                    >
-                                                        {NC_REASONS.map(r => (
-                                                            <option key={r} value={r}>{r}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                {/* 3. Description */}
-                                                <div className="space-y-1.5">
-                                                    <label className="text-xs font-bold text-[#383838]">3. Description / Explanation (Optional)</label>
-                                                    <textarea
-                                                        value={ncDescription}
-                                                        onChange={(e) => setNcDescription(e.target.value)}
-                                                        placeholder="Provide brief context or doctor / hospital / event reference..."
-                                                        rows={2}
-                                                        className="w-full text-xs bg-white border border-[#E2E2E2] rounded-xl p-2.5 outline-none focus:ring-1 focus:ring-blue-500"
-                                                    />
-                                                </div>
-
-                                                {/* 4. Upload Proof File to Cloudflare R2 */}
-                                                <div className="space-y-1.5">
-                                                    <label className="text-xs font-bold text-[#383838]">
-                                                        4. Supporting Document (PDF, PNG, JPG)
-                                                    </label>
-                                                    <div className="border border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-3 text-center bg-white transition cursor-pointer relative">
-                                                        <input
-                                                            type="file"
-                                                            accept=".pdf,.png,.jpg,.jpeg,.webp"
-                                                            onChange={(e) => {
-                                                                if (e.target.files && e.target.files[0]) {
-                                                                    setNcProofFile(e.target.files[0]);
-                                                                }
-                                                            }}
-                                                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                                        />
-                                                        <div className="space-y-0.5">
-                                                            <UploadCloud className="w-5 h-5 text-[#0073E6] mx-auto" />
-                                                            <p className="text-xs font-semibold text-[#383838]">
-                                                                {ncProofFile ? ncProofFile.name : 'Upload Medical / Event Certificate'}
-                                                            </p>
-                                                            <p className="text-[10px] text-[#727272]">
-                                                                Files are securely stored and viewable by your faculty
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Submit Button */}
-                                                <div className="flex justify-end pt-1">
-                                                    <button
-                                                        type="submit"
-                                                        disabled={isSubmittingNc || selectedNcDates.length === 0 || !ncProofFile}
-                                                        className="px-4 py-2 rounded-xl bg-[#0073E6] hover:bg-[#174073] disabled:opacity-50 text-white font-semibold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer"
-                                                    >
-                                                        {isSubmittingNc ? (
-                                                            <>
-                                                                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                                                <span>Uploading document...</span>
-                                                            </>
-                                                        ) : (
-                                                            <span>Submit Leave Request</span>
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </form>
-
-                                            {/* Student's Existing NC Requests for this Subject */}
-                                            <div className="space-y-2">
-                                                <span className="text-[11px] font-bold text-[#727272] uppercase tracking-wider block">
-                                                    Your Leave Requests for this Course ({subjectNcRequests.length})
-                                                </span>
-                                                {subjectNcRequests.length === 0 ? (
-                                                    <p className="text-xs text-[#727272] py-3 text-center">No leave requests submitted yet for this course.</p>
-                                                ) : (
-                                                    subjectNcRequests.map((req) => (
-                                                        <div key={req.id} className="p-3 rounded-xl border border-[#E2E2E2] bg-white text-xs space-y-1.5 shadow-xs">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="font-bold text-[#383838] font-sans">
-                                                                    Dates: {(req.absentDates || []).join(', ')}
-                                                                </span>
-                                                                {req.status === 'APPROVED' ? (
-                                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px] flex items-center gap-1">
-                                                                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Approved
-                                                                    </span>
-                                                                ) : req.status === 'PENDING' ? (
-                                                                    <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px] flex items-center gap-1">
-                                                                        <Clock className="w-3 h-3 text-amber-600" /> Pending Review
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[10px] flex items-center gap-1">
-                                                                        <XCircle className="w-3 h-3 text-rose-600" /> Rejected
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <div className="text-[#383838] flex items-center justify-between">
-                                                                <span>Reason: <strong>{req.reason}</strong></span>
-                                                                {req.proofFileName && (
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setDocPreviewUrl(getNcProofUrl(req));
-                                                                            setDocPreviewName(req.proofFileName);
-                                                                        }}
-                                                                        className="text-[#0073E6] hover:underline font-semibold flex items-center gap-1 text-[11px] cursor-pointer"
-                                                                    >
-                                                                        <Eye className="w-3.5 h-3.5" /> View Document
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                            {req.reviewComment && (
-                                                                <p className="text-[11px] text-[#727272] bg-slate-50 p-2 rounded-lg italic">
-                                                                    Faculty Comment ({req.reviewedBy}): "{req.reviewComment}"
-                                                                </p>
+                                                                        <div className="text-[#383838] flex items-center justify-between">
+                                                                            <span>Reason: <strong>{req.reason}</strong></span>
+                                                                            {req.proofFileName && (
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        setDocPreviewUrl(getNcProofUrl(req));
+                                                                                        setDocPreviewName(req.proofFileName);
+                                                                                    }}
+                                                                                    className="text-[#0073E6] hover:underline font-semibold flex items-center gap-1 text-[11px] cursor-pointer"
+                                                                                >
+                                                                                    <Eye className="w-3.5 h-3.5" /> View Document
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                        {req.reviewComment && (
+                                                                            <p className="text-[11px] text-[#727272] bg-slate-50 p-2 rounded-lg italic">
+                                                                                Faculty Comment ({req.reviewedBy}): "{req.reviewComment}"
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                ))
                                                             )}
                                                         </div>
-                                                    ))
-                                                )}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        /* TEACHER VIEW INSIDE MODAL */
-                                        <div className="space-y-4">
-                                            {/* Teacher Filter Controls */}
-                                            <div className="bg-slate-50 p-3 rounded-xl border border-[#E2E2E2] flex flex-wrap items-center justify-between gap-3 text-xs">
-                                                <div className="flex items-center gap-2 flex-1 min-w-[180px]">
-                                                    <Search className="w-3.5 h-3.5 text-[#727272]" />
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Search student PRN or name..."
-                                                        value={teacherNcSearchStudent}
-                                                        onChange={(e) => setTeacherNcSearchStudent(e.target.value)}
-                                                        className="w-full bg-white border border-[#E2E2E2] rounded-lg px-2.5 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500"
-                                                    />
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[#727272] font-semibold text-[11px]">Status:</span>
-                                                    <select
-                                                        value={teacherNcFilterStatus}
-                                                        onChange={(e) => setTeacherNcFilterStatus(e.target.value)}
-                                                        className="bg-white border border-[#E2E2E2] rounded-lg px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500"
-                                                    >
-                                                        <option value="ALL">All Statuses</option>
-                                                        <option value="PENDING">Pending Only</option>
-                                                        <option value="APPROVED">Approved Only</option>
-                                                        <option value="REJECTED">Rejected Only</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            {/* Requests List for Teacher */}
-                                            <div className="space-y-2">
-                                                {subjectNcRequests.length === 0 ? (
-                                                    <p className="text-xs text-[#727272] py-6 text-center">
-                                                        No leave requests found for this course.
-                                                    </p>
+                                                    </div>
                                                 ) : (
-                                                    subjectNcRequests.map((req) => (
-                                                        <div key={req.id} className="p-3.5 rounded-xl border border-[#E2E2E2] bg-white text-xs space-y-2 shadow-xs">
-                                                            <div className="flex items-center justify-between">
-                                                                <div>
-                                                                    <span className="font-bold text-[#383838] text-sm">
-                                                                        {req.studentName}
-                                                                    </span>
-                                                                    <span className="text-[#727272] text-[11px] ml-2 font-sans">
-                                                                        PRN: {req.studentPrn} {req.rollNo ? `(Roll: ${req.rollNo})` : ''}
-                                                                    </span>
-                                                                </div>
-                                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                                                                    req.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-                                                                        'bg-amber-50 text-amber-700 border border-amber-200'
-                                                                    }`}>
-                                                                    {req.status}
-                                                                </span>
+                                                    /* TEACHER VIEW INSIDE MODAL */
+                                                    <div className="space-y-4">
+                                                        {/* Teacher Filter Controls */}
+                                                        <div className="bg-slate-50 p-3 rounded-xl border border-[#E2E2E2] flex flex-wrap items-center justify-between gap-3 text-xs">
+                                                            <div className="flex items-center gap-2 flex-1 min-w-[180px]">
+                                                                <Search className="w-3.5 h-3.5 text-[#727272]" />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Search student PRN or name..."
+                                                                    value={teacherNcSearchStudent}
+                                                                    onChange={(e) => setTeacherNcSearchStudent(e.target.value)}
+                                                                    className="w-full bg-white border border-[#E2E2E2] rounded-lg px-2.5 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                                                />
                                                             </div>
-
-                                                            <div className="text-[#383838] text-[11px] space-y-1">
-                                                                <div>
-                                                                    Absent Dates: <strong className="font-sans">{(req.absentDates || []).join(', ')}</strong>
-                                                                </div>
-                                                                <div>
-                                                                    Reason: <strong>{req.reason}</strong>
-                                                                    {req.description && <span className="italic text-[#727272] ml-1">("{req.description}")</span>}
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="flex items-center justify-between pt-1 border-t border-[#E2E2E2]">
-                                                                {req.proofFileName ? (
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setDocPreviewUrl(getNcProofUrl(req));
-                                                                            setDocPreviewName(req.proofFileName);
-                                                                        }}
-                                                                        className="text-[#0073E6] hover:underline font-semibold flex items-center gap-1 cursor-pointer text-[11px]"
-                                                                    >
-                                                                        <Eye className="w-3.5 h-3.5" />
-                                                                        <span>View Document </span>
-                                                                    </button>
-                                                                ) : (
-                                                                    <span className="text-[#727272] italic">No document attached</span>
-                                                                )}
-
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setReviewingReq(req);
-                                                                        setReviewDecision(req.status === 'REJECTED' ? 'REJECTED' : 'APPROVED');
-                                                                        setReviewComment(req.reviewComment || '');
-                                                                    }}
-                                                                    className="px-3 py-1 rounded-lg bg-[#0073E6] hover:bg-[#174073] text-white font-bold text-xs shadow-xs transition cursor-pointer"
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[#727272] font-semibold text-[11px]">Status:</span>
+                                                                <select
+                                                                    value={teacherNcFilterStatus}
+                                                                    onChange={(e) => setTeacherNcFilterStatus(e.target.value)}
+                                                                    className="bg-white border border-[#E2E2E2] rounded-lg px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500"
                                                                 >
-                                                                    Review Request
-                                                                </button>
+                                                                    <option value="ALL">All Statuses</option>
+                                                                    <option value="PENDING">Pending Only</option>
+                                                                    <option value="APPROVED">Approved Only</option>
+                                                                    <option value="REJECTED">Rejected Only</option>
+                                                                </select>
                                                             </div>
                                                         </div>
-                                                    ))
+
+                                                        {/* Requests List for Teacher */}
+                                                        <div className="space-y-2">
+                                                            {subjectNcRequests.length === 0 ? (
+                                                                <p className="text-xs text-[#727272] py-6 text-center">
+                                                                    No leave requests found for this course.
+                                                                </p>
+                                                            ) : (
+                                                                subjectNcRequests.map((req) => (
+                                                                    <div key={req.id} className="p-3.5 rounded-xl border border-[#E2E2E2] bg-white text-xs space-y-2 shadow-xs">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div>
+                                                                                <span className="font-bold text-[#383838] text-sm">
+                                                                                    {req.studentName}
+                                                                                </span>
+                                                                                <span className="text-[#727272] text-[11px] ml-2 font-sans">
+                                                                                    PRN: {req.studentPrn} {req.rollNo ? `(Roll: ${req.rollNo})` : ''}
+                                                                                </span>
+                                                                            </div>
+                                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                                                                req.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                                                                                    'bg-amber-50 text-amber-700 border border-amber-200'
+                                                                                }`}>
+                                                                                {req.status}
+                                                                            </span>
+                                                                        </div>
+
+                                                                        <div className="text-[#383838] text-[11px] space-y-1">
+                                                                            <div>
+                                                                                Absent Dates: <strong className="font-sans">{(req.absentDates || []).join(', ')}</strong>
+                                                                            </div>
+                                                                            <div>
+                                                                                Reason: <strong>{req.reason}</strong>
+                                                                                {req.description && <span className="italic text-[#727272] ml-1">("{req.description}")</span>}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="flex items-center justify-between pt-1 border-t border-[#E2E2E2]">
+                                                                            {req.proofFileName ? (
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        setDocPreviewUrl(getNcProofUrl(req));
+                                                                                        setDocPreviewName(req.proofFileName);
+                                                                                    }}
+                                                                                    className="text-[#0073E6] hover:underline font-semibold flex items-center gap-1 cursor-pointer text-[11px]"
+                                                                                >
+                                                                                    <Eye className="w-3.5 h-3.5" />
+                                                                                    <span>View Document </span>
+                                                                                </button>
+                                                                            ) : (
+                                                                                <span className="text-[#727272] italic">No document attached</span>
+                                                                            )}
+
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setReviewingReq(req);
+                                                                                    setReviewDecision(req.status === 'REJECTED' ? 'REJECTED' : 'APPROVED');
+                                                                                    setReviewComment(req.reviewComment || '');
+                                                                                }}
+                                                                                className="px-3 py-1 rounded-lg bg-[#0073E6] hover:bg-[#174073] text-white font-bold text-xs shadow-xs transition cursor-pointer"
+                                                                            >
+                                                                                Review Request
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            )}
+                                                        </div>
+
+                                                        {/* Teacher Review Form Sub-section */}
+                                                        {reviewingReq && (
+                                                            <div className="p-4 rounded-xl bg-[#DEEDFC]/50 border border-[#D9ECFF] space-y-3 animate-in fade-in duration-150">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="font-bold text-xs text-blue-900">
+                                                                        Reviewing Student: {reviewingReq.studentName} ({reviewingReq.studentPrn})
+                                                                    </span>
+                                                                    <button
+                                                                        onClick={() => setReviewingReq(null)}
+                                                                        className="text-[#727272] hover:text-[#383838]"
+                                                                    >
+                                                                        <X className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setReviewDecision('APPROVED')}
+                                                                        className={`p-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${reviewDecision === 'APPROVED'
+                                                                            ? 'bg-emerald-600 text-white shadow-xs'
+                                                                            : 'bg-white border border-[#E2E2E2] text-[#383838]'
+                                                                            }`}
+                                                                    >
+                                                                        <CheckCircle2 className="w-3.5 h-3.5" /> Approve Leave
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setReviewDecision('REJECTED')}
+                                                                        className={`p-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${reviewDecision === 'REJECTED'
+                                                                            ? 'bg-rose-600 text-white shadow-xs'
+                                                                            : 'bg-white border border-[#E2E2E2] text-[#383838]'
+                                                                            }`}
+                                                                    >
+                                                                        <XCircle className="w-3.5 h-3.5" /> Reject Request
+                                                                    </button>
+                                                                </div>
+
+                                                                <textarea
+                                                                    value={reviewComment}
+                                                                    onChange={(e) => setReviewComment(e.target.value)}
+                                                                    placeholder="Enter teacher remarks or feedback..."
+                                                                    rows={2}
+                                                                    className="w-full text-xs bg-white border border-[#E2E2E2] rounded-lg p-2 outline-none focus:ring-1 focus:ring-blue-500"
+                                                                />
+
+                                                                <div className="flex justify-end gap-2">
+                                                                    <button
+                                                                        onClick={() => setReviewingReq(null)}
+                                                                        className="px-3 py-1 text-xs text-[#383838] hover:bg-slate-200 rounded-lg"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={handleTeacherReviewNc}
+                                                                        disabled={isSubmittingReview}
+                                                                        className="px-4 py-1.5 rounded-lg bg-[#0073E6] hover:bg-[#174073] text-white text-xs font-bold shadow-xs cursor-pointer"
+                                                                    >
+                                                                        {isSubmittingReview ? 'Saving...' : 'Save Decision'}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {/* Global NC & Leave Requests Modal Popup */}
+                        {showNcModal && (
+                            <div
+                                className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+                                onClick={() => setShowNcModal(false)}
+                            >
+                                <div
+                                    className="bg-white rounded-2xl border border-[#E2E2E2] shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    {/* Header */}
+                                    <div className="p-4 sm:p-5 border-b border-[#E2E2E2] bg-slate-50/80 flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-9 h-9 rounded-xl bg-[#DEEDFC] text-[#0073E6] border border-[#D9ECFF] flex items-center justify-center shrink-0">
+                                                <Shield className="w-5 h-5 text-[#0073E6]" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm sm:text-base font-bold text-[#383838] leading-tight">
+                                                    Attendance Excuse Requests (NC)
+                                                </h3>
+                                                <p className="text-[11px] text-[#727272] mt-0.5">
+                                                    {isTeacher
+                                                        ? 'Review and decide on student leave and duty submissions'
+                                                        : 'Medical, duty leave & event excuse requests'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowNcModal(false)}
+                                            className="p-1.5 rounded-lg text-[#727272] hover:text-[#383838] hover:bg-slate-200/70 cursor-pointer transition"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
 
-                                            {/* Teacher Review Form Sub-section */}
-                                            {reviewingReq && (
-                                                <div className="p-4 rounded-xl bg-[#DEEDFC]/50 border border-[#D9ECFF] space-y-3 animate-in fade-in duration-150">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-bold text-xs text-blue-900">
-                                                            Reviewing Student: {reviewingReq.studentName} ({reviewingReq.studentPrn})
-                                                        </span>
-                                                        <button
-                                                            onClick={() => setReviewingReq(null)}
-                                                            className="text-[#727272] hover:text-[#383838]"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setReviewDecision('APPROVED')}
-                                                            className={`p-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${reviewDecision === 'APPROVED'
-                                                                ? 'bg-emerald-600 text-white shadow-xs'
-                                                                : 'bg-white border border-[#E2E2E2] text-[#383838]'
-                                                                }`}
-                                                        >
-                                                            <CheckCircle2 className="w-3.5 h-3.5" /> Approve Leave
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setReviewDecision('REJECTED')}
-                                                            className={`p-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${reviewDecision === 'REJECTED'
-                                                                ? 'bg-rose-600 text-white shadow-xs'
-                                                                : 'bg-white border border-[#E2E2E2] text-[#383838]'
-                                                                }`}
-                                                        >
-                                                            <XCircle className="w-3.5 h-3.5" /> Reject Request
-                                                        </button>
-                                                    </div>
-
-                                                    <textarea
-                                                        value={reviewComment}
-                                                        onChange={(e) => setReviewComment(e.target.value)}
-                                                        placeholder="Enter teacher remarks or feedback..."
-                                                        rows={2}
-                                                        className="w-full text-xs bg-white border border-[#E2E2E2] rounded-lg p-2 outline-none focus:ring-1 focus:ring-blue-500"
-                                                    />
-
-                                                    <div className="flex justify-end gap-2">
-                                                        <button
-                                                            onClick={() => setReviewingReq(null)}
-                                                            className="px-3 py-1 text-xs text-[#383838] hover:bg-slate-200 rounded-lg"
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                        <button
-                                                            onClick={handleTeacherReviewNc}
-                                                            disabled={isSubmittingReview}
-                                                            className="px-4 py-1.5 rounded-lg bg-[#0073E6] hover:bg-[#174073] text-white text-xs font-bold shadow-xs cursor-pointer"
-                                                        >
-                                                            {isSubmittingReview ? 'Saving...' : 'Save Decision'}
-                                                        </button>
-                                                    </div>
+                                    {/* Student View */}
+                                    {!isTeacher ? (
+                                        <>
+                                            {/* Tab Navigation */}
+                                            <div className="px-5 pt-3 border-b border-[#E2E2E2] bg-white flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setNcModalTab('requests')}
+                                                        className={`px-3.5 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 cursor-pointer ${ncModalTab === 'requests'
+                                                            ? 'border-blue-600 text-[#0073E6]'
+                                                            : 'border-transparent text-[#727272] hover:text-[#383838]'
+                                                            }`}
+                                                    >
+                                                        <FileText className="w-3.5 h-3.5" />
+                                                        <span>My Requests ({myNcRequests.length})</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setNcModalTab('apply')}
+                                                        className={`px-3.5 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 cursor-pointer ${ncModalTab === 'apply'
+                                                            ? 'border-blue-600 text-[#0073E6]'
+                                                            : 'border-transparent text-[#727272] hover:text-[#383838]'
+                                                            }`}
+                                                    >
+                                                        <UploadCloud className="w-3.5 h-3.5" />
+                                                        <span>+ Apply for Leave</span>
+                                                    </button>
                                                 </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={fetchMyNcRequests}
+                                                    disabled={myNcLoading}
+                                                    className="p-1.5 text-[#727272] hover:text-[#383838] rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                                                    title="Refresh requests"
+                                                >
+                                                    <RefreshCw className={`w-3.5 h-3.5 ${myNcLoading ? 'animate-spin text-[#0073E6]' : ''}`} />
+                                                </button>
+                                            </div>
+
+                                            {/* Body */}
+                                            <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                                                {ncModalTab === 'requests' ? (
+                                                    myNcLoading ? (
+                                                        <div className="py-12 text-center text-xs text-[#727272] flex flex-col items-center gap-2">
+                                                            <RefreshCw className="w-5 h-5 animate-spin text-[#0073E6]" />
+                                                            <span>Loading your leave requests...</span>
+                                                        </div>
+                                                    ) : myNcRequests.length === 0 ? (
+                                                        <div className="py-12 text-center bg-slate-50/50 rounded-xl border border-dashed border-[#E2E2E2] p-6 space-y-2">
+                                                            <Shield className="w-10 h-10 text-[#E2E2E2] mx-auto" />
+                                                            <h4 className="text-xs font-bold text-[#383838]">No Leave Requests Found</h4>
+                                                            <p className="text-[11px] text-[#727272] max-w-xs mx-auto">
+                                                                You haven't submitted any absence excuse or medical leave requests yet.
+                                                            </p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setNcModalTab('apply')}
+                                                                className="mt-2 px-3.5 py-1.5 rounded-lg bg-[#0073E6] hover:bg-[#174073] text-white text-xs font-bold transition shadow-2xs cursor-pointer inline-flex items-center gap-1"
+                                                            >
+                                                                <UploadCloud className="w-3.5 h-3.5" />
+                                                                <span>Apply for Leave Now</span>
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            {myNcRequests.map((req) => (
+                                                                <div key={req.id} className="p-4 rounded-xl border border-[#E2E2E2] bg-white text-xs space-y-2.5 shadow-2xs hover:border-slate-300 transition">
+                                                                    <div className="flex items-center justify-between gap-2">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                            <span className="font-bold text-[#383838]">{req.reason}</span>
+                                                                            {req.missedSubjects && req.missedSubjects.length > 0 && (
+                                                                                <span className="px-2 py-0.5 rounded-full bg-[#DEEDFC] text-[#174073] text-[10px] font-semibold">
+                                                                                    {req.missedSubjects[0].subjectName}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${req.status === 'APPROVED'
+                                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                                            : req.status === 'REJECTED'
+                                                                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                                                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                                                                            }`}>
+                                                                            {req.status}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div className="text-[11px] text-[#383838] space-y-1">
+                                                                        <div className="flex items-center gap-1.5 font-sans">
+                                                                            <Calendar className="w-3.5 h-3.5 text-[#727272]" />
+                                                                            <span>Absent: <strong className="text-[#383838]">{(req.absentDates || []).join(', ')}</strong></span>
+                                                                        </div>
+                                                                        {req.description && (
+                                                                            <p className="text-[#383838] italic">"{req.description}"</p>
+                                                                        )}
+                                                                        {req.reviewComment && (
+                                                                            <div className="mt-1 p-2 rounded-lg bg-slate-50 border border-[#E2E2E2] text-[#383838]">
+                                                                                <strong className="text-[#383838] font-semibold">Faculty Remarks:</strong> {req.reviewComment}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {req.proofFileName && (
+                                                                        <div className="pt-2 border-t border-[#E2E2E2] flex items-center justify-between">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setDocPreviewUrl(getNcProofUrl(req));
+                                                                                    setDocPreviewName(req.proofFileName);
+                                                                                }}
+                                                                                className="text-[#0073E6] hover:underline font-semibold flex items-center gap-1.5 text-[11px] cursor-pointer"
+                                                                            >
+                                                                                <Eye className="w-3.5 h-3.5" />
+                                                                                <span>View Proof ({req.proofFileName})</span>
+                                                                            </button>
+                                                                            <span className="text-[10px] text-[#727272]">
+                                                                                {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : ''}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )
+                                                ) : (
+                                                    /* Student Apply Form */
+                                                    <form onSubmit={handleSubmitSubjectNc} className="space-y-4">
+                                                        {/* Course Selector */}
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-xs font-bold text-[#383838]">Select Subject</label>
+                                                            <select
+                                                                value={ncModalSubject?.id || ''}
+                                                                onChange={(e) => {
+                                                                    const match = (subjects || []).find(s => s.id === e.target.value);
+                                                                    setNcModalSubject(match || null);
+                                                                    setSelectedNcDates([]);
+                                                                }}
+                                                                className="w-full text-xs bg-white border border-[#E2E2E2] rounded-xl px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500"
+                                                            >
+                                                                <option value="" disabled>-- Choose Enrolled Course --</option>
+                                                                {(subjects || []).map(s => (
+                                                                    <option key={s.id} value={s.id}>
+                                                                        {s.name} ({s.code || 'Course'})
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+
+                                                        {/* Absent Dates */}
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-xs font-bold text-[#383838] flex items-center justify-between">
+                                                                <span>Absent Date(s)</span>
+                                                                <span className="text-[11px] font-normal text-[#727272] font-sans">
+                                                                    {selectedNcDates.length} selected
+                                                                </span>
+                                                            </label>
+
+                                                            {/* Absent records from detailedAttendance if available */}
+                                                            {ncModalSubject?.detailedAttendance && ncModalSubject.detailedAttendance.filter(r => r.status === 'Absent').length > 0 && (
+                                                                <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto p-1 border border-[#E2E2E2] rounded-lg bg-slate-50/50">
+                                                                    {ncModalSubject.detailedAttendance.filter(r => r.status === 'Absent').map((rec, idx) => {
+                                                                        const isSel = selectedNcDates.includes(rec.date);
+                                                                        return (
+                                                                            <button
+                                                                                key={idx}
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setSelectedNcDates(prev =>
+                                                                                        prev.includes(rec.date) ? prev.filter(d => d !== rec.date) : [...prev, rec.date]
+                                                                                    );
+                                                                                }}
+                                                                                className={`p-1.5 rounded-lg border text-[11px] font-sans text-left transition cursor-pointer ${isSel ? 'bg-[#DEEDFC] border-blue-400 text-blue-900 font-bold' : 'bg-white border-[#E2E2E2] text-[#383838] hover:border-slate-300'
+                                                                                    }`}
+                                                                            >
+                                                                                {rec.date}
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Manual date input to add custom dates */}
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="date"
+                                                                    id="manual-nc-date"
+                                                                    onChange={(e) => {
+                                                                        if (e.target.value && !selectedNcDates.includes(e.target.value)) {
+                                                                            setSelectedNcDates(prev => [...prev, e.target.value]);
+                                                                            e.target.value = '';
+                                                                        }
+                                                                    }}
+                                                                    className="text-xs bg-white border border-[#E2E2E2] rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500"
+                                                                />
+                                                                <span className="text-[11px] text-[#727272]">Pick date to add to list</span>
+                                                            </div>
+
+                                                            {selectedNcDates.length > 0 && (
+                                                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                                                    {selectedNcDates.map(d => (
+                                                                        <span key={d} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#DEEDFC] text-[#174073] border border-[#D9ECFF] text-[11px] font-sans font-semibold">
+                                                                            {d}
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setSelectedNcDates(prev => prev.filter(x => x !== d))}
+                                                                                className="hover:text-rose-600 cursor-pointer"
+                                                                            >
+                                                                                ×
+                                                                            </button>
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Reason dropdown */}
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-xs font-bold text-[#383838]">Reason for Absence</label>
+                                                            <select
+                                                                value={ncReason}
+                                                                onChange={(e) => setNcReason(e.target.value)}
+                                                                className="w-full text-xs bg-white border border-[#E2E2E2] rounded-xl px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500"
+                                                            >
+                                                                {NC_REASONS.map(r => (
+                                                                    <option key={r} value={r}>{r}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+
+                                                        {/* Explanation textarea */}
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-xs font-bold text-[#383838]">Detailed Explanation (Optional)</label>
+                                                            <textarea
+                                                                value={ncDescription}
+                                                                onChange={(e) => setNcDescription(e.target.value)}
+                                                                placeholder="Specify medical hospital, competition event details, etc."
+                                                                rows={2}
+                                                                className="w-full text-xs bg-white border border-[#E2E2E2] rounded-xl p-2.5 outline-none focus:ring-1 focus:ring-blue-500"
+                                                            />
+                                                        </div>
+
+                                                        {/* Supporting Document Proof */}
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-xs font-bold text-[#383838] flex items-center justify-between">
+                                                                <span>Supporting Proof Document</span>
+                                                                <span className="text-[10px] text-[#727272] font-normal">PDF, JPG, PNG (Max 15MB)</span>
+                                                            </label>
+                                                            <input
+                                                                type="file"
+                                                                accept=".pdf,image/png,image/jpeg,image/jpg"
+                                                                onChange={(e) => {
+                                                                    if (e.target.files && e.target.files[0]) {
+                                                                        setNcProofFile(e.target.files[0]);
+                                                                    }
+                                                                }}
+                                                                className="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#DEEDFC] file:text-[#174073] hover:file:bg-blue-100 cursor-pointer border border-[#E2E2E2] rounded-xl p-1.5 bg-slate-50/50"
+                                                            />
+                                                        </div>
+
+                                                        <div className="pt-2 flex justify-end gap-2 border-t border-[#E2E2E2]">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setNcModalTab('requests')}
+                                                                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#383838] hover:bg-slate-100 transition cursor-pointer"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                type="submit"
+                                                                disabled={isSubmittingNc}
+                                                                className="px-5 py-2 rounded-xl bg-[#0073E6] hover:bg-[#174073] text-white text-xs font-bold shadow-xs cursor-pointer transition disabled:opacity-50"
+                                                            >
+                                                                {isSubmittingNc ? 'Submitting...' : 'Submit Request'}
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                )}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        /* Teacher View */
+                                        <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                <div className="flex items-center gap-1">
+                                                    {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((st) => (
+                                                        <button
+                                                            key={st}
+                                                            type="button"
+                                                            onClick={() => setTeacherNcFilterStatus(st)}
+                                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${teacherNcFilterStatus === st
+                                                                ? 'bg-[#0073E6] text-white shadow-xs'
+                                                                : 'bg-slate-100 text-[#383838] hover:bg-slate-200/70'
+                                                                }`}
+                                                        >
+                                                            {st === 'ALL'
+                                                                ? `All (${allFacultyNc.length})`
+                                                                : st === 'PENDING'
+                                                                    ? `Pending (${allFacultyNc.filter(r => r.status === 'PENDING').length})`
+                                                                    : st === 'APPROVED'
+                                                                        ? `Approved (${allFacultyNc.filter(r => r.status === 'APPROVED').length})`
+                                                                        : `Rejected (${allFacultyNc.filter(r => r.status === 'REJECTED').length})`}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={fetchAllFacultyNc}
+                                                    disabled={allFacultyNcLoading}
+                                                    className="p-1.5 text-[#727272] hover:text-[#383838] rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                                                    title="Refresh requests"
+                                                >
+                                                    <RefreshCw className={`w-3.5 h-3.5 ${allFacultyNcLoading ? 'animate-spin text-[#0073E6]' : ''}`} />
+                                                </button>
+                                            </div>
+
+                                            {allFacultyNcLoading ? (
+                                                <div className="py-12 text-center text-xs text-[#727272] flex flex-col items-center gap-2">
+                                                    <RefreshCw className="w-5 h-5 animate-spin text-[#0073E6]" />
+                                                    <span>Loading student leave requests...</span>
+                                                </div>
+                                            ) : (
+                                                (() => {
+                                                    const list = allFacultyNc.filter(r => teacherNcFilterStatus === 'ALL' || r.status === teacherNcFilterStatus);
+                                                    if (list.length === 0) {
+                                                        return (
+                                                            <div className="py-12 text-center bg-slate-50/50 rounded-xl border border-dashed border-[#E2E2E2] p-6">
+                                                                <Shield01Icon size={40} className="text-[#E2E2E2] mx-auto mb-2" />
+                                                                <h4 className="text-xs font-bold text-[#383838]">No Leave Requests Found</h4>
+                                                                <p className="text-[11px] text-[#727272]">No student submissions match this filter.</p>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <div className="space-y-2.5">
+                                                            {list.map(req => (
+                                                                <div key={req.id} className="p-3.5 rounded-xl border border-[#E2E2E2] bg-white text-xs space-y-2 shadow-2xs hover:border-[#D9ECFF] transition">
+                                                                    <div className="flex items-center justify-between gap-2">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                            <span className="font-bold text-[#383838]">{req.studentName}</span>
+                                                                            <span className="font-sans text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-[#383838] font-semibold border border-[#E2E2E2]">
+                                                                                {req.studentPrn}
+                                                                            </span>
+                                                                            {req.missedSubjects && req.missedSubjects.length > 0 && (
+                                                                                <span className="px-2 py-0.2 rounded-full bg-[#DEEDFC] text-[#174073] text-[10px] font-semibold">
+                                                                                    {req.missedSubjects[0].subjectName}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                                            req.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                                                                'bg-amber-50 text-amber-700 border-amber-200'
+                                                                            }`}>
+                                                                            {req.status}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div className="text-[11px] text-[#383838] space-y-0.5">
+                                                                        <div>Absent: <strong className="font-sans text-[#383838]">{(req.absentDates || []).join(', ')}</strong></div>
+                                                                        <div>Reason: <strong className="text-[#383838]">{req.reason}</strong>{req.description ? ` - "${req.description}"` : ''}</div>
+                                                                    </div>
+
+                                                                    <div className="flex items-center justify-between pt-1 border-t border-[#E2E2E2]">
+                                                                        {req.proofFileName ? (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setDocPreviewUrl(getNcProofUrl(req));
+                                                                                    setDocPreviewName(req.proofFileName);
+                                                                                }}
+                                                                                className="text-[#0073E6] hover:underline font-semibold flex items-center gap-1 text-[11px] cursor-pointer"
+                                                                            >
+                                                                                <Eye className="w-3.5 h-3.5" />
+                                                                                <span>View Document</span>
+                                                                            </button>
+                                                                        ) : (
+                                                                            <span className="text-[#727272] italic text-[11px]">No file attached</span>
+                                                                        )}
+
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setReviewingReq(req);
+                                                                                setReviewDecision(req.status === 'REJECTED' ? 'REJECTED' : 'APPROVED');
+                                                                                setReviewComment(req.reviewComment || '');
+                                                                            }}
+                                                                            className="px-3 py-1 rounded-lg bg-[#0073E6] hover:bg-[#174073] text-white font-bold text-[11px] cursor-pointer shadow-2xs"
+                                                                        >
+                                                                            Review
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    );
+                                                })()
                                             )}
                                         </div>
                                     )}
                                 </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-            {/* Global NC & Leave Requests Modal Popup */}
-            {showNcModal && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
-                    onClick={() => setShowNcModal(false)}
-                >
-                    <div
-                        className="bg-white rounded-2xl border border-[#E2E2E2] shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {/* Header */}
-                        <div className="p-4 sm:p-5 border-b border-[#E2E2E2] bg-slate-50/80 flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-xl bg-[#DEEDFC] text-[#0073E6] border border-[#D9ECFF] flex items-center justify-center shrink-0">
-                                    <Shield className="w-5 h-5 text-[#0073E6]" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm sm:text-base font-bold text-[#383838] leading-tight">
-                                        Attendance Excuse Requests (NC)
-                                    </h3>
-                                    <p className="text-[11px] text-[#727272] mt-0.5">
-                                        {isTeacher
-                                            ? 'Review and decide on student leave and duty submissions'
-                                            : 'Medical, duty leave & event excuse requests'}
-                                    </p>
+                            </div>
+                        )}
+
+
+                        {/* Document Preview Modal */}
+                        {docPreviewUrl && (
+                            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
+                                <div className="bg-white rounded-2xl border border-[#E2E2E2] max-w-2xl w-full shadow-2xl relative overflow-hidden flex flex-col max-h-[85vh]">
+                                    <div className="flex items-center justify-between px-5 py-3 border-b border-[#E2E2E2] bg-slate-50">
+                                        <div className="flex items-center gap-2">
+                                            <FileText className="w-4 h-4 text-[#0073E6]" />
+                                            <span className="font-bold text-xs sm:text-sm text-[#383838]">{docPreviewName}</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold font-sans">
+                                                Document Cloud
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <a
+                                                href={docPreviewUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                download={docPreviewName}
+                                                className="p-1 rounded-lg text-[#727272] hover:text-[#383838] hover:bg-slate-200"
+                                                title="Download Document"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                            </a>
+                                            <button
+                                                onClick={() => setDocPreviewUrl(null)}
+                                                className="p-1 rounded-lg text-[#727272] hover:text-[#383838] hover:bg-slate-200"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 p-3 overflow-auto flex items-center justify-center bg-slate-100 min-h-[350px]">
+                                        {docPreviewUrl.toLowerCase().endsWith('.pdf') ? (
+                                            <iframe
+                                                src={docPreviewUrl}
+                                                title="NC Proof Preview"
+                                                className="w-full h-[60vh] rounded-xl border border-[#E2E2E2] bg-white"
+                                            />
+                                        ) : (
+                                            <img
+                                                src={docPreviewUrl}
+                                                alt={docPreviewName}
+                                                className="max-h-[60vh] object-contain rounded-xl border border-[#E2E2E2] shadow-xs"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
+                                                }}
+                                            />
+                                        )}
+                                        <div className="hidden text-center p-6 text-[#727272]">
+                                            <AlertCircle className="w-6 h-6 text-amber-500 mx-auto mb-1" />
+                                            <p className="text-xs font-semibold">Document cannot be previewed directly in frame.</p>
+                                            <a
+                                                href={docPreviewUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="mt-2 inline-block px-3 py-1.5 rounded-lg bg-[#0073E6] text-white text-xs font-semibold"
+                                            >
+                                                Download & View File
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setShowNcModal(false)}
-                                className="p-1.5 rounded-lg text-[#727272] hover:text-[#383838] hover:bg-slate-200/70 cursor-pointer transition"
+                        )}
+
+                        {/* Standalone Faculty Review Decision Modal */}
+                        {reviewingReq && (
+                            <div
+                                className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+                                onClick={() => setReviewingReq(null)}
                             >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        {/* Student View */}
-                        {!isTeacher ? (
-                            <>
-                                {/* Tab Navigation */}
-                                <div className="px-5 pt-3 border-b border-[#E2E2E2] bg-white flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2">
+                                <div
+                                    className="bg-white rounded-2xl border border-[#E2E2E2] max-w-lg w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <div className="px-5 py-4 border-b border-[#E2E2E2] bg-slate-50 flex items-center justify-between">
+                                        <div>
+                                            <h3 className="font-bold text-sm text-[#383838]">Review Student Leave Request</h3>
+                                            <p className="text-[11px] text-[#727272]">
+                                                Student: <strong className="text-[#383838]">{reviewingReq.studentName}</strong> (PRN: {reviewingReq.studentPrn})
+                                            </p>
+                                        </div>
                                         <button
-                                            type="button"
-                                            onClick={() => setNcModalTab('requests')}
-                                            className={`px-3.5 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 cursor-pointer ${ncModalTab === 'requests'
-                                                ? 'border-blue-600 text-[#0073E6]'
-                                                : 'border-transparent text-[#727272] hover:text-[#383838]'
-                                                }`}
+                                            onClick={() => setReviewingReq(null)}
+                                            className="p-1 rounded-lg text-[#727272] hover:text-[#383838] hover:bg-slate-200 cursor-pointer"
                                         >
-                                            <FileText className="w-3.5 h-3.5" />
-                                            <span>My Requests ({myNcRequests.length})</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setNcModalTab('apply')}
-                                            className={`px-3.5 py-2 text-xs font-bold border-b-2 transition flex items-center gap-1.5 cursor-pointer ${ncModalTab === 'apply'
-                                                ? 'border-blue-600 text-[#0073E6]'
-                                                : 'border-transparent text-[#727272] hover:text-[#383838]'
-                                                }`}
-                                        >
-                                            <UploadCloud className="w-3.5 h-3.5" />
-                                            <span>+ Apply for Leave</span>
+                                            <X className="w-4 h-4" />
                                         </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={fetchMyNcRequests}
-                                        disabled={myNcLoading}
-                                        className="p-1.5 text-[#727272] hover:text-[#383838] rounded-lg hover:bg-slate-100 transition cursor-pointer"
-                                        title="Refresh requests"
-                                    >
-                                        <RefreshCw className={`w-3.5 h-3.5 ${myNcLoading ? 'animate-spin text-[#0073E6]' : ''}`} />
-                                    </button>
-                                </div>
 
-                                {/* Body */}
-                                <div className="p-5 overflow-y-auto flex-1 space-y-4">
-                                    {ncModalTab === 'requests' ? (
-                                        myNcLoading ? (
-                                            <div className="py-12 text-center text-xs text-[#727272] flex flex-col items-center gap-2">
-                                                <RefreshCw className="w-5 h-5 animate-spin text-[#0073E6]" />
-                                                <span>Loading your leave requests...</span>
+                                    <div className="p-5 space-y-4 text-xs">
+                                        <div className="bg-slate-50 p-3 rounded-xl border border-[#E2E2E2] space-y-1.5">
+                                            <div className="flex justify-between">
+                                                <span className="text-[#727272]">Dates of Absence:</span>
+                                                <span className="font-bold font-sans text-[#383838]">{(reviewingReq.absentDates || []).join(', ')}</span>
                                             </div>
-                                        ) : myNcRequests.length === 0 ? (
-                                            <div className="py-12 text-center bg-slate-50/50 rounded-xl border border-dashed border-[#E2E2E2] p-6 space-y-2">
-                                                <Shield className="w-10 h-10 text-[#E2E2E2] mx-auto" />
-                                                <h4 className="text-xs font-bold text-[#383838]">No Leave Requests Found</h4>
-                                                <p className="text-[11px] text-[#727272] max-w-xs mx-auto">
-                                                    You haven't submitted any absence excuse or medical leave requests yet.
-                                                </p>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setNcModalTab('apply')}
-                                                    className="mt-2 px-3.5 py-1.5 rounded-lg bg-[#0073E6] hover:bg-[#174073] text-white text-xs font-bold transition shadow-2xs cursor-pointer inline-flex items-center gap-1"
-                                                >
-                                                    <UploadCloud className="w-3.5 h-3.5" />
-                                                    <span>Apply for Leave Now</span>
-                                                </button>
+                                            <div className="flex justify-between">
+                                                <span className="text-[#727272]">Reason Category:</span>
+                                                <span className="font-semibold text-[#383838]">{reviewingReq.reason}</span>
                                             </div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {myNcRequests.map((req) => (
-                                                    <div key={req.id} className="p-4 rounded-xl border border-[#E2E2E2] bg-white text-xs space-y-2.5 shadow-2xs hover:border-slate-300 transition">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                <span className="font-bold text-[#383838]">{req.reason}</span>
-                                                                {req.missedSubjects && req.missedSubjects.length > 0 && (
-                                                                    <span className="px-2 py-0.5 rounded-full bg-[#DEEDFC] text-[#174073] text-[10px] font-semibold">
-                                                                        {req.missedSubjects[0].subjectName}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${req.status === 'APPROVED'
-                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                                : req.status === 'REJECTED'
-                                                                    ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                                                    : 'bg-amber-50 text-amber-700 border-amber-200'
-                                                                }`}>
-                                                                {req.status}
-                                                            </span>
-                                                        </div>
+                                            {reviewingReq.description && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-[#727272]">Student Explanation:</span>
+                                                    <span className="italic text-[#383838] max-w-[240px] text-right truncate" title={reviewingReq.description}>"{reviewingReq.description}"</span>
+                                                </div>
+                                            )}
+                                            {reviewingReq.missedSubjects && reviewingReq.missedSubjects.length > 0 && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-[#727272]">Affected Course:</span>
+                                                    <span className="font-semibold text-[#174073]">{reviewingReq.missedSubjects.map(m => m.subjectName).filter(Boolean).join(', ') || 'General'}</span>
+                                                </div>
+                                            )}
+                                        </div>
 
-                                                        <div className="text-[11px] text-[#383838] space-y-1">
-                                                            <div className="flex items-center gap-1.5 font-sans">
-                                                                <Calendar className="w-3.5 h-3.5 text-[#727272]" />
-                                                                <span>Absent: <strong className="text-[#383838]">{(req.absentDates || []).join(', ')}</strong></span>
-                                                            </div>
-                                                            {req.description && (
-                                                                <p className="text-[#383838] italic">"{req.description}"</p>
-                                                            )}
-                                                            {req.reviewComment && (
-                                                                <div className="mt-1 p-2 rounded-lg bg-slate-50 border border-[#E2E2E2] text-[#383838]">
-                                                                    <strong className="text-[#383838] font-semibold">Faculty Remarks:</strong> {req.reviewComment}
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {req.proofFileName && (
-                                                            <div className="pt-2 border-t border-[#E2E2E2] flex items-center justify-between">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setDocPreviewUrl(getNcProofUrl(req));
-                                                                        setDocPreviewName(req.proofFileName);
-                                                                    }}
-                                                                    className="text-[#0073E6] hover:underline font-semibold flex items-center gap-1.5 text-[11px] cursor-pointer"
-                                                                >
-                                                                    <Eye className="w-3.5 h-3.5" />
-                                                                    <span>View Proof ({req.proofFileName})</span>
-                                                                </button>
-                                                                <span className="text-[10px] text-[#727272]">
-                                                                    {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : ''}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )
-                                    ) : (
-                                        /* Student Apply Form */
-                                        <form onSubmit={handleSubmitSubjectNc} className="space-y-4">
-                                            {/* Course Selector */}
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-[#383838]">Select Subject</label>
-                                                <select
-                                                    value={ncModalSubject?.id || ''}
-                                                    onChange={(e) => {
-                                                        const match = (subjects || []).find(s => s.id === e.target.value);
-                                                        setNcModalSubject(match || null);
-                                                        setSelectedNcDates([]);
-                                                    }}
-                                                    className="w-full text-xs bg-white border border-[#E2E2E2] rounded-xl px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500"
-                                                >
-                                                    <option value="" disabled>-- Choose Enrolled Course --</option>
-                                                    {(subjects || []).map(s => (
-                                                        <option key={s.id} value={s.id}>
-                                                            {s.name} ({s.code || 'Course'})
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            {/* Absent Dates */}
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-[#383838] flex items-center justify-between">
-                                                    <span>Absent Date(s)</span>
-                                                    <span className="text-[11px] font-normal text-[#727272] font-sans">
-                                                        {selectedNcDates.length} selected
-                                                    </span>
-                                                </label>
-
-                                                {/* Absent records from detailedAttendance if available */}
-                                                {ncModalSubject?.detailedAttendance && ncModalSubject.detailedAttendance.filter(r => r.status === 'Absent').length > 0 && (
-                                                    <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto p-1 border border-[#E2E2E2] rounded-lg bg-slate-50/50">
-                                                        {ncModalSubject.detailedAttendance.filter(r => r.status === 'Absent').map((rec, idx) => {
-                                                            const isSel = selectedNcDates.includes(rec.date);
-                                                            return (
-                                                                <button
-                                                                    key={idx}
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setSelectedNcDates(prev =>
-                                                                            prev.includes(rec.date) ? prev.filter(d => d !== rec.date) : [...prev, rec.date]
-                                                                        );
-                                                                    }}
-                                                                    className={`p-1.5 rounded-lg border text-[11px] font-sans text-left transition cursor-pointer ${isSel ? 'bg-[#DEEDFC] border-blue-400 text-blue-900 font-bold' : 'bg-white border-[#E2E2E2] text-[#383838] hover:border-slate-300'
-                                                                        }`}
-                                                                >
-                                                                    {rec.date}
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                )}
-
-                                                {/* Manual date input to add custom dates */}
+                                        {reviewingReq.proofFileName && (
+                                            <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#D9ECFF] bg-[#DEEDFC]/60">
                                                 <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="date"
-                                                        id="manual-nc-date"
-                                                        onChange={(e) => {
-                                                            if (e.target.value && !selectedNcDates.includes(e.target.value)) {
-                                                                setSelectedNcDates(prev => [...prev, e.target.value]);
-                                                                e.target.value = '';
-                                                            }
-                                                        }}
-                                                        className="text-xs bg-white border border-[#E2E2E2] rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500"
-                                                    />
-                                                    <span className="text-[11px] text-[#727272]">Pick date to add to list</span>
+                                                    <FileText className="w-4 h-4 text-[#0073E6]" />
+                                                    <span className="font-semibold text-[#383838] truncate max-w-[200px]">{reviewingReq.proofFileName}</span>
                                                 </div>
-
-                                                {selectedNcDates.length > 0 && (
-                                                    <div className="flex flex-wrap gap-1.5 pt-1">
-                                                        {selectedNcDates.map(d => (
-                                                            <span key={d} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#DEEDFC] text-[#174073] border border-[#D9ECFF] text-[11px] font-sans font-semibold">
-                                                                {d}
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setSelectedNcDates(prev => prev.filter(x => x !== d))}
-                                                                    className="hover:text-rose-600 cursor-pointer"
-                                                                >
-                                                                    ×
-                                                                </button>
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Reason dropdown */}
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-[#383838]">Reason for Absence</label>
-                                                <select
-                                                    value={ncReason}
-                                                    onChange={(e) => setNcReason(e.target.value)}
-                                                    className="w-full text-xs bg-white border border-[#E2E2E2] rounded-xl px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500"
-                                                >
-                                                    {NC_REASONS.map(r => (
-                                                        <option key={r} value={r}>{r}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            {/* Explanation textarea */}
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-[#383838]">Detailed Explanation (Optional)</label>
-                                                <textarea
-                                                    value={ncDescription}
-                                                    onChange={(e) => setNcDescription(e.target.value)}
-                                                    placeholder="Specify medical hospital, competition event details, etc."
-                                                    rows={2}
-                                                    className="w-full text-xs bg-white border border-[#E2E2E2] rounded-xl p-2.5 outline-none focus:ring-1 focus:ring-blue-500"
-                                                />
-                                            </div>
-
-                                            {/* Supporting Document Proof */}
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-[#383838] flex items-center justify-between">
-                                                    <span>Supporting Proof Document</span>
-                                                    <span className="text-[10px] text-[#727272] font-normal">PDF, JPG, PNG (Max 15MB)</span>
-                                                </label>
-                                                <input
-                                                    type="file"
-                                                    accept=".pdf,image/png,image/jpeg,image/jpg"
-                                                    onChange={(e) => {
-                                                        if (e.target.files && e.target.files[0]) {
-                                                            setNcProofFile(e.target.files[0]);
-                                                        }
-                                                    }}
-                                                    className="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#DEEDFC] file:text-[#174073] hover:file:bg-blue-100 cursor-pointer border border-[#E2E2E2] rounded-xl p-1.5 bg-slate-50/50"
-                                                />
-                                            </div>
-
-                                            <div className="pt-2 flex justify-end gap-2 border-t border-[#E2E2E2]">
                                                 <button
                                                     type="button"
-                                                    onClick={() => setNcModalTab('requests')}
-                                                    className="px-4 py-2 rounded-xl text-xs font-semibold text-[#383838] hover:bg-slate-100 transition cursor-pointer"
+                                                    onClick={() => {
+                                                        setDocPreviewUrl(getNcProofUrl(reviewingReq));
+                                                        setDocPreviewName(reviewingReq.proofFileName);
+                                                    }}
+                                                    className="px-2.5 py-1 rounded-lg bg-[#0073E6] hover:bg-[#174073] text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs cursor-pointer"
                                                 >
-                                                    Cancel
+                                                    <Eye className="w-3.5 h-3.5" />
+                                                    <span>Preview Document</span>
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-1.5">
+                                            <label className="font-bold text-[#383838]">Review Decision</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setReviewDecision('APPROVED')}
+                                                    className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${reviewDecision === 'APPROVED'
+                                                        ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/30'
+                                                        : 'bg-white border border-[#E2E2E2] text-[#383838] hover:bg-slate-50'
+                                                        }`}
+                                                >
+                                                    <CheckCircle2 className="w-4 h-4" /> Approve Leave
                                                 </button>
                                                 <button
-                                                    type="submit"
-                                                    disabled={isSubmittingNc}
-                                                    className="px-5 py-2 rounded-xl bg-[#0073E6] hover:bg-[#174073] text-white text-xs font-bold shadow-xs cursor-pointer transition disabled:opacity-50"
+                                                    type="button"
+                                                    onClick={() => setReviewDecision('REJECTED')}
+                                                    className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${reviewDecision === 'REJECTED'
+                                                        ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-600/30'
+                                                        : 'bg-white border border-[#E2E2E2] text-[#383838] hover:bg-slate-50'
+                                                        }`}
                                                 >
-                                                    {isSubmittingNc ? 'Submitting...' : 'Submit Request'}
+                                                    <XCircle className="w-4 h-4" /> Reject Request
                                                 </button>
                                             </div>
-                                        </form>
-                                    )}
-                                </div>
-                            </>
-                        ) : (
-                            /* Teacher View */
-                            <div className="p-5 overflow-y-auto flex-1 space-y-4">
-                                <div className="flex items-center justify-between gap-2 flex-wrap">
-                                    <div className="flex items-center gap-1">
-                                        {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((st) => (
-                                            <button
-                                                key={st}
-                                                type="button"
-                                                onClick={() => setTeacherNcFilterStatus(st)}
-                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${teacherNcFilterStatus === st
-                                                    ? 'bg-[#0073E6] text-white shadow-xs'
-                                                    : 'bg-slate-100 text-[#383838] hover:bg-slate-200/70'
-                                                    }`}
-                                            >
-                                                {st === 'ALL'
-                                                    ? `All (${allFacultyNc.length})`
-                                                    : st === 'PENDING'
-                                                        ? `Pending (${allFacultyNc.filter(r => r.status === 'PENDING').length})`
-                                                        : st === 'APPROVED'
-                                                            ? `Approved (${allFacultyNc.filter(r => r.status === 'APPROVED').length})`
-                                                            : `Rejected (${allFacultyNc.filter(r => r.status === 'REJECTED').length})`}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={fetchAllFacultyNc}
-                                        disabled={allFacultyNcLoading}
-                                        className="p-1.5 text-[#727272] hover:text-[#383838] rounded-lg hover:bg-slate-100 transition cursor-pointer"
-                                        title="Refresh requests"
-                                    >
-                                        <RefreshCw className={`w-3.5 h-3.5 ${allFacultyNcLoading ? 'animate-spin text-[#0073E6]' : ''}`} />
-                                    </button>
-                                </div>
+                                        </div>
 
-                                {allFacultyNcLoading ? (
-                                    <div className="py-12 text-center text-xs text-[#727272] flex flex-col items-center gap-2">
-                                        <RefreshCw className="w-5 h-5 animate-spin text-[#0073E6]" />
-                                        <span>Loading student leave requests...</span>
-                                    </div>
-                                ) : (
-                                    (() => {
-                                        const list = allFacultyNc.filter(r => teacherNcFilterStatus === 'ALL' || r.status === teacherNcFilterStatus);
-                                        if (list.length === 0) {
-                                            return (
-                                                <div className="py-12 text-center bg-slate-50/50 rounded-xl border border-dashed border-[#E2E2E2] p-6">
-                                                    <Shield01Icon size={40} className="text-[#E2E2E2] mx-auto mb-2" />
-                                                    <h4 className="text-xs font-bold text-[#383838]">No Leave Requests Found</h4>
-                                                    <p className="text-[11px] text-[#727272]">No student submissions match this filter.</p>
-                                                </div>
-                                            );
-                                        }
-                                        return (
-                                            <div className="space-y-2.5">
-                                                {list.map(req => (
-                                                    <div key={req.id} className="p-3.5 rounded-xl border border-[#E2E2E2] bg-white text-xs space-y-2 shadow-2xs hover:border-[#D9ECFF] transition">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                <span className="font-bold text-[#383838]">{req.studentName}</span>
-                                                                <span className="font-sans text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-[#383838] font-semibold border border-[#E2E2E2]">
-                                                                    {req.studentPrn}
-                                                                </span>
-                                                                {req.missedSubjects && req.missedSubjects.length > 0 && (
-                                                                    <span className="px-2 py-0.2 rounded-full bg-[#DEEDFC] text-[#174073] text-[10px] font-semibold">
-                                                                        {req.missedSubjects[0].subjectName}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                                req.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                                                                    'bg-amber-50 text-amber-700 border-amber-200'
-                                                                }`}>
-                                                                {req.status}
-                                                            </span>
-                                                        </div>
-
-                                                        <div className="text-[11px] text-[#383838] space-y-0.5">
-                                                            <div>Absent: <strong className="font-sans text-[#383838]">{(req.absentDates || []).join(', ')}</strong></div>
-                                                            <div>Reason: <strong className="text-[#383838]">{req.reason}</strong>{req.description ? ` - "${req.description}"` : ''}</div>
-                                                        </div>
-
-                                                        <div className="flex items-center justify-between pt-1 border-t border-[#E2E2E2]">
-                                                            {req.proofFileName ? (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setDocPreviewUrl(getNcProofUrl(req));
-                                                                        setDocPreviewName(req.proofFileName);
-                                                                    }}
-                                                                    className="text-[#0073E6] hover:underline font-semibold flex items-center gap-1 text-[11px] cursor-pointer"
-                                                                >
-                                                                    <Eye className="w-3.5 h-3.5" />
-                                                                    <span>View Document</span>
-                                                                </button>
-                                                            ) : (
-                                                                <span className="text-[#727272] italic text-[11px]">No file attached</span>
-                                                            )}
-
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setReviewingReq(req);
-                                                                    setReviewDecision(req.status === 'REJECTED' ? 'REJECTED' : 'APPROVED');
-                                                                    setReviewComment(req.reviewComment || '');
-                                                                }}
-                                                                className="px-3 py-1 rounded-lg bg-[#0073E6] hover:bg-[#174073] text-white font-bold text-[11px] cursor-pointer shadow-2xs"
-                                                            >
-                                                                Review
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <label className="font-bold text-[#383838]">Faculty Remarks / Justification</label>
+                                                <span className="text-[10px] text-[#727272]">Optional notes</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-1.5 pb-1">
+                                                {[
+                                                    'Verified with medical proof',
+                                                    'Approved for university event',
+                                                    'Granted as per department guideline',
+                                                    'Proof document is unclear / invalid'
+                                                ].map((preset, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => setReviewComment(preset)}
+                                                        className="text-[10px] font-medium bg-slate-100 hover:bg-slate-200 text-[#383838] px-2 py-0.5 rounded-md border border-[#E2E2E2] transition cursor-pointer"
+                                                    >
+                                                        {preset}
+                                                    </button>
                                                 ))}
                                             </div>
-                                        );
-                                    })()
-                                )}
+                                            <textarea
+                                                value={reviewComment}
+                                                onChange={(e) => setReviewComment(e.target.value)}
+                                                placeholder="Add approval note, conditional remarks, or rejection reason..."
+                                                rows={2}
+                                                className="w-full text-xs bg-slate-50/50 hover:bg-white focus:bg-white border border-[#E2E2E2] rounded-xl p-2.5 outline-none focus:ring-1 focus:ring-blue-500 transition"
+                                            />
+                                        </div>
+
+                                        <div className="flex justify-end gap-2 pt-2 border-t border-[#E2E2E2]">
+                                            <button
+                                                type="button"
+                                                onClick={() => setReviewingReq(null)}
+                                                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#383838] hover:bg-slate-100 transition cursor-pointer"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleTeacherReviewNc}
+                                                disabled={isSubmittingReview}
+                                                className="px-5 py-2 rounded-xl bg-[#0073E6] hover:bg-[#174073] text-white text-xs font-bold shadow-xs cursor-pointer transition disabled:opacity-50"
+                                            >
+                                                {isSubmittingReview ? 'Submitting...' : 'Confirm Decision'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
-                </div>
-            )}
-
-
-            {/* Document Preview Modal */}
-            {docPreviewUrl && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
-                    <div className="bg-white rounded-2xl border border-[#E2E2E2] max-w-2xl w-full shadow-2xl relative overflow-hidden flex flex-col max-h-[85vh]">
-                        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E2E2E2] bg-slate-50">
-                            <div className="flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-[#0073E6]" />
-                                <span className="font-bold text-xs sm:text-sm text-[#383838]">{docPreviewName}</span>
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold font-sans">
-                                    Document Cloud
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <a
-                                    href={docPreviewUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    download={docPreviewName}
-                                    className="p-1 rounded-lg text-[#727272] hover:text-[#383838] hover:bg-slate-200"
-                                    title="Download Document"
-                                >
-                                    <Download className="w-4 h-4" />
-                                </a>
-                                <button
-                                    onClick={() => setDocPreviewUrl(null)}
-                                    className="p-1 rounded-lg text-[#727272] hover:text-[#383838] hover:bg-slate-200"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="flex-1 p-3 overflow-auto flex items-center justify-center bg-slate-100 min-h-[350px]">
-                            {docPreviewUrl.toLowerCase().endsWith('.pdf') ? (
-                                <iframe
-                                    src={docPreviewUrl}
-                                    title="NC Proof Preview"
-                                    className="w-full h-[60vh] rounded-xl border border-[#E2E2E2] bg-white"
-                                />
-                            ) : (
-                                <img
-                                    src={docPreviewUrl}
-                                    alt={docPreviewName}
-                                    className="max-h-[60vh] object-contain rounded-xl border border-[#E2E2E2] shadow-xs"
-                                    onError={(e) => {
-                                        e.target.style.display = 'none';
-                                        if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
-                                    }}
-                                />
-                            )}
-                            <div className="hidden text-center p-6 text-[#727272]">
-                                <AlertCircle className="w-6 h-6 text-amber-500 mx-auto mb-1" />
-                                <p className="text-xs font-semibold">Document cannot be previewed directly in frame.</p>
-                                <a
-                                    href={docPreviewUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="mt-2 inline-block px-3 py-1.5 rounded-lg bg-[#0073E6] text-white text-xs font-semibold"
-                                >
-                                    Download & View File
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Standalone Faculty Review Decision Modal */}
-            {reviewingReq && (
-                <div
-                    className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
-                    onClick={() => setReviewingReq(null)}
-                >
-                    <div
-                        className="bg-white rounded-2xl border border-[#E2E2E2] max-w-lg w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="px-5 py-4 border-b border-[#E2E2E2] bg-slate-50 flex items-center justify-between">
-                            <div>
-                                <h3 className="font-bold text-sm text-[#383838]">Review Student Leave Request</h3>
-                                <p className="text-[11px] text-[#727272]">
-                                    Student: <strong className="text-[#383838]">{reviewingReq.studentName}</strong> (PRN: {reviewingReq.studentPrn})
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setReviewingReq(null)}
-                                className="p-1 rounded-lg text-[#727272] hover:text-[#383838] hover:bg-slate-200 cursor-pointer"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        <div className="p-5 space-y-4 text-xs">
-                            <div className="bg-slate-50 p-3 rounded-xl border border-[#E2E2E2] space-y-1.5">
-                                <div className="flex justify-between">
-                                    <span className="text-[#727272]">Dates of Absence:</span>
-                                    <span className="font-bold font-sans text-[#383838]">{(reviewingReq.absentDates || []).join(', ')}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-[#727272]">Reason Category:</span>
-                                    <span className="font-semibold text-[#383838]">{reviewingReq.reason}</span>
-                                </div>
-                                {reviewingReq.description && (
-                                    <div className="flex justify-between">
-                                        <span className="text-[#727272]">Student Explanation:</span>
-                                        <span className="italic text-[#383838] max-w-[240px] text-right truncate" title={reviewingReq.description}>"{reviewingReq.description}"</span>
-                                    </div>
-                                )}
-                                {reviewingReq.missedSubjects && reviewingReq.missedSubjects.length > 0 && (
-                                    <div className="flex justify-between">
-                                        <span className="text-[#727272]">Affected Course:</span>
-                                        <span className="font-semibold text-[#174073]">{reviewingReq.missedSubjects.map(m => m.subjectName).filter(Boolean).join(', ') || 'General'}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {reviewingReq.proofFileName && (
-                                <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#D9ECFF] bg-[#DEEDFC]/60">
-                                    <div className="flex items-center gap-2">
-                                        <FileText className="w-4 h-4 text-[#0073E6]" />
-                                        <span className="font-semibold text-[#383838] truncate max-w-[200px]">{reviewingReq.proofFileName}</span>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setDocPreviewUrl(getNcProofUrl(reviewingReq));
-                                            setDocPreviewName(reviewingReq.proofFileName);
-                                        }}
-                                        className="px-2.5 py-1 rounded-lg bg-[#0073E6] hover:bg-[#174073] text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs cursor-pointer"
-                                    >
-                                        <Eye className="w-3.5 h-3.5" />
-                                        <span>Preview Document</span>
-                                    </button>
-                                </div>
-                            )}
-
-                            <div className="space-y-1.5">
-                                <label className="font-bold text-[#383838]">Review Decision</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setReviewDecision('APPROVED')}
-                                        className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${reviewDecision === 'APPROVED'
-                                            ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/30'
-                                            : 'bg-white border border-[#E2E2E2] text-[#383838] hover:bg-slate-50'
-                                            }`}
-                                    >
-                                        <CheckCircle2 className="w-4 h-4" /> Approve Leave
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setReviewDecision('REJECTED')}
-                                        className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${reviewDecision === 'REJECTED'
-                                            ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-600/30'
-                                            : 'bg-white border border-[#E2E2E2] text-[#383838] hover:bg-slate-50'
-                                            }`}
-                                    >
-                                        <XCircle className="w-4 h-4" /> Reject Request
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <label className="font-bold text-[#383838]">Faculty Remarks / Justification</label>
-                                    <span className="text-[10px] text-[#727272]">Optional notes</span>
-                                </div>
-                                <div className="flex flex-wrap gap-1.5 pb-1">
-                                    {[
-                                        'Verified with medical proof',
-                                        'Approved for university event',
-                                        'Granted as per department guideline',
-                                        'Proof document is unclear / invalid'
-                                    ].map((preset, idx) => (
-                                        <button
-                                            key={idx}
-                                            type="button"
-                                            onClick={() => setReviewComment(preset)}
-                                            className="text-[10px] font-medium bg-slate-100 hover:bg-slate-200 text-[#383838] px-2 py-0.5 rounded-md border border-[#E2E2E2] transition cursor-pointer"
-                                        >
-                                            {preset}
-                                        </button>
-                                    ))}
-                                </div>
-                                <textarea
-                                    value={reviewComment}
-                                    onChange={(e) => setReviewComment(e.target.value)}
-                                    placeholder="Add approval note, conditional remarks, or rejection reason..."
-                                    rows={2}
-                                    className="w-full text-xs bg-slate-50/50 hover:bg-white focus:bg-white border border-[#E2E2E2] rounded-xl p-2.5 outline-none focus:ring-1 focus:ring-blue-500 transition"
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-2 border-t border-[#E2E2E2]">
-                                <button
-                                    type="button"
-                                    onClick={() => setReviewingReq(null)}
-                                    className="px-4 py-2 rounded-xl text-xs font-semibold text-[#383838] hover:bg-slate-100 transition cursor-pointer"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleTeacherReviewNc}
-                                    disabled={isSubmittingReview}
-                                    className="px-5 py-2 rounded-xl bg-[#0073E6] hover:bg-[#174073] text-white text-xs font-bold shadow-xs cursor-pointer transition disabled:opacity-50"
-                                >
-                                    {isSubmittingReview ? 'Submitting...' : 'Confirm Decision'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+                );
 };
 
-export default AttendanceAnalytics;
+                export default AttendanceAnalytics;
