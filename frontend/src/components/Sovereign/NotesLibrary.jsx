@@ -359,17 +359,36 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
                 if (cachedConfig) {
                     const semConfig = JSON.parse(cachedConfig);
                     if (semConfig && typeof semConfig === 'object') {
-                        candidateList = candidateList.filter(sub => {
-                            const sem = (sub.semester || '').trim().toUpperCase();
-                            const revoked = semConfig[sem];
-                            if (Array.isArray(revoked) && revoked.length > 0) {
-                                const id = sub.id || '';
-                                const name = sub.name || '';
-                                const code = sub.code || '';
-                                return !revoked.includes(id) && !revoked.includes(name) && (!code || !revoked.includes(code));
+                        if (Array.isArray(semConfig.shownSubjectIds)) {
+                            const shownSet = new Set(semConfig.shownSubjectIds);
+                            const hiddenSet = new Set(semConfig.hiddenSubjectIds || []);
+                            candidateList = candidateList.filter(sub => {
+                                const isExplicitlyHidden = hiddenSet.has(sub.id) || hiddenSet.has(sub.name) || (sub.code && hiddenSet.has(sub.code));
+                                if (isExplicitlyHidden) return false;
+                                return shownSet.has(sub.id) || shownSet.has(sub.name) || (sub.code && shownSet.has(sub.code));
+                            });
+                            if (Array.isArray(semConfig.customSubjects)) {
+                                for (const cs of semConfig.customSubjects) {
+                                    if (shownSet.has(cs.id) || shownSet.has(cs.name)) {
+                                        if (!candidateList.some(s => s.id === cs.id || s.name === cs.name)) {
+                                            candidateList.push(cs);
+                                        }
+                                    }
+                                }
                             }
-                            return true;
-                        });
+                        } else {
+                            candidateList = candidateList.filter(sub => {
+                                const sem = (sub.semester || '').trim().toUpperCase();
+                                const revoked = semConfig[sem];
+                                if (Array.isArray(revoked) && revoked.length > 0) {
+                                    const id = sub.id || '';
+                                    const name = sub.name || '';
+                                    const code = sub.code || '';
+                                    return !revoked.includes(id) && !revoked.includes(name) && (!code || !revoked.includes(code));
+                                }
+                                return true;
+                            });
+                        }
                     }
                 }
             } catch {}

@@ -170,9 +170,9 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                     section: 'Administration'
                 },
                 {
-                    name: 'Semester Visibility',
+                    name: 'Subject Visibility',
                     icon: Layers01Icon,
-                    path: '/settings?tab=semester-subjects'
+                    path: '/settings?tab=subject-visibility'
                 },
                 {
                     name: 'API Keys & Settings',
@@ -251,6 +251,9 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                             const isSelected = (() => {
                                 if (item.path.includes('?')) {
                                     const [base, query] = item.path.split('?');
+                                    if (query === 'tab=subject-visibility') {
+                                        return location.pathname === base && (location.search.includes('tab=subject-visibility') || location.search.includes('tab=semester-subjects'));
+                                    }
                                     return location.pathname === base && location.search.includes(query);
                                 }
                                 if (item.path === '/settings') {

@@ -497,34 +497,71 @@ const SovereignLayout = () => {
                 enrolledSubjects = catalogSubs;
             }
 
-            // Filter out subjects revoked by admin for each semester (for non-admin users)
-            if (!isAdmin) {
-                let semConfig = null;
+            // Filter subjects according to Admin Subject Visibility and inject custom courses
+            let semConfig = null;
+            try {
+                const cachedConfig = localStorage.getItem('eduvault_semester_subjects_config');
+                if (cachedConfig) semConfig = JSON.parse(cachedConfig);
+            } catch {}
+            if (!semConfig) {
                 try {
-                    const cachedConfig = localStorage.getItem('eduvault_semester_subjects_config');
-                    if (cachedConfig) semConfig = JSON.parse(cachedConfig);
+                    const cfgRes = await axios.get(`${API_BASE}/admin/semester-subjects`);
+                    if (cfgRes.data) {
+                        semConfig = cfgRes.data;
+                        localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(cfgRes.data));
+                    }
                 } catch {}
-                if (!semConfig) {
-                    try {
-                        const cfgRes = await axios.get(`${API_BASE}/admin/semester-subjects`);
-                        if (cfgRes.data) {
-                            semConfig = cfgRes.data;
-                            localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(cfgRes.data));
+            }
+            if (semConfig && typeof semConfig === 'object') {
+                if (Array.isArray(semConfig.customSubjects) && semConfig.customSubjects.length > 0) {
+                    for (const cs of semConfig.customSubjects) {
+                        if (!catalogSubs.some(s => s.id === cs.id || s.name === cs.name)) {
+                            catalogSubs.push({
+                                ...cs,
+                                noteCount: 0,
+                                isCustom: true
+                            });
                         }
-                    } catch {}
+                    }
+                    setCatalogSubjects([...catalogSubs]);
                 }
-                if (semConfig && typeof semConfig === 'object') {
-                    enrolledSubjects = enrolledSubjects.filter(sub => {
-                        const sem = (sub.semester || '').trim().toUpperCase();
-                        const revoked = semConfig[sem];
-                        if (Array.isArray(revoked) && revoked.length > 0) {
-                            const id = sub.id || '';
-                            const name = sub.name || '';
-                            const code = sub.code || '';
-                            return !revoked.includes(id) && !revoked.includes(name) && (!code || !revoked.includes(code));
+
+                if (!isAdmin) {
+                    if (Array.isArray(semConfig.shownSubjectIds)) {
+                        const shownSet = new Set(semConfig.shownSubjectIds);
+                        const hiddenSet = new Set(semConfig.hiddenSubjectIds || []);
+                        enrolledSubjects = enrolledSubjects.filter(sub => {
+                            const isExplicitlyHidden = hiddenSet.has(sub.id) || hiddenSet.has(sub.name) || (sub.code && hiddenSet.has(sub.code));
+                            if (isExplicitlyHidden) return false;
+                            return shownSet.has(sub.id) || shownSet.has(sub.name) || (sub.code && shownSet.has(sub.code));
+                        });
+
+                        if (Array.isArray(semConfig.customSubjects)) {
+                            for (const cs of semConfig.customSubjects) {
+                                if (shownSet.has(cs.id) || shownSet.has(cs.name)) {
+                                    if (!enrolledSubjects.some(s => s.id === cs.id || s.name === cs.name)) {
+                                        enrolledSubjects.push({
+                                            ...cs,
+                                            noteCount: 0,
+                                            isCustom: true
+                                        });
+                                    }
+                                }
+                            }
                         }
-                        return true;
-                    });
+                    } else {
+                        enrolledSubjects = enrolledSubjects.filter(sub => {
+                            const sem = (sub.semester || '').trim().toUpperCase();
+                            const revoked = semConfig[sem];
+                            if (Array.isArray(revoked) && revoked.length > 0) {
+                                const id = sub.id || '';
+                                const name = sub.name || '';
+                                const code = sub.code || '';
+                                return !revoked.includes(id) && !revoked.includes(name) && (!code || !revoked.includes(code));
+                            }
+                            return true;
+                        });
+                    }
                 }
             }
 

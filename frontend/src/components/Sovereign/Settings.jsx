@@ -21,7 +21,9 @@ import {
     SparklesIcon,
     Shield01Icon,
     Calendar03Icon,
-    Layers01Icon
+    Layers01Icon,
+    Add01Icon,
+    Delete02Icon
 } from 'hugeicons-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -59,21 +61,22 @@ export default function Settings() {
     // Active Section Tab (synced with URL for sidebar navigation)
     const queryTab = searchParams.get('tab');
     const [activeTab, setActiveTab] = useState(
-        queryTab && ['teacher-subjects', 'semester-subjects', 'api-keys'].includes(queryTab)
-            ? queryTab
+        queryTab && ['teacher-subjects', 'semester-subjects', 'subject-visibility', 'api-keys'].includes(queryTab)
+            ? (queryTab === 'semester-subjects' ? 'subject-visibility' : queryTab)
             : 'teacher-subjects'
     );
 
     useEffect(() => {
         const t = searchParams.get('tab');
-        if (t && ['teacher-subjects', 'semester-subjects', 'api-keys'].includes(t)) {
-            setActiveTab(t);
+        if (t && ['teacher-subjects', 'semester-subjects', 'subject-visibility', 'api-keys'].includes(t)) {
+            setActiveTab(t === 'semester-subjects' ? 'subject-visibility' : t);
         }
     }, [searchParams]);
 
     const handleTabChange = (tabKey) => {
-        setActiveTab(tabKey);
-        setSearchParams({ tab: tabKey });
+        const normalized = tabKey === 'semester-subjects' ? 'subject-visibility' : tabKey;
+        setActiveTab(normalized);
+        setSearchParams({ tab: normalized });
     };
 
     // --- 1. Teacher Assignment State ---
@@ -86,10 +89,19 @@ export default function Settings() {
     const [teacherYearFilter, setTeacherYearFilter] = useState('ALL');
     const [teacherSemFilter, setTeacherSemFilter] = useState('ALL');
 
-    // --- 2. Semester Subject Visibility State ---
-    const [selectedSemester, setSelectedSemester] = useState('SEM 01');
-    const [semesterSubjectsConfig, setSemesterSubjectsConfig] = useState({}); // { [sem]: [revokedSubjectIds] }
-    const [savingSemesterConfig, setSavingSemesterConfig] = useState(false);
+    // --- 2. Subject Visibility & Custom Courses State ---
+    const [visibilityConfig, setVisibilityConfig] = useState({
+        shownSubjectIds: null,
+        hiddenSubjectIds: [],
+        customSubjects: []
+    });
+    const [savingVisibilityConfig, setSavingVisibilityConfig] = useState(false);
+    const [visibilitySearch, setVisibilitySearch] = useState('');
+    const [visibilityFilter, setVisibilityFilter] = useState('all'); // 'all' | 'shown' | 'hidden'
+    const [showAddCustomModal, setShowAddCustomModal] = useState(false);
+    const [newCustomName, setNewCustomName] = useState('');
+    const [newCustomCode, setNewCustomCode] = useState('');
+    const [newCustomDept, setNewCustomDept] = useState('AI & Data Science');
 
     // --- 3. Gemini API Key State ---
     const [geminiKey, setGeminiKey] = useState('');
@@ -205,137 +217,179 @@ export default function Settings() {
         try {
             const res = await axios.get(`${API_BASE}/admin/semester-subjects`);
             if (res.data && typeof res.data === 'object') {
-                setSemesterSubjectsConfig(res.data);
-                localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(res.data));
+                const data = res.data;
+                const shown = Array.isArray(data.shownSubjectIds) ? data.shownSubjectIds : null;
+                const hidden = Array.isArray(data.hiddenSubjectIds) ? data.hiddenSubjectIds : [];
+                const custom = Array.isArray(data.customSubjects) ? data.customSubjects : [];
+                setVisibilityConfig({
+                    shownSubjectIds: shown,
+                    hiddenSubjectIds: hidden,
+                    customSubjects: custom
+                });
+                localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(data));
                 return;
             }
         } catch {
-            // Check localStorage
             const localSaved = localStorage.getItem('eduvault_semester_subjects_config');
             if (localSaved) {
                 try {
-                    setSemesterSubjectsConfig(JSON.parse(localSaved));
+                    const data = JSON.parse(localSaved);
+                    setVisibilityConfig({
+                        shownSubjectIds: Array.isArray(data.shownSubjectIds) ? data.shownSubjectIds : null,
+                        hiddenSubjectIds: Array.isArray(data.hiddenSubjectIds) ? data.hiddenSubjectIds : [],
+                        customSubjects: Array.isArray(data.customSubjects) ? data.customSubjects : []
+                    });
                 } catch { }
             }
         }
     };
 
-    // --- Teacher Subject Toggle Handlers ---
-    const handleToggleTeacherSubject = (subNameOrId) => {
-        setAssignedTeacherSubjects(prev => {
-            if (prev.includes(subNameOrId)) {
-                return prev.filter(item => item !== subNameOrId);
-            } else {
-                return [...prev, subNameOrId];
-            }
-        });
-    };
-
-    const handleSaveTeacherSubjects = async () => {
-        if (!selectedTeacherId) return;
-        setSavingTeacherSubjects(true);
-
-        const folderMappings = {};
-        allCatalogSubjects.forEach(sub => {
-            if (assignedTeacherSubjects.includes(sub.name) || assignedTeacherSubjects.includes(sub.id)) {
-                folderMappings[sub.name] = {
-                    id: sub.id,
-                    code: sub.code || '',
-                    year: sub.year || getYearFromSem(sub.semester),
-                    semester: sub.semester || '',
-                    bucketFolder: sub.bucketFolder || sub.name
-                };
-            }
-        });
-
-        try {
-            await axios.put(`${API_BASE}/teacher/mappings`, {
-                year: teacherYearFilter,
-                semester: teacherSemFilter,
-                selectedSubjects: assignedTeacherSubjects,
-                folderMappings
-            }, {
-                params: { prn: selectedTeacherId },
-                headers: { 'X-Student-PRN': selectedTeacherId }
-            });
-            toast.success(`Assigned ${assignedTeacherSubjects.length} subjects to ${selectedTeacherId}`);
-            if (refreshData) refreshData();
-        } catch (err) {
-            console.error('Failed to save teacher mappings:', err);
-            toast.error('Failed to save teacher subjects: ' + (err.response?.data?.error || err.message));
-        } finally {
-            setSavingTeacherSubjects(false);
+    // Helper to determine if a subject is visible/shown to students
+    const isSubjectShown = (sub) => {
+        const subKey = sub.id || sub.name;
+        if (Array.isArray(visibilityConfig.shownSubjectIds)) {
+            const shown = visibilityConfig.shownSubjectIds.includes(subKey) ||
+                          visibilityConfig.shownSubjectIds.includes(sub.name) ||
+                          (sub.code && visibilityConfig.shownSubjectIds.includes(sub.code));
+            const hidden = Array.isArray(visibilityConfig.hiddenSubjectIds) &&
+                           (visibilityConfig.hiddenSubjectIds.includes(subKey) || visibilityConfig.hiddenSubjectIds.includes(sub.name));
+            return shown && !hidden;
         }
+        if (Array.isArray(visibilityConfig.hiddenSubjectIds)) {
+            return !visibilityConfig.hiddenSubjectIds.includes(subKey) &&
+                   !visibilityConfig.hiddenSubjectIds.includes(sub.name);
+        }
+        return true;
     };
 
-    const handleAssignAllFiltered = () => {
-        const ids = filteredTeacherSubjects.map(s => s.name || s.id);
-        setAssignedTeacherSubjects(prev => Array.from(new Set([...prev, ...ids])));
-        toast.info(`Assigned all ${ids.length} filtered subjects`);
-    };
+    const handleToggleSubjectVisibility = (sub) => {
+        const subKey = sub.id || sub.name;
+        const currentlyShown = isSubjectShown(sub);
 
-    const handleRevokeAllFiltered = () => {
-        const ids = new Set(filteredTeacherSubjects.map(s => s.name || s.id));
-        setAssignedTeacherSubjects(prev => prev.filter(k => !ids.has(k)));
-        toast.info(`Cleared filtered subjects for selected teacher`);
-    };
+        setVisibilityConfig(prev => {
+            const baseShown = Array.isArray(prev.shownSubjectIds)
+                ? [...prev.shownSubjectIds]
+                : allAvailableSubjects.filter(s => isSubjectShown(s)).map(s => s.id || s.name);
 
-    // --- Semester Subject Visibility Handlers ---
-    const handleShowAllInSemester = (sem) => {
-        setSemesterSubjectsConfig(prev => ({
-            ...prev,
-            [sem]: []
-        }));
-        toast.info(`Marked all courses visible in ${sem}`);
-    };
+            let nextShown;
+            let nextHidden = Array.isArray(prev.hiddenSubjectIds) ? [...prev.hiddenSubjectIds] : [];
 
-    const handleHideAllInSemester = (sem) => {
-        const allIds = subjectsForSelectedSemester.map(s => s.id || s.name);
-        setSemesterSubjectsConfig(prev => ({
-            ...prev,
-            [sem]: allIds
-        }));
-        toast.info(`Revoked visibility for courses in ${sem}`);
-    };
-
-    const isSubjectVisibleInSemester = (sem, subId) => {
-        const revokedList = semesterSubjectsConfig[sem] || [];
-        return !revokedList.includes(subId);
-    };
-
-    const handleToggleSemesterSubject = (sem, subId) => {
-        setSemesterSubjectsConfig(prev => {
-            const currentRevoked = prev[sem] || [];
-            let updatedRevoked;
-            if (currentRevoked.includes(subId)) {
-                // Was revoked -> make visible again
-                updatedRevoked = currentRevoked.filter(id => id !== subId);
+            if (currentlyShown) {
+                // Set to Hidden
+                nextShown = baseShown.filter(k => k !== subKey && k !== sub.name && k !== sub.code);
+                if (!nextHidden.includes(subKey)) nextHidden.push(subKey);
             } else {
-                // Was visible -> revoke/hide it
-                updatedRevoked = [...currentRevoked, subId];
+                // Set to Shown
+                nextShown = Array.from(new Set([...baseShown, subKey, sub.name]));
+                nextHidden = nextHidden.filter(k => k !== subKey && k !== sub.name && k !== sub.code);
             }
+
             return {
                 ...prev,
-                [sem]: updatedRevoked
+                shownSubjectIds: nextShown,
+                hiddenSubjectIds: nextHidden
             };
         });
     };
 
-    const handleSaveSemesterConfig = async () => {
-        setSavingSemesterConfig(true);
+    const handleShowAllFiltered = () => {
+        const keysToShow = filteredVisibilitySubjects.map(s => s.id || s.name);
+        setVisibilityConfig(prev => {
+            const baseShown = Array.isArray(prev.shownSubjectIds)
+                ? [...prev.shownSubjectIds]
+                : allAvailableSubjects.filter(s => isSubjectShown(s)).map(s => s.id || s.name);
+            const nextShown = Array.from(new Set([...baseShown, ...keysToShow]));
+            const nextHidden = (prev.hiddenSubjectIds || []).filter(k => !keysToShow.includes(k));
+            return {
+                ...prev,
+                shownSubjectIds: nextShown,
+                hiddenSubjectIds: nextHidden
+            };
+        });
+        toast.success(`Marked ${keysToShow.length} subjects as Shown to students`);
+    };
+
+    const handleHideAllFiltered = () => {
+        const keysToHide = new Set(filteredVisibilitySubjects.map(s => s.id || s.name));
+        setVisibilityConfig(prev => {
+            const baseShown = Array.isArray(prev.shownSubjectIds)
+                ? [...prev.shownSubjectIds]
+                : allAvailableSubjects.filter(s => isSubjectShown(s)).map(s => s.id || s.name);
+            const nextShown = baseShown.filter(k => !keysToHide.has(k));
+            const nextHidden = Array.from(new Set([...(prev.hiddenSubjectIds || []), ...keysToHide]));
+            return {
+                ...prev,
+                shownSubjectIds: nextShown,
+                hiddenSubjectIds: nextHidden
+            };
+        });
+        toast.info(`Marked ${keysToHide.size} subjects as Hidden`);
+    };
+
+    const handleAddCustomSubject = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        const trimmedName = newCustomName.trim();
+        if (!trimmedName) {
+            toast.error('Subject name is required');
+            return;
+        }
+
+        const newId = `custom_${Date.now()}_${trimmedName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+        const newSub = {
+            id: newId,
+            name: trimmedName,
+            code: newCustomCode.trim() || 'CUSTOM',
+            department: newCustomDept.trim() || 'AI & Data Science',
+            isCustom: true
+        };
+
+        setVisibilityConfig(prev => {
+            const baseShown = Array.isArray(prev.shownSubjectIds)
+                ? [...prev.shownSubjectIds]
+                : allAvailableSubjects.filter(s => isSubjectShown(s)).map(s => s.id || s.name);
+            return {
+                ...prev,
+                customSubjects: [...(prev.customSubjects || []), newSub],
+                shownSubjectIds: Array.from(new Set([...baseShown, newId, trimmedName]))
+            };
+        });
+
+        setNewCustomName('');
+        setNewCustomCode('');
+        setShowAddCustomModal(false);
+        toast.success(`Added "${trimmedName}" as active course`);
+    };
+
+    const handleDeleteCustomSubject = (subId, subName) => {
+        setVisibilityConfig(prev => ({
+            ...prev,
+            customSubjects: (prev.customSubjects || []).filter(s => s.id !== subId),
+            shownSubjectIds: (prev.shownSubjectIds || []).filter(k => k !== subId && k !== subName),
+            hiddenSubjectIds: (prev.hiddenSubjectIds || []).filter(k => k !== subId && k !== subName)
+        }));
+        toast.info(`Removed custom subject "${subName}"`);
+    };
+
+    const handleSaveVisibilityConfig = async () => {
+        setSavingVisibilityConfig(true);
+        const payload = {
+            shownSubjectIds: visibilityConfig.shownSubjectIds || allAvailableSubjects.filter(s => isSubjectShown(s)).map(s => s.id || s.name),
+            hiddenSubjectIds: visibilityConfig.hiddenSubjectIds || [],
+            customSubjects: visibilityConfig.customSubjects || []
+        };
         try {
-            await axios.put(`${API_BASE}/admin/semester-subjects`, semesterSubjectsConfig, {
+            await axios.put(`${API_BASE}/admin/semester-subjects`, payload, {
                 headers: { 'X-User-Role': 'admin' }
             });
-            localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(semesterSubjectsConfig));
-            toast.success('Semester subject visibility updated successfully!');
+            localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(payload));
+            toast.success('Subject visibility updated successfully!');
             if (refreshData) refreshData();
         } catch (err) {
             console.warn('Could not save to backend, saved locally:', err);
-            localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(semesterSubjectsConfig));
-            toast.success('Semester subject visibility saved locally!');
+            localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(payload));
+            toast.success('Subject visibility saved locally!');
         } finally {
-            setSavingSemesterConfig(false);
+            setSavingVisibilityConfig(false);
         }
     };
 
@@ -433,13 +487,34 @@ export default function Settings() {
         });
     }, [allCatalogSubjects, teacherYearFilter, teacherSemFilter, teacherSubjectSearch]);
 
-    // Filter subjects for semester visibility tab
-    const subjectsForSelectedSemester = useMemo(() => {
-        return allCatalogSubjects.filter(sub => {
-            if (!sub.semester) return false;
-            return sub.semester.trim().toUpperCase() === selectedSemester.trim().toUpperCase();
+    // All available subjects including any custom subjects added by admin
+    const allAvailableSubjects = useMemo(() => {
+        const list = [...allCatalogSubjects];
+        const custom = visibilityConfig.customSubjects || [];
+        for (const cs of custom) {
+            if (!list.some(s => s.id === cs.id || s.name === cs.name)) {
+                list.push({ ...cs, isCustom: true });
+            }
+        }
+        return list;
+    }, [allCatalogSubjects, visibilityConfig.customSubjects]);
+
+    // Filtered subjects for Subject Visibility tab
+    const filteredVisibilitySubjects = useMemo(() => {
+        return allAvailableSubjects.filter(sub => {
+            if (visibilitySearch.trim()) {
+                const q = visibilitySearch.toLowerCase();
+                const nameMatch = sub.name?.toLowerCase().includes(q);
+                const codeMatch = sub.code?.toLowerCase().includes(q);
+                const deptMatch = sub.department?.toLowerCase().includes(q);
+                if (!nameMatch && !codeMatch && !deptMatch) return false;
+            }
+            const shown = isSubjectShown(sub);
+            if (visibilityFilter === 'shown' && !shown) return false;
+            if (visibilityFilter === 'hidden' && shown) return false;
+            return true;
         });
-    }, [allCatalogSubjects, selectedSemester]);
+    }, [allAvailableSubjects, visibilitySearch, visibilityFilter, visibilityConfig]);
 
     // Access guard: If non-admin user navigates to /settings
     if (!isAdmin) {
@@ -509,16 +584,16 @@ export default function Settings() {
 
                     <button
                         type="button"
-                        onClick={() => handleTabChange('semester-subjects')}
+                        onClick={() => handleTabChange('subject-visibility')}
                         className={cn(
                             "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shrink-0",
-                            activeTab === 'semester-subjects'
+                            (activeTab === 'subject-visibility' || activeTab === 'semester-subjects')
                                 ? "bg-[#0073E6] text-white shadow-xs"
                                 : "bg-white text-[#727272] hover:text-[#383838] hover:bg-slate-100 border border-[#E2E2E2]"
                         )}
                     >
                         <Layers01Icon className="w-4 h-4" />
-                        <span>Semester Subject Visibility</span>
+                        <span>Subject Visibility</span>
                     </button>
 
                     <button
@@ -675,8 +750,8 @@ export default function Settings() {
                     </div>
                 )}
 
-                {/* TAB 2: Semester Subject Visibility */}
-                {activeTab === 'semester-subjects' && (
+                {/* TAB 2: Subject Visibility & Custom Courses */}
+                {(activeTab === 'subject-visibility' || activeTab === 'semester-subjects') && (
                     <div className="bg-white border border-[#E2E2E2] rounded-2xl shadow-xs overflow-hidden">
                         <div className="p-5 sm:p-6 border-b border-[#E2E2E2] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
@@ -684,142 +759,278 @@ export default function Settings() {
                                     <Layers01Icon className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h2 className="text-base font-bold text-[#383838]">Semester Course Visibility</h2>
+                                    <h2 className="text-base font-bold text-[#383838]">Subject Visibility &amp; Course Selection</h2>
                                     <p className="text-xs text-[#727272] mt-0.5">
-                                        Assign or revoke what courses are shown to students in each semester view.
+                                        Choose which subjects are shown to students, or introduce new custom courses for this term.
                                     </p>
                                 </div>
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={handleSaveSemesterConfig}
-                                disabled={savingSemesterConfig}
-                                className="px-4 py-2 rounded-xl bg-[#0073E6] hover:bg-[#4A9AF0] text-white font-semibold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
-                            >
-                                <FloppyDiskIcon className="w-3.5 h-3.5" />
-                                <span>{savingSemesterConfig ? 'Saving...' : 'Save Semester Visibility'}</span>
-                            </button>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddCustomModal(true)}
+                                    className="px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                                >
+                                    <Add01Icon className="w-3.5 h-3.5" />
+                                    <span>Add Custom Course</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleSaveVisibilityConfig}
+                                    disabled={savingVisibilityConfig}
+                                    className="px-4 py-2 rounded-xl bg-[#0073E6] hover:bg-[#4A9AF0] text-white font-semibold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                                >
+                                    <FloppyDiskIcon className="w-3.5 h-3.5" />
+                                    <span>{savingVisibilityConfig ? 'Saving...' : 'Save Visibility'}</span>
+                                </button>
+                            </div>
                         </div>
 
                         <div className="p-5 sm:p-6 space-y-4">
-                            {/* Semester Buttons grouped by Year: FY, SY, TY, LY */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                                {YEAR_GROUPS.map(yg => (
-                                    <div key={yg.year} className="bg-slate-50 border border-[#E2E2E2] rounded-xl p-2.5 space-y-2">
-                                        <div className="flex items-center justify-between text-xs font-bold text-[#383838]">
-                                            <span className="text-xs font-extrabold text-[#0073E6]">{yg.year}</span>
-                                            <span className="text-[10px] text-[#727272] font-medium">{yg.label}</span>
+                            {/* Inline Modal / Form to Add Custom Course */}
+                            {showAddCustomModal && (
+                                <div className="p-4 rounded-xl border-2 border-purple-200 bg-purple-50/50 space-y-3 animate-in fade-in duration-200">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-xs font-bold text-purple-900">
+                                            <Add01Icon className="w-4 h-4 text-purple-600" />
+                                            <span>Add New / Different Course</span>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-1.5">
-                                            {yg.semesters.map(sem => (
-                                                <button
-                                                    key={sem}
-                                                    type="button"
-                                                    onClick={() => setSelectedSemester(sem)}
-                                                    className={cn(
-                                                        "py-1.5 px-2 rounded-lg text-xs font-bold transition cursor-pointer text-center",
-                                                        selectedSemester === sem
-                                                            ? "bg-[#0073E6] text-white shadow-2xs"
-                                                            : "bg-white border border-[#E2E2E2] text-[#727272] hover:bg-slate-100 hover:text-[#383838]"
-                                                    )}
-                                                >
-                                                    {sem}
-                                                </button>
-                                            ))}
-                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAddCustomModal(false)}
+                                            className="text-xs text-[#727272] hover:text-[#383838] cursor-pointer"
+                                        >
+                                            <CancelCircleIcon className="w-4 h-4" />
+                                        </button>
                                     </div>
-                                ))}
+
+                                    <form onSubmit={handleAddCustomSubject} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[11px] font-bold text-[#727272] uppercase tracking-wider">
+                                                Course Name *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={newCustomName}
+                                                onChange={(e) => setNewCustomName(e.target.value)}
+                                                placeholder="e.g. Cloud Computing"
+                                                className="w-full text-xs px-3 py-2 bg-white border border-[#E2E2E2] rounded-lg outline-none focus:ring-1 focus:ring-purple-500 font-medium text-[#383838]"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-[11px] font-bold text-[#727272] uppercase tracking-wider">
+                                                Course Code
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newCustomCode}
+                                                onChange={(e) => setNewCustomCode(e.target.value)}
+                                                placeholder="e.g. 02ADL305"
+                                                className="w-full text-xs px-3 py-2 bg-white border border-[#E2E2E2] rounded-lg outline-none focus:ring-1 focus:ring-purple-500 font-mono text-[#383838]"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-[11px] font-bold text-[#727272] uppercase tracking-wider">
+                                                Department
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newCustomDept}
+                                                onChange={(e) => setNewCustomDept(e.target.value)}
+                                                placeholder="e.g. AI & Data Science"
+                                                className="w-full text-xs px-3 py-2 bg-white border border-[#E2E2E2] rounded-lg outline-none focus:ring-1 focus:ring-purple-500 font-medium text-[#383838]"
+                                            />
+                                        </div>
+
+                                        <div className="sm:col-span-3 flex items-center justify-end gap-2 pt-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAddCustomModal(false)}
+                                                className="px-3 py-1.5 rounded-lg border border-[#E2E2E2] bg-white text-xs font-semibold text-[#727272] hover:bg-slate-50 cursor-pointer"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
+                                            >
+                                                <Add01Icon className="w-3.5 h-3.5" />
+                                                <span>Add &amp; Make Visible</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            )}
+
+                            {/* Search, Filter Pills, and Bulk Actions */}
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <div className="relative flex-1">
+                                    <Search01Icon className="w-3.5 h-3.5 text-[#727272] absolute left-3 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        type="text"
+                                        value={visibilitySearch}
+                                        onChange={(e) => setVisibilitySearch(e.target.value)}
+                                        placeholder="Search courses by name, code, or department..."
+                                        className="w-full text-xs pl-8 pr-3 py-2 bg-white border border-[#E2E2E2] rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => setVisibilityFilter('all')}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5",
+                                            visibilityFilter === 'all'
+                                                ? "bg-[#0073E6] text-white shadow-2xs"
+                                                : "bg-slate-100 text-[#727272] hover:text-[#383838] border border-[#E2E2E2]"
+                                        )}
+                                    >
+                                        <span>All</span>
+                                        <span className="text-[10px] opacity-80">({allAvailableSubjects.length})</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setVisibilityFilter('shown')}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5",
+                                            visibilityFilter === 'shown'
+                                                ? "bg-emerald-600 text-white shadow-2xs"
+                                                : "bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-200"
+                                        )}
+                                    >
+                                        <ViewIcon className="w-3.5 h-3.5" />
+                                        <span>Shown</span>
+                                        <span className="text-[10px] opacity-80">
+                                            ({allAvailableSubjects.filter(s => isSubjectShown(s)).length})
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setVisibilityFilter('hidden')}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5",
+                                            visibilityFilter === 'hidden'
+                                                ? "bg-slate-700 text-white shadow-2xs"
+                                                : "bg-white text-slate-600 hover:bg-slate-100 border border-[#E2E2E2]"
+                                        )}
+                                    >
+                                        <ViewOffIcon className="w-3.5 h-3.5" />
+                                        <span>Hidden</span>
+                                        <span className="text-[10px] opacity-80">
+                                            ({allAvailableSubjects.filter(s => !isSubjectShown(s)).length})
+                                        </span>
+                                    </button>
+                                </div>
                             </div>
 
-                            {/* Semester Course List Header with Quick Actions */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-[#E2E2E2]">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                        Courses in {getYearFromSem(selectedSemester)} • {selectedSemester}
-                                    </span>
-                                    <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                                        {subjectsForSelectedSemester.length} total
-                                    </span>
-                                </div>
+                            {/* Quick Action Buttons */}
+                            <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#E2E2E2]">
+                                <span className="text-xs text-[#727272]">
+                                    Showing <strong className="text-[#383838]">{filteredVisibilitySubjects.length}</strong> matching subjects
+                                </span>
 
                                 <div className="flex items-center gap-2 shrink-0">
                                     <button
                                         type="button"
-                                        onClick={() => handleShowAllInSemester(selectedSemester)}
-                                        className="px-2.5 py-1.5 rounded-lg border border-[#E2E2E2] bg-white hover:bg-slate-50 text-[11px] font-semibold text-emerald-700 transition cursor-pointer flex items-center gap-1.5"
-                                        title="Show all courses in this semester to students"
+                                        onClick={handleShowAllFiltered}
+                                        className="px-2.5 py-1.5 rounded-lg border border-[#E2E2E2] bg-white hover:bg-emerald-50 text-[11px] font-semibold text-emerald-700 transition cursor-pointer flex items-center gap-1.5"
+                                        title="Show all filtered courses to students"
                                     >
-                                        <ViewIcon className="w-3.5 h-3.5" />
-                                        <span>Show All</span>
+                                        <ViewIcon className="w-3.5 h-3.5 text-emerald-600" />
+                                        <span>Show All Filtered</span>
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => handleHideAllInSemester(selectedSemester)}
-                                        className="px-2.5 py-1.5 rounded-lg border border-[#E2E2E2] bg-white hover:bg-slate-50 text-[11px] font-semibold text-rose-600 transition cursor-pointer flex items-center gap-1.5"
-                                        title="Hide/Revoke all courses in this semester"
+                                        onClick={handleHideAllFiltered}
+                                        className="px-2.5 py-1.5 rounded-lg border border-[#E2E2E2] bg-white hover:bg-rose-50 text-[11px] font-semibold text-rose-600 transition cursor-pointer flex items-center gap-1.5"
+                                        title="Hide all filtered courses"
                                     >
-                                        <ViewOffIcon className="w-3.5 h-3.5" />
-                                        <span>Revoke All</span>
+                                        <ViewOffIcon className="w-3.5 h-3.5 text-rose-500" />
+                                        <span>Hide All Filtered</span>
                                     </button>
                                 </div>
                             </div>
 
-                            {subjectsForSelectedSemester.length === 0 ? (
-                                <div className="py-10 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-dashed border-[#E2E2E2]">
-                                    No courses recorded for {selectedSemester}.
+                            {/* Subject Cards Grid */}
+                            {filteredVisibilitySubjects.length === 0 ? (
+                                <div className="py-12 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-dashed border-[#E2E2E2]">
+                                    No courses found matching your criteria.
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                    {subjectsForSelectedSemester.map(sub => {
+                                    {filteredVisibilitySubjects.map(sub => {
                                         const subId = sub.id || sub.name;
-                                        const isVisible = isSubjectVisibleInSemester(selectedSemester, subId);
+                                        const shown = isSubjectShown(sub);
 
                                         return (
                                             <div
                                                 key={subId}
-                                                onClick={() => handleToggleSemesterSubject(selectedSemester, subId)}
                                                 className={cn(
-                                                    "p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 text-xs select-none",
-                                                    isVisible
-                                                        ? "bg-white hover:border-blue-300 border-[#E2E2E2] shadow-2xs"
-                                                        : "bg-slate-50/80 border-slate-200/90 opacity-75"
+                                                    "p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 text-xs select-none",
+                                                    shown
+                                                        ? "bg-white border-[#E2E2E2] shadow-2xs hover:border-blue-300"
+                                                        : "bg-slate-50/70 border-slate-200/90 opacity-70"
                                                 )}
                                             >
-                                                <div className="min-w-0">
-                                                    <div className="font-semibold text-slate-900 truncate text-[13px]">{sub.name}</div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className="font-semibold text-slate-900 truncate text-[13px]">{sub.name}</span>
+                                                        {sub.isCustom && (
+                                                            <span className="px-1.5 py-0.2 rounded-md text-[9px] font-extrabold bg-purple-50 text-purple-700 border border-purple-200">
+                                                                Custom
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
                                                         <span className="font-mono font-medium">{sub.code || 'CODE'}</span>
                                                         <span>•</span>
-                                                        <span>{sub.department || 'B.Tech'}</span>
+                                                        <span className="truncate">{sub.department || 'B.Tech'}</span>
                                                     </div>
                                                 </div>
 
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleToggleSemesterSubject(selectedSemester, subId);
-                                                    }}
-                                                    className={cn(
-                                                        "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition shrink-0 flex items-center gap-1.5 cursor-pointer",
-                                                        isVisible
-                                                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                                                            : "bg-slate-200/80 text-slate-600 border border-slate-300 hover:bg-slate-200"
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleToggleSubjectVisibility(sub)}
+                                                        className={cn(
+                                                            "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition flex items-center gap-1.5 cursor-pointer",
+                                                            shown
+                                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                                                                : "bg-slate-200/80 text-slate-600 border border-slate-300 hover:bg-slate-200"
+                                                        )}
+                                                    >
+                                                        {shown ? (
+                                                            <>
+                                                                <ViewIcon className="w-3.5 h-3.5 text-emerald-600" />
+                                                                <span>Shown</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <ViewOffIcon className="w-3.5 h-3.5 text-slate-500" />
+                                                                <span>Hidden</span>
+                                                            </>
+                                                        )}
+                                                    </button>
+
+                                                    {sub.isCustom && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteCustomSubject(sub.id, sub.name)}
+                                                            className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                                                            title="Delete custom subject"
+                                                        >
+                                                            <Delete02Icon className="w-4 h-4" />
+                                                        </button>
                                                     )}
-                                                >
-                                                    {isVisible ? (
-                                                        <>
-                                                            <ViewIcon className="w-3.5 h-3.5 text-emerald-600" />
-                                                            <span>Visible</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <ViewOffIcon className="w-3.5 h-3.5 text-slate-500" />
-                                                            <span>Hidden</span>
-                                                        </>
-                                                    )}
-                                                </button>
+                                                </div>
                                             </div>
                                         );
                                     })}
