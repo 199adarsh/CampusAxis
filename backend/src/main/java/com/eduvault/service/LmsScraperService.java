@@ -51,14 +51,14 @@ public class LmsScraperService {
     private String auditPassword = "Dkte@123";
 
     // 3 Configurable Accounts for Scraping (credentials to be provided)
-    @Value("${app.lms.scraper.account1.username:SCRAPER_USER_1}")
+    @Value("${app.lms.scraper.account1.username:24UAD022}")
     private String scraperUser1;
-    @Value("${app.lms.scraper.account1.password:SCRAPER_PASS_1}")
+    @Value("${app.lms.scraper.account1.password:Dkte@123}")
     private String scraperPass1;
 
-    @Value("${app.lms.scraper.account2.username:SCRAPER_USER_2}")
+    @Value("${app.lms.scraper.account2.username:24UAD019}")
     private String scraperUser2;
-    @Value("${app.lms.scraper.account2.password:SCRAPER_PASS_2}")
+    @Value("${app.lms.scraper.account2.password:Dkte@123}")
     private String scraperPass2;
 
     @Value("${app.lms.scraper.account3.username:SCRAPER_USER_3}")
