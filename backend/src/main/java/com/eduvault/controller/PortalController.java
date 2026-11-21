@@ -65,6 +65,41 @@ public class PortalController {
         this.database = database;
     }
 
+    @GetMapping("/faculty/accounts")
+    public ResponseEntity<List<Map<String, String>>> getFacultyAccountsList() {
+        return ResponseEntity.ok(getFacultyAccounts());
+    }
+
+    @PostMapping("/admin/login")
+    public ResponseEntity<?> adminLogin(@RequestBody Map<String, String> body) {
+        String id = body.get("adminId");
+        if (id == null) id = body.get("id");
+        if (id == null) id = body.get("username");
+        String pass = body.get("password");
+
+        if (id == null || pass == null || id.isBlank() || pass.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Admin ID and password are required"));
+        }
+
+        String trimmedId = id.trim().toLowerCase();
+        String trimmedPass = pass.trim().toLowerCase();
+
+        boolean idValid = trimmedId.equals("admin") || trimmedId.equals("admin@campusaxis") || trimmedId.equals("admin@eduvault") || trimmedId.equals("admin@caxis");
+        boolean passValid = trimmedPass.equals("admin") || trimmedPass.equals("admin123") || trimmedPass.equals("caxisadmin") || trimmedPass.equals("eduvault");
+
+        if (idValid && passValid) {
+            return ResponseEntity.ok(Map.of(
+                "name", "System Administrator",
+                "prn", "ADMIN01",
+                "dob", "ADMIN",
+                "department", "Campus Administration",
+                "role", "admin"
+            ));
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid Admin credentials"));
+    }
+
     @PostMapping("/faculty/login")
     public ResponseEntity<?> facultyLogin(@RequestBody Map<String, String> body) {
         String id = body.get("facultyId");
@@ -73,12 +108,25 @@ public class PortalController {
             return ResponseEntity.badRequest().body(Map.of("error", "Faculty ID and password are required"));
         }
 
+        String trimmedId = id.trim().toLowerCase();
+        String trimmedPass = pass.trim().toLowerCase();
+
+        // Support admin logging in via faculty portal form
+        if ((trimmedId.equals("admin") || trimmedId.equals("admin@campusaxis") || trimmedId.equals("admin@eduvault"))
+                && (trimmedPass.equals("admin") || trimmedPass.equals("admin123") || trimmedPass.equals("caxisadmin") || trimmedPass.equals("eduvault"))) {
+            return ResponseEntity.ok(Map.of(
+                "name", "System Administrator",
+                "prn", "ADMIN01",
+                "dob", "ADMIN",
+                "department", "Campus Administration",
+                "role", "admin"
+            ));
+        }
+
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
         int day = today.getDayOfMonth();
         String day1 = String.valueOf(day);
         String day2 = String.format("%02d", day);
-
-        String trimmedPass = pass.trim().toLowerCase();
 
         for (Map<String, String> account : getFacultyAccounts()) {
             String accId = account.get("id");

@@ -1,52 +1,76 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
-    Key,
-    Eye,
-    EyeOff,
-    CheckCircle2,
-    XCircle,
-    BookOpen,
-    Search,
-    Shield,
-    Sparkles,
-    Check,
-    RotateCcw,
-    User,
-    Save,
-    ExternalLink,
-    AlertCircle
-} from 'lucide-react';
+    Settings02Icon,
+    BookOpen01Icon,
+    Search01Icon,
+    RefreshIcon,
+    UserIcon,
+    FloppyDiskIcon,
+    ArrowUpRight01Icon,
+    Tick02Icon,
+    UserMultiple02Icon,
+    Key01Icon,
+    ViewIcon,
+    ViewOffIcon,
+    CheckmarkCircle02Icon,
+    CancelCircleIcon,
+    AlertCircleIcon,
+    SparklesIcon,
+    Shield01Icon,
+    Calendar03Icon,
+    Layers01Icon
+} from 'hugeicons-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
-const Settings = () => {
+const DEFAULT_TEACHERS = [
+    { id: 'DRP@caxis', name: 'Prof. D R Patil', dept: 'AI & Data Science' },
+    { id: 'HPM@caxis', name: 'Prof. H P Magdum', dept: 'AI & Data Science' },
+    { id: 'TIB@caxis', name: 'Prof. T I Bagban', dept: 'AI & Data Science' },
+    { id: 'PMM@caxis', name: 'Prof. P M Mathpati', dept: 'AI & Data Science' }
+];
+
+const ALL_SEMESTERS = [
+    'SEM 01', 'SEM 02', 'SEM 03', 'SEM 04',
+    'SEM 05', 'SEM 06', 'SEM 07', 'SEM 08'
+];
+
+export default function Settings() {
+    const navigate = useNavigate();
     const context = useOutletContext() || {};
     const { profile, catalogSubjects = [], refreshData } = context;
 
-    const isTeacher = profile
-        ? (profile.dob === 'TEACHER' || String(profile.role || '').toUpperCase() === 'TEACHER')
-        : (localStorage.getItem('eduvault_user_role') === 'teacher');
+    const userRole = localStorage.getItem('eduvault_user_role') || profile?.role || (profile?.dob === 'TEACHER' ? 'teacher' : 'student');
+    const isAdmin = userRole === 'admin' || profile?.role === 'admin';
 
-    // --- Gemini API Key State ---
+    // Active Section Tab
+    const [activeTab, setActiveTab] = useState('teacher-subjects'); // 'teacher-subjects' | 'semester-subjects' | 'api-keys'
+
+    // --- 1. Teacher Assignment State ---
+    const [teachers, setTeachers] = useState(DEFAULT_TEACHERS);
+    const [selectedTeacherId, setSelectedTeacherId] = useState(DEFAULT_TEACHERS[0].id);
+    const [assignedTeacherSubjects, setAssignedTeacherSubjects] = useState([]);
+    const [savingTeacherSubjects, setSavingTeacherSubjects] = useState(false);
+    const [allCatalogSubjects, setAllCatalogSubjects] = useState([]);
+    const [teacherSubjectSearch, setTeacherSubjectSearch] = useState('');
+    const [teacherYearFilter, setTeacherYearFilter] = useState('ALL');
+    const [teacherSemFilter, setTeacherSemFilter] = useState('ALL');
+
+    // --- 2. Semester Subject Visibility State ---
+    const [selectedSemester, setSelectedSemester] = useState('SEM 01');
+    const [semesterSubjectsConfig, setSemesterSubjectsConfig] = useState({}); // { [sem]: [revokedSubjectIds] }
+    const [savingSemesterConfig, setSavingSemesterConfig] = useState(false);
+
+    // --- 3. Gemini API Key State ---
     const [geminiKey, setGeminiKey] = useState('');
     const [showKey, setShowKey] = useState(false);
-    const [keyStatus, setKeyStatus] = useState('idle'); // 'idle' | 'testing' | 'valid' | 'invalid'
+    const [keyStatus, setKeyStatus] = useState('idle'); // 'idle' | 'testing' | 'valid' | 'invalid' | 'saved' | 'empty'
     const [keyStatusMsg, setKeyStatusMsg] = useState('');
-
-    // --- Teacher Subjects State ---
-    const [allSubjects, setAllSubjects] = useState([]);
-    const [bucketFolderCount, setBucketFolderCount] = useState(0);
-    const [subjectsLoading, setSubjectsLoading] = useState(false);
-    const [savingSubjects, setSavingSubjects] = useState(false);
-    const [selectedSubjects, setSelectedSubjects] = useState([]);
-    const [subjectSearch, setSubjectSearch] = useState('');
-    const [yearFilter, setYearFilter] = useState('ALL');
-    const [semFilter, setSemFilter] = useState('ALL');
 
     const getYearFromSem = (sem) => {
         const m = (sem || '').match(/(\d+)/);
@@ -57,8 +81,9 @@ const Settings = () => {
         return 'Final Year';
     };
 
-    // Load initial settings on mount
+    // Load initial settings
     useEffect(() => {
+        // Load API Key
         const savedKey = localStorage.getItem('eduvault_custom_gemini_key') || localStorage.getItem('eduvault_gemini_api_key') || '';
         setGeminiKey(savedKey);
         if (savedKey) {
@@ -69,81 +94,184 @@ const Settings = () => {
             setKeyStatusMsg('No custom key (using system default)');
         }
 
-        const savedTeacherSubs = localStorage.getItem('eduvault_teacher_subjects');
-        if (savedTeacherSubs) {
-            try {
-                const parsed = JSON.parse(savedTeacherSubs);
-                if (Array.isArray(parsed)) {
-                    setSelectedSubjects(parsed);
-                }
-            } catch (e) {
-                console.error('Error loading teacher subjects', e);
-            }
-        }
-
-        const savedFilter = localStorage.getItem('eduvault_teacher_filter');
-        if (savedFilter) {
-            try {
-                const f = JSON.parse(savedFilter);
-                if (f.year) setYearFilter(f.year);
-                if (f.semester) setSemFilter(f.semester);
-            } catch { /* ignore */ }
-        }
-
-        fetchAllSubjects();
+        // Load catalog and faculty
+        loadCatalogSubjects();
+        loadTeachersList();
+        loadSemesterVisibilityConfig();
     }, []);
 
-    const getTeacherPrn = () => {
-        if (profile?.prn) return profile.prn;
+    // Load teacher subjects when selected teacher changes
+    useEffect(() => {
+        if (selectedTeacherId) {
+            loadTeacherAssignedSubjects(selectedTeacherId);
+        }
+    }, [selectedTeacherId]);
+
+    const loadTeachersList = async () => {
         try {
-            const p = JSON.parse(localStorage.getItem('eduvault_profile') || 'null');
-            if (p?.prn) return p.prn;
-        } catch { /* ignore */ }
-        return localStorage.getItem('eduvault_prn') || 'TEACHER';
+            const res = await axios.get(`${API_BASE}/portal/faculty/accounts`);
+            if (Array.isArray(res.data) && res.data.length > 0) {
+                setTeachers(res.data);
+                if (!selectedTeacherId) {
+                    setSelectedTeacherId(res.data[0].id);
+                }
+            }
+        } catch {
+            // Keep default teachers
+        }
     };
 
-    const fetchAllSubjects = async (showToast = false) => {
-        setSubjectsLoading(true);
+    const loadCatalogSubjects = async () => {
         try {
-            const prn = getTeacherPrn();
-            const [r2Res, mapRes] = await Promise.allSettled([
+            const [r2Res, subRes] = await Promise.allSettled([
                 axios.get(`${API_BASE}/r2/subjects`),
-                axios.get(`${API_BASE}/teacher/mappings`, { params: { prn }, headers: { 'X-Student-PRN': prn } })
+                axios.get(`${API_BASE}/subjects`)
             ]);
 
             let list = [];
             if (r2Res.status === 'fulfilled' && Array.isArray(r2Res.value?.data?.subjects)) {
                 list = r2Res.value.data.subjects;
-                setBucketFolderCount(Array.isArray(r2Res.value.data.bucketFolders) ? r2Res.value.data.bucketFolders.length : 0);
-            } else {
-                const res = await axios.get(`${API_BASE}/subjects`);
-                list = Array.isArray(res.data) ? res.data.map(s => ({ ...s, year: getYearFromSem(s.semester), inBucket: false })) : [];
+            } else if (subRes.status === 'fulfilled' && Array.isArray(subRes.value?.data)) {
+                list = subRes.value.data.map(s => ({
+                    ...s,
+                    year: getYearFromSem(s.semester),
+                    inBucket: false
+                }));
             }
-            setAllSubjects(list);
-
-            if (mapRes.status === 'fulfilled' && mapRes.value?.data && Array.isArray(mapRes.value.data.selectedSubjects)) {
-                const serverData = mapRes.value.data;
-                setSelectedSubjects(serverData.selectedSubjects);
-                if (serverData.year) setYearFilter(serverData.year);
-                if (serverData.semester) setSemFilter(serverData.semester);
-                localStorage.setItem('eduvault_teacher_subjects', JSON.stringify(serverData.selectedSubjects));
-                localStorage.setItem('eduvault_teacher_filter', JSON.stringify({ year: serverData.year || 'ALL', semester: serverData.semester || 'ALL' }));
-            }
-
-            if (showToast) {
-                toast.success(`Detected ${list.filter(s => s.inBucket).length} bucket subjects (${list.length} total)`);
-            }
+            setAllCatalogSubjects(list);
         } catch (err) {
-            console.error('Failed to fetch subjects list', err);
+            console.error('Failed to load catalog subjects:', err);
             if (catalogSubjects && catalogSubjects.length > 0) {
-                setAllSubjects(catalogSubjects.map(s => ({ ...s, year: getYearFromSem(s.semester), inBucket: false })));
+                setAllCatalogSubjects(catalogSubjects.map(s => ({ ...s, year: getYearFromSem(s.semester), inBucket: false })));
             }
-        } finally {
-            setSubjectsLoading(false);
         }
     };
 
-    // --- Gemini Key Handlers ---
+    const loadTeacherAssignedSubjects = async (teacherId) => {
+        try {
+            const res = await axios.get(`${API_BASE}/teacher/mappings`, {
+                params: { prn: teacherId },
+                headers: { 'X-Student-PRN': teacherId }
+            });
+            if (res.data && Array.isArray(res.data.selectedSubjects)) {
+                setAssignedTeacherSubjects(res.data.selectedSubjects);
+            } else {
+                setAssignedTeacherSubjects([]);
+            }
+        } catch (err) {
+            console.warn('Could not fetch teacher mappings:', err);
+            setAssignedTeacherSubjects([]);
+        }
+    };
+
+    const loadSemesterVisibilityConfig = async () => {
+        try {
+            const res = await axios.get(`${API_BASE}/admin/semester-subjects`);
+            if (res.data && typeof res.data === 'object') {
+                setSemesterSubjectsConfig(res.data);
+                localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(res.data));
+                return;
+            }
+        } catch {
+            // Check localStorage
+            const localSaved = localStorage.getItem('eduvault_semester_subjects_config');
+            if (localSaved) {
+                try {
+                    setSemesterSubjectsConfig(JSON.parse(localSaved));
+                } catch { }
+            }
+        }
+    };
+
+    // --- Teacher Subject Toggle Handlers ---
+    const handleToggleTeacherSubject = (subNameOrId) => {
+        setAssignedTeacherSubjects(prev => {
+            if (prev.includes(subNameOrId)) {
+                return prev.filter(item => item !== subNameOrId);
+            } else {
+                return [...prev, subNameOrId];
+            }
+        });
+    };
+
+    const handleSaveTeacherSubjects = async () => {
+        if (!selectedTeacherId) return;
+        setSavingTeacherSubjects(true);
+
+        const folderMappings = {};
+        allCatalogSubjects.forEach(sub => {
+            if (assignedTeacherSubjects.includes(sub.name) || assignedTeacherSubjects.includes(sub.id)) {
+                folderMappings[sub.name] = {
+                    id: sub.id,
+                    code: sub.code || '',
+                    year: sub.year || getYearFromSem(sub.semester),
+                    semester: sub.semester || '',
+                    bucketFolder: sub.bucketFolder || sub.name
+                };
+            }
+        });
+
+        try {
+            await axios.put(`${API_BASE}/teacher/mappings`, {
+                year: teacherYearFilter,
+                semester: teacherSemFilter,
+                selectedSubjects: assignedTeacherSubjects,
+                folderMappings
+            }, {
+                params: { prn: selectedTeacherId },
+                headers: { 'X-Student-PRN': selectedTeacherId }
+            });
+            toast.success(`Assigned ${assignedTeacherSubjects.length} subjects to ${selectedTeacherId}`);
+            if (refreshData) refreshData();
+        } catch (err) {
+            console.error('Failed to save teacher mappings:', err);
+            toast.error('Failed to save teacher subjects: ' + (err.response?.data?.error || err.message));
+        } finally {
+            setSavingTeacherSubjects(false);
+        }
+    };
+
+    // --- Semester Subject Visibility Handlers ---
+    const isSubjectVisibleInSemester = (sem, subId) => {
+        const revokedList = semesterSubjectsConfig[sem] || [];
+        return !revokedList.includes(subId);
+    };
+
+    const handleToggleSemesterSubject = (sem, subId) => {
+        setSemesterSubjectsConfig(prev => {
+            const currentRevoked = prev[sem] || [];
+            let updatedRevoked;
+            if (currentRevoked.includes(subId)) {
+                // Was revoked -> make visible again
+                updatedRevoked = currentRevoked.filter(id => id !== subId);
+            } else {
+                // Was visible -> revoke/hide it
+                updatedRevoked = [...currentRevoked, subId];
+            }
+            return {
+                ...prev,
+                [sem]: updatedRevoked
+            };
+        });
+    };
+
+    const handleSaveSemesterConfig = async () => {
+        setSavingSemesterConfig(true);
+        try {
+            await axios.put(`${API_BASE}/admin/semester-subjects`, semesterSubjectsConfig);
+            localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(semesterSubjectsConfig));
+            toast.success('Semester subject visibility updated successfully!');
+            if (refreshData) refreshData();
+        } catch (err) {
+            console.warn('Could not save to backend, saved locally:', err);
+            localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(semesterSubjectsConfig));
+            toast.success('Semester subject visibility saved locally!');
+        } finally {
+            setSavingSemesterConfig(false);
+        }
+    };
+
+    // --- Gemini API Key Handlers ---
     const handleSaveGeminiKey = (e) => {
         if (e && e.preventDefault) e.preventDefault();
         const trimmed = geminiKey.trim();
@@ -184,17 +312,12 @@ const Settings = () => {
         const toastId = toast.loading('Connecting to Google Gemini API...');
 
         try {
-            // Direct ping to Google Gemini REST API
             const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(keyToTest)}`;
             const response = await fetch(testUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [
-                        {
-                            parts: [{ text: 'Respond with the word OK.' }]
-                        }
-                    ]
+                    contents: [{ parts: [{ text: 'Respond with OK.' }] }]
                 })
             });
 
@@ -211,545 +334,484 @@ const Settings = () => {
                 setKeyStatusMsg(errMsg);
                 toast.error(`Verification failed: ${errMsg}`, { id: toastId });
             }
-        } catch (err) {
-            console.error('Gemini test connection failed', err);
-            // In case of CORS or browser network block, try testing through backend proxy!
-            try {
-                const backendRes = await axios.post(`${API_BASE}/ai/chat`, {
-                    question: 'Ping test',
-                    customApiKey: keyToTest
-                }, {
-                    headers: { 'X-Gemini-Api-Key': keyToTest }
-                });
-                if (backendRes.status === 200 && backendRes.data?.answer && !backendRes.data.answer.toLowerCase().includes("encountered an error")) {
-                    setKeyStatus('valid');
-                    setKeyStatusMsg('API key verified via backend proxy');
-                    localStorage.setItem('eduvault_custom_gemini_key', keyToTest);
-                    localStorage.setItem('eduvault_gemini_api_key', keyToTest);
-                    toast.success('Gemini API key verified successfully via proxy!', { id: toastId });
-                    return;
-                }
-            } catch (beErr) {
-                console.warn('Backend proxy test also failed', beErr);
-            }
-
+        } catch {
             if (keyToTest.startsWith('AIza') && keyToTest.length >= 35) {
                 setKeyStatus('valid');
-                setKeyStatusMsg('Valid key format (Network restricted direct ping)');
+                setKeyStatusMsg('Valid key format configured');
                 localStorage.setItem('eduvault_custom_gemini_key', keyToTest);
                 localStorage.setItem('eduvault_gemini_api_key', keyToTest);
                 toast.success('Gemini key format valid and saved!', { id: toastId });
             } else {
                 setKeyStatus('invalid');
-                setKeyStatusMsg(err.message || 'Network connection failed');
-                toast.error('Could not verify key: ' + err.message, { id: toastId });
+                setKeyStatusMsg('Could not verify API key');
+                toast.error('Could not verify key format', { id: toastId });
             }
         }
     };
 
-    // --- Teacher Subject Selection Handlers ---
-    const handleToggleSubject = (sub) => {
-        const subName = typeof sub === 'string' ? sub : sub?.name;
-        const subId = typeof sub === 'object' ? sub?.id : null;
-        setSelectedSubjects(prev => {
-            const hasIt = prev.includes(subName) || (subId && prev.includes(subId));
-            if (hasIt) {
-                return prev.filter(name => name !== subName && name !== subId);
-            } else {
-                return [...prev, subName];
-            }
-        });
-    };
-
-    const handleSelectAllFiltered = () => {
-        const filteredNames = filteredSubjects.map(s => s.name);
-        setSelectedSubjects(prev => {
-            const combined = new Set([...prev, ...filteredNames]);
-            return Array.from(combined);
-        });
-    };
-
-    const handleClearSelection = () => {
-        setSelectedSubjects([]);
-    };
-
-    const handleSaveTeacherSubjects = async () => {
-        setSavingSubjects(true);
-        localStorage.setItem('eduvault_teacher_subjects', JSON.stringify(selectedSubjects));
-        localStorage.setItem('eduvault_teacher_filter', JSON.stringify({ year: yearFilter, semester: semFilter }));
-
-        const folderMappings = {};
-        allSubjects.forEach(sub => {
-            if (selectedSubjects.includes(sub.name) || selectedSubjects.includes(sub.id)) {
-                folderMappings[sub.name] = {
-                    id: sub.id,
-                    code: sub.code || '',
-                    year: sub.year || getYearFromSem(sub.semester),
-                    semester: sub.semester || '',
-                    bucketFolder: sub.bucketFolder || sub.name
-                };
-            }
-        });
-
-        try {
-            const prn = getTeacherPrn();
-            await axios.put(`${API_BASE}/teacher/mappings`, {
-                year: yearFilter,
-                semester: semFilter,
-                selectedSubjects,
-                folderMappings
-            }, { params: { prn }, headers: { 'X-Student-PRN': prn } });
-            toast.success(`Saved ${selectedSubjects.length} subject(s) to JSON config!`);
-        } catch (err) {
-            console.warn('Could not persist mappings to backend JSON, saved locally', err);
-            toast.success(`Saved ${selectedSubjects.length} assigned subjects locally!`);
-        } finally {
-            setSavingSubjects(false);
-            if (refreshData) {
-                refreshData();
-            }
-        }
-    };
-
-    const availableYears = ['FY', 'SY', 'TY', 'Final Year'];
-
-    // Unique semesters for selected year
-    const availableSemesters = useMemo(() => {
-        const set = new Set();
-        allSubjects.forEach(s => {
-            const yr = s.year || getYearFromSem(s.semester);
-            if ((yearFilter === 'ALL' || yr === yearFilter) && s.semester) {
-                set.add(s.semester);
-            }
-        });
-        return Array.from(set).sort();
-    }, [allSubjects, yearFilter]);
-
-    // Filter available subjects by Year -> Semester -> Search (Bucket-detected subjects first)
-    const filteredSubjects = useMemo(() => {
-        return allSubjects.filter(sub => {
+    // Filter subjects for teacher assignment tab
+    const filteredTeacherSubjects = useMemo(() => {
+        return allCatalogSubjects.filter(sub => {
             const yr = sub.year || getYearFromSem(sub.semester);
-            if (yearFilter !== 'ALL' && yr !== yearFilter) {
-                return false;
-            }
-            if (semFilter !== 'ALL' && sub.semester && !sub.semester.toLowerCase().includes(semFilter.toLowerCase())) {
-                return false;
-            }
-            if (subjectSearch.trim()) {
-                const q = subjectSearch.toLowerCase();
+            if (teacherYearFilter !== 'ALL' && yr !== teacherYearFilter) return false;
+            if (teacherSemFilter !== 'ALL' && sub.semester && !sub.semester.toLowerCase().includes(teacherSemFilter.toLowerCase())) return false;
+            if (teacherSubjectSearch.trim()) {
+                const q = teacherSubjectSearch.toLowerCase();
                 const nameMatch = sub.name?.toLowerCase().includes(q);
                 const codeMatch = sub.code?.toLowerCase().includes(q);
-                const deptMatch = sub.department?.toLowerCase().includes(q);
-                const folderMatch = sub.bucketFolder?.toLowerCase().includes(q);
-                return nameMatch || codeMatch || deptMatch || folderMatch;
+                return nameMatch || codeMatch;
             }
             return true;
-        }).sort((a, b) => Number(Boolean(b.inBucket)) - Number(Boolean(a.inBucket)));
-    }, [allSubjects, yearFilter, semFilter, subjectSearch]);
+        });
+    }, [allCatalogSubjects, teacherYearFilter, teacherSemFilter, teacherSubjectSearch]);
+
+    // Filter subjects for semester visibility tab
+    const subjectsForSelectedSemester = useMemo(() => {
+        return allCatalogSubjects.filter(sub => {
+            if (!sub.semester) return false;
+            return sub.semester.trim().toUpperCase() === selectedSemester.trim().toUpperCase();
+        });
+    }, [allCatalogSubjects, selectedSemester]);
+
+    // Access guard: If non-admin user navigates to /settings
+    if (!isAdmin) {
+        return (
+            <div className="flex-1 flex items-center justify-center min-h-[70vh] p-4 text-center">
+                <div className="max-w-md w-full bg-white border border-[#E2E2E2] rounded-2xl p-6 sm:p-8 shadow-xs">
+                    <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto mb-4">
+                        <Shield01Icon className="w-6 h-6" />
+                    </div>
+                    <h2 className="text-lg font-bold text-[#383838]">Admin Control Restricted</h2>
+                    <p className="text-xs text-[#727272] mt-2 leading-relaxed">
+                        System configuration, teacher course assignments, and API keys are restricted to institutional administrators.
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/dashboard')}
+                        className="mt-6 px-4 py-2 rounded-xl bg-[#0073E6] text-white text-xs font-semibold hover:bg-[#4A9AF0] transition"
+                    >
+                        Return to Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex-1 overflow-y-auto bg-background p-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-12 antialiased text-[#383838] font-sans min-h-screen">
             <div className="max-w-5xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="bg-white border border-[#E2E2E2]/90 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                {/* Header Card */}
+                <div className="bg-white border border-[#E2E2E2] rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="material-symbols-outlined text-primary text-[18px]">settings</span>
-                            <span className="text-[11px] font-bold text-[#727272] uppercase tracking-wider">System Settings</span>
+                            <Shield01Icon className="w-4 h-4 text-[#0073E6]" />
+                            <span className="text-[11px] font-bold text-[#727272] uppercase tracking-wider">Administration Suite</span>
                         </div>
                         <h1 className="text-xl sm:text-2xl font-bold text-[#383838] tracking-tight">
-                            Platform Settings &amp; Preferences
+                            Platform &amp; Academic Settings
                         </h1>
                         <p className="text-xs text-[#727272] mt-0.5">
-                            Manage your personal AI credentials, taught subjects, and account parameters.
+                            Manage teacher course allocations, semester catalog visibility, and system AI credentials.
                         </p>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-[#727272]">Current Role:</span>
-                        <span className={cn(
-                            "px-2.5 py-1 rounded-full text-xs font-bold border",
-                            isTeacher
-                                ? "bg-[#DEEDFC] text-[#174073] border-blue-200"
-                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        )}>
-                            {isTeacher ? 'Teacher / Faculty' : 'Student'}
+                        <span className="text-xs font-semibold text-[#727272]">Role:</span>
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold border bg-[#DEEDFC] text-[#0073E6] border-blue-200">
+                            System Administrator
                         </span>
                     </div>
                 </div>
 
-                {/* Section 1: Gemini AI Key Configuration */}
-                <div className="bg-white border border-[#E2E2E2] rounded-2xl shadow-xs overflow-hidden">
-                    <div className="p-5 sm:p-6 border-b border-[#E2E2E2] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 border border-purple-100 flex items-center justify-center shrink-0">
-                                <Sparkles className="w-5 h-5 text-purple-600" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-base font-bold text-[#383838]">Custom Google Gemini API Key</h2>
-                                    <span className="text-[10px] font-semibold bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
-                                        BYOK Support
-                                    </span>
-                                </div>
-                                <p className="text-xs text-[#727272] mt-0.5">
-                                    Bring your own Gemini API key for unlimited AI chat, Note Doubts, and Chapter RAG queries.
-                                </p>
-                            </div>
-                        </div>
+                {/* Sub-Navigation Tabs */}
+                <div className="flex items-center gap-2 border-b border-[#E2E2E2] pb-2 overflow-x-auto no-scrollbar">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('teacher-subjects')}
+                        className={cn(
+                            "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shrink-0",
+                            activeTab === 'teacher-subjects'
+                                ? "bg-[#0073E6] text-white shadow-xs"
+                                : "bg-white text-[#727272] hover:text-[#383838] hover:bg-slate-100 border border-[#E2E2E2]"
+                        )}
+                    >
+                        <UserMultiple02Icon className="w-4 h-4" />
+                        <span>Teacher Subject Allocation</span>
+                    </button>
 
-                        {/* Status Badge */}
-                        <div className="flex items-center gap-2 self-start sm:self-center">
-                            {keyStatus === 'valid' && (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>Valid &amp; Connected</span>
-                                </span>
-                            )}
-                            {keyStatus === 'testing' && (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#DEEDFC] text-[#174073] border border-blue-200 animate-pulse">
-                                    <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                                    <span>Verifying...</span>
-                                </span>
-                            )}
-                            {keyStatus === 'invalid' && (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
-                                    <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                                    <span>Verification Failed</span>
-                                </span>
-                            )}
-                            {keyStatus === 'saved' && (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#DEEDFC] text-[#174073] border border-blue-200 shadow-2xs">
-                                    <Check className="w-3.5 h-3.5 text-[#0073E6]" />
-                                    <span>Key Configured</span>
-                                </span>
-                            )}
-                            {keyStatus === 'empty' && (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-[#383838] border border-[#E2E2E2] shadow-2xs">
-                                    <span>System Default Active</span>
-                                </span>
-                            )}
-                        </div>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('semester-subjects')}
+                        className={cn(
+                            "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shrink-0",
+                            activeTab === 'semester-subjects'
+                                ? "bg-[#0073E6] text-white shadow-xs"
+                                : "bg-white text-[#727272] hover:text-[#383838] hover:bg-slate-100 border border-[#E2E2E2]"
+                        )}
+                    >
+                        <Layers01Icon className="w-4 h-4" />
+                        <span>Semester Subject Visibility</span>
+                    </button>
 
-                    <div className="p-5 sm:p-6 space-y-4">
-                        <div className="space-y-2">
-                            <label className="block text-xs font-bold text-[#383838] uppercase tracking-wider">
-                                Gemini API Key
-                            </label>
-                            <div className="relative">
-                                <Key className="w-4 h-4 text-[#727272] absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input
-                                    type={showKey ? 'text' : 'password'}
-                                    value={geminiKey}
-                                    onChange={(e) => {
-                                        setGeminiKey(e.target.value);
-                                        setKeyStatus('idle');
-                                    }}
-                                    placeholder="Enter your Gemini API key (e.g. AIzaSy...)"
-                                    className="w-full text-xs sm:text-sm pl-9 pr-24 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-[#E2E2E2] rounded-xl outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition font-mono"
-                                />
-                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowKey(!showKey)}
-                                        className="p-1.5 rounded-lg text-[#727272] hover:text-[#383838] hover:bg-slate-100 transition cursor-pointer"
-                                        title={showKey ? 'Hide key' : 'Show key'}
-                                    >
-                                        {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between text-[11px] text-[#727272] pt-1">
-                                <span>{keyStatusMsg || 'Your key is stored securely in your browser session.'}</span>
-                                <a
-                                    href="https://aistudio.google.com/app/apikey"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-purple-600 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                                >
-                                    <span>Get free Gemini API Key</span>
-                                    <ExternalLink className="w-3 h-3" />
-                                </a>
-                            </div>
-                        </div>
-
-                        {/* Buttons row */}
-                        <div className="flex flex-wrap items-center gap-2.5 pt-2">
-                            <button
-                                type="button"
-                                onClick={handleSaveGeminiKey}
-                                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-semibold text-xs transition shadow-xs flex items-center gap-1.5 cursor-pointer"
-                            >
-                                <Save className="w-3.5 h-3.5" />
-                                <span>Save API Key</span>
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={handleTestGeminiKey}
-                                disabled={!geminiKey.trim() || keyStatus === 'testing'}
-                                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-[#383838] font-semibold text-xs border border-[#E2E2E2] transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                            >
-                                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                                <span>Test Connection</span>
-                            </button>
-
-                            {geminiKey && (
-                                <button
-                                    type="button"
-                                    onClick={handleClearGeminiKey}
-                                    className="px-3.5 py-2 rounded-xl text-[#383838] hover:text-rose-600 hover:bg-rose-50 border border-[#E2E2E2] transition text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                                >
-                                    <RotateCcw className="w-3.5 h-3.5" />
-                                    <span>Clear Custom Key</span>
-                                </button>
-                            )}
-                        </div>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('api-keys')}
+                        className={cn(
+                            "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shrink-0",
+                            activeTab === 'api-keys'
+                                ? "bg-[#0073E6] text-white shadow-xs"
+                                : "bg-white text-[#727272] hover:text-[#383838] hover:bg-slate-100 border border-[#E2E2E2]"
+                        )}
+                    >
+                        <Key01Icon className="w-4 h-4" />
+                        <span>API Keys &amp; AI</span>
+                    </button>
                 </div>
 
-                {/* Section 2: Teacher Subject Selection (Teachers only) */}
-                {isTeacher && (
-                <div className="bg-white border border-[#E2E2E2] rounded-2xl shadow-xs overflow-hidden">
-                    <div className="p-5 sm:p-6 border-b border-[#E2E2E2] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-[#DEEDFC] text-[#174073] border border-blue-100 flex items-center justify-center shrink-0">
-                                <BookOpen className="w-5 h-5 text-[#0073E6]" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-base font-bold text-[#383838]">Faculty Subject Assignments</h2>
-                                    <span className="text-[10px] font-semibold bg-[#DEEDFC] text-[#174073] px-2 py-0.5 rounded-full border border-blue-200">
-                                        {selectedSubjects.length} Assigned
-                                    </span>
+                {/* TAB 1: Teacher Subject Allocation */}
+                {activeTab === 'teacher-subjects' && (
+                    <div className="bg-white border border-[#E2E2E2] rounded-2xl shadow-xs overflow-hidden">
+                        <div className="p-5 sm:p-6 border-b border-[#E2E2E2] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[#DEEDFC] text-[#0073E6] flex items-center justify-center shrink-0">
+                                    <BookOpen01Icon className="w-5 h-5" />
                                 </div>
-                                <p className="text-xs text-[#727272] mt-0.5">
-                                    Select the courses you teach. This filters your attendance requests and class registers.
-                                </p>
+                                <div>
+                                    <h2 className="text-base font-bold text-[#383838]">Assign &amp; Revoke Teacher Subjects</h2>
+                                    <p className="text-xs text-[#727272] mt-0.5">
+                                        Select a teacher and allocate or revoke the subjects they can inspect, view doubts for, or verify notes.
+                                    </p>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => fetchAllSubjects(true)}
-                                disabled={subjectsLoading}
-                                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#383838] font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                            >
-                                <RotateCcw className={cn("w-3.5 h-3.5", subjectsLoading && "animate-spin")} />
-                                <span>Detect Bucket ({bucketFolderCount})</span>
-                            </button>
                             <button
                                 type="button"
                                 onClick={handleSaveTeacherSubjects}
-                                disabled={savingSubjects}
-                                className="px-4 py-2 rounded-xl bg-[#0073E6] hover:bg-[#4A9AF0] active:bg-blue-800 text-white font-semibold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                disabled={savingTeacherSubjects}
+                                className="px-4 py-2 rounded-xl bg-[#0073E6] hover:bg-[#4A9AF0] text-white font-semibold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
                             >
-                                <Save className="w-3.5 h-3.5" />
-                                <span>{savingSubjects ? 'Saving...' : 'Save Subjects'}</span>
+                                <FloppyDiskIcon className="w-3.5 h-3.5" />
+                                <span>{savingTeacherSubjects ? 'Saving...' : 'Save Teacher Allocation'}</span>
                             </button>
                         </div>
-                    </div>
 
-                    <div className="p-5 sm:p-6 space-y-4">
-                        {/* Search and filters toolbar */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-[#E2E2E2]/80">
-                            <div className="flex items-center gap-2 flex-1">
-                                <div className="relative flex-1">
-                                    <Search className="w-3.5 h-3.5 text-[#727272] absolute left-3 top-1/2 -translate-y-1/2" />
-                                    <input
-                                        type="text"
-                                        value={subjectSearch}
-                                        onChange={(e) => setSubjectSearch(e.target.value)}
-                                        placeholder="Search by subject name, code, or department..."
-                                        className="w-full text-xs pl-8 pr-3 py-1.5 bg-white border border-[#E2E2E2] rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
-                                    />
-                                </div>
-                                <select
-                                    value={yearFilter}
-                                    onChange={(e) => {
-                                        setYearFilter(e.target.value);
-                                        setSemFilter('ALL');
-                                    }}
-                                    className="text-xs bg-white border border-[#E2E2E2] rounded-lg px-2.5 py-1.5 font-medium text-[#383838] outline-none cursor-pointer"
-                                >
-                                    <option value="ALL">All Years</option>
-                                    {availableYears.map(yr => (
-                                        <option key={yr} value={yr}>{yr}</option>
-                                    ))}
-                                </select>
-                                {availableSemesters.length > 0 && (
+                        <div className="p-5 sm:p-6 space-y-4">
+                            {/* Teacher Selector Toolbar */}
+                            <div className="bg-slate-50 p-3.5 rounded-xl border border-[#E2E2E2] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-[#383838]">Selected Teacher:</span>
                                     <select
-                                        value={semFilter}
-                                        onChange={(e) => setSemFilter(e.target.value)}
-                                        className="text-xs bg-white border border-[#E2E2E2] rounded-lg px-2.5 py-1.5 font-medium text-[#383838] outline-none cursor-pointer"
+                                        value={selectedTeacherId}
+                                        onChange={(e) => setSelectedTeacherId(e.target.value)}
+                                        className="text-xs bg-white border border-[#E2E2E2] rounded-lg px-3 py-1.5 font-semibold text-[#383838] outline-none cursor-pointer"
                                     >
-                                        <option value="ALL">All Semesters</option>
-                                        {availableSemesters.map(sem => (
-                                            <option key={sem} value={sem}>{sem}</option>
+                                        {teachers.map(t => (
+                                            <option key={t.id} value={t.id}>
+                                                {t.name} ({t.id})
+                                            </option>
                                         ))}
                                     </select>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-2 text-xs">
-                                <button
-                                    type="button"
-                                    onClick={handleSelectAllFiltered}
-                                    className="px-2.5 py-1 rounded-lg text-[#383838] bg-white border border-[#E2E2E2] hover:bg-slate-100 font-semibold cursor-pointer transition"
-                                >
-                                    Select All Filtered
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleClearSelection}
-                                    className="px-2.5 py-1 rounded-lg text-[#383838] hover:text-rose-600 hover:bg-white font-semibold cursor-pointer transition"
-                                >
-                                    Clear Selection
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Subject Checkbox Grid */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-xs text-[#727272] px-1">
-                                <span>Showing {filteredSubjects.length} available courses</span>
-                                <span>{selectedSubjects.length} selected</span>
-                            </div>
-
-                            {subjectsLoading ? (
-                                <div className="py-12 text-center text-xs text-[#727272] flex flex-col items-center justify-center gap-2">
-                                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                                    <span>Loading academic course catalog...</span>
                                 </div>
-                            ) : filteredSubjects.length === 0 ? (
-                                <div className="py-12 text-center text-xs text-[#727272] bg-slate-50 rounded-xl border border-dashed border-[#E2E2E2] p-4">
-                                    No subjects match the search query "{subjectSearch}".
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[460px] overflow-y-auto p-1 no-scrollbar">
-                                    {filteredSubjects.map(sub => {
-                                        const isChecked = selectedSubjects.includes(sub.name) || selectedSubjects.includes(sub.id);
 
-                                        return (
-                                            <div
-                                                key={sub.id || sub.name}
-                                                onClick={() => handleToggleSubject(sub)}
-                                                className={cn(
-                                                    "p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 text-xs select-none",
-                                                    isChecked
-                                                        ? "bg-[#DEEDFC]/50 border-blue-300 shadow-2xs"
-                                                        : "bg-white hover:bg-slate-50 border-[#E2E2E2]"
-                                                )}
-                                            >
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className={cn(
-                                                        "w-4 h-4 rounded flex items-center justify-center border transition shrink-0",
-                                                        isChecked
-                                                            ? "bg-[#0073E6] border-blue-600 text-white"
-                                                            : "border-slate-300 bg-white"
-                                                    )}>
-                                                        {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
-                                                    </div>
-
-                                                    <div className="min-w-0">
-                                                        <div className="font-bold text-[#383838] truncate">
-                                                            {sub.name}
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5 text-[10px] text-[#727272] mt-0.5">
-                                                            {sub.code && (
-                                                                <span className="font-mono font-semibold bg-slate-100 text-[#383838] px-1.5 py-0.2 rounded border border-[#E2E2E2]/60">
-                                                                    {sub.code}
-                                                                </span>
-                                                            )}
-                                                            {sub.semester && <span>{sub.semester}</span>}
-                                                            {sub.department && <span>• {sub.department}</span>}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-1.5 shrink-0">
-                                                    {sub.inBucket && (
-                                                        <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                                                            In Bucket
-                                                        </span>
-                                                    )}
-                                                    {isChecked && (
-                                                        <span className="text-[10px] font-bold text-[#174073] bg-blue-100/70 px-2 py-0.5 rounded-full">
-                                                            Assigned
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Save Confirmation Button */}
-                        <div className="flex items-center justify-between pt-3 border-t border-[#E2E2E2]">
-                            <span className="text-xs text-[#727272]">
-                                Selected: <strong>{selectedSubjects.length}</strong> subjects
-                            </span>
-                            <button
-                                type="button"
-                                onClick={handleSaveTeacherSubjects}
-                                className="px-5 py-2 rounded-xl bg-[#0073E6] hover:bg-[#4A9AF0] active:bg-blue-800 text-white font-semibold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-                            >
-                                <Save className="w-3.5 h-3.5" />
-                                <span>Save Changes</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                )}
-
-                {/* Section 3: User Profile & Role Overview */}
-                <div className="bg-white border border-[#E2E2E2] rounded-2xl p-5 sm:p-6 shadow-xs">
-                    <div className="flex items-center gap-3 pb-4 border-b border-[#E2E2E2]">
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 text-[#383838] border border-[#E2E2E2] flex items-center justify-center shrink-0">
-                            <User className="w-5 h-5 text-[#383838]" />
-                        </div>
-                        <div>
-                            <h2 className="text-base font-bold text-[#383838]">User Identity &amp; Role Overview</h2>
-                            <p className="text-xs text-[#727272]">Authenticated session details</p>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-4 text-xs">
-                        <div className="bg-slate-50 p-3 rounded-xl border border-[#E2E2E2]/80">
-                            <span className="text-[10px] font-bold text-[#727272] uppercase">User Name</span>
-                            <div className="font-bold text-[#383838] mt-0.5 truncate">{profile?.name || 'Academic User'}</div>
-                        </div>
-
-                        <div className="bg-slate-50 p-3 rounded-xl border border-[#E2E2E2]/80">
-                            <span className="text-[10px] font-bold text-[#727272] uppercase">PRN / Faculty ID</span>
-                            <div className="font-mono font-bold text-[#383838] mt-0.5">{profile?.prn || 'N/A'}</div>
-                        </div>
-
-                        <div className="bg-slate-50 p-3 rounded-xl border border-[#E2E2E2]/80">
-                            <span className="text-[10px] font-bold text-[#727272] uppercase">Department</span>
-                            <div className="font-semibold text-[#383838] mt-0.5">{profile?.department || 'AI & Data Science'}</div>
-                        </div>
-
-                        <div className="bg-slate-50 p-3 rounded-xl border border-[#E2E2E2]/80">
-                            <span className="text-[10px] font-bold text-[#727272] uppercase">Active Role</span>
-                            <div className="mt-1">
-                                <span className={cn(
-                                    "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold",
-                                    isTeacher ? "bg-[#0073E6] text-white" : "bg-emerald-600 text-white"
-                                )}>
-                                    {isTeacher ? 'Teacher / Faculty' : 'Student'}
+                                <span className="text-xs text-[#727272]">
+                                    Currently assigned: <strong className="text-[#0073E6]">{assignedTeacherSubjects.length}</strong> subjects
                                 </span>
                             </div>
+
+                            {/* Search and Filters */}
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <div className="relative flex-1">
+                                    <Search01Icon className="w-3.5 h-3.5 text-[#727272] absolute left-3 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        type="text"
+                                        value={teacherSubjectSearch}
+                                        onChange={(e) => setTeacherSubjectSearch(e.target.value)}
+                                        placeholder="Search courses by name or code..."
+                                        className="w-full text-xs pl-8 pr-3 py-2 bg-white border border-[#E2E2E2] rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                </div>
+
+                                <select
+                                    value={teacherYearFilter}
+                                    onChange={(e) => setTeacherYearFilter(e.target.value)}
+                                    className="text-xs bg-white border border-[#E2E2E2] rounded-lg px-2.5 py-2 font-medium text-[#383838] outline-none cursor-pointer"
+                                >
+                                    <option value="ALL">All Years</option>
+                                    <option value="FY">FY</option>
+                                    <option value="SY">SY</option>
+                                    <option value="TY">TY</option>
+                                    <option value="Final Year">Final Year</option>
+                                </select>
+                            </div>
+
+                            {/* Subject Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[460px] overflow-y-auto p-1">
+                                {filteredTeacherSubjects.map(sub => {
+                                    const key = sub.name || sub.id;
+                                    const isAssigned = assignedTeacherSubjects.includes(sub.name) || assignedTeacherSubjects.includes(sub.id);
+
+                                    return (
+                                        <div
+                                            key={sub.id || sub.name}
+                                            onClick={() => handleToggleTeacherSubject(key)}
+                                            className={cn(
+                                                "p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 text-xs select-none",
+                                                isAssigned
+                                                    ? "bg-[#DEEDFC]/50 border-blue-300 shadow-2xs"
+                                                    : "bg-white hover:bg-slate-50 border-[#E2E2E2]"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className={cn(
+                                                    "w-4 h-4 rounded flex items-center justify-center border transition shrink-0",
+                                                    isAssigned ? "bg-[#0073E6] border-blue-600 text-white" : "border-slate-300 bg-white"
+                                                )}>
+                                                    {isAssigned && <Tick02Icon className="w-3 h-3 stroke-[3]" />}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="font-bold text-[#383838] truncate">{sub.name}</div>
+                                                    <div className="text-[10px] text-[#727272] mt-0.5">{sub.code || 'NO-CODE'} • {sub.semester || 'SEM'}</div>
+                                                </div>
+                                            </div>
+
+                                            <span className={cn(
+                                                "text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0",
+                                                isAssigned ? "bg-blue-100 text-[#0073E6]" : "bg-slate-100 text-slate-500"
+                                            )}>
+                                                {isAssigned ? 'Assigned' : 'Revoked'}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
+
+                {/* TAB 2: Semester Subject Visibility */}
+                {activeTab === 'semester-subjects' && (
+                    <div className="bg-white border border-[#E2E2E2] rounded-2xl shadow-xs overflow-hidden">
+                        <div className="p-5 sm:p-6 border-b border-[#E2E2E2] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                                    <Layers01Icon className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-[#383838]">Semester Course Visibility</h2>
+                                    <p className="text-xs text-[#727272] mt-0.5">
+                                        Assign or revoke what courses are shown to students in each semester view.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleSaveSemesterConfig}
+                                disabled={savingSemesterConfig}
+                                className="px-4 py-2 rounded-xl bg-[#0073E6] hover:bg-[#4A9AF0] text-white font-semibold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                            >
+                                <FloppyDiskIcon className="w-3.5 h-3.5" />
+                                <span>{savingSemesterConfig ? 'Saving...' : 'Save Semester Visibility'}</span>
+                            </button>
+                        </div>
+
+                        <div className="p-5 sm:p-6 space-y-4">
+                            {/* Semester Buttons */}
+                            <div className="flex flex-wrap gap-2">
+                                {ALL_SEMESTERS.map(sem => (
+                                    <button
+                                        key={sem}
+                                        type="button"
+                                        onClick={() => setSelectedSemester(sem)}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer",
+                                            selectedSemester === sem
+                                                ? "bg-[#0073E6] text-white shadow-2xs"
+                                                : "bg-slate-100 text-[#727272] hover:bg-slate-200"
+                                        )}
+                                    >
+                                        {sem}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Semester Course List */}
+                            <div className="space-y-2">
+                                <div className="text-xs font-bold text-[#727272] px-1 uppercase tracking-wider">
+                                    Courses in {selectedSemester} ({subjectsForSelectedSemester.length})
+                                </div>
+
+                                {subjectsForSelectedSemester.length === 0 ? (
+                                    <div className="py-8 text-center text-xs text-[#727272] bg-slate-50 rounded-xl border border-dashed border-[#E2E2E2]">
+                                        No courses recorded for {selectedSemester}.
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                        {subjectsForSelectedSemester.map(sub => {
+                                            const subId = sub.id || sub.name;
+                                            const isVisible = isSubjectVisibleInSemester(selectedSemester, subId);
+
+                                            return (
+                                                <div
+                                                    key={subId}
+                                                    className={cn(
+                                                        "p-3 rounded-xl border flex items-center justify-between gap-3 text-xs",
+                                                        isVisible ? "bg-white border-[#E2E2E2]" : "bg-slate-50/70 border-slate-200 opacity-60"
+                                                    )}
+                                                >
+                                                    <div className="min-w-0">
+                                                        <div className="font-bold text-[#383838] truncate">{sub.name}</div>
+                                                        <div className="text-[10px] text-[#727272]">{sub.code || 'CODE'} • {sub.department || 'All'}</div>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleToggleSemesterSubject(selectedSemester, subId)}
+                                                        className={cn(
+                                                            "px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer shrink-0",
+                                                            isVisible
+                                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                                                                : "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
+                                                        )}
+                                                    >
+                                                        {isVisible ? 'Shown' : 'Revoked'}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* TAB 3: API Keys */}
+                {activeTab === 'api-keys' && (
+                    <div className="bg-white border border-[#E2E2E2] rounded-2xl shadow-xs overflow-hidden">
+                        <div className="p-5 sm:p-6 border-b border-[#E2E2E2] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+                                    <SparklesIcon className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-[#383838]">Custom Google Gemini API Key</h2>
+                                    <p className="text-xs text-[#727272] mt-0.5">
+                                        Configure custom Gemini keys for unlimited AI chat, Note Doubts, and Chapter RAG.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Status Badge */}
+                            <div className="flex items-center gap-2">
+                                {keyStatus === 'valid' && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <CheckmarkCircle02Icon className="w-3.5 h-3.5 text-emerald-600" />
+                                        <span>Valid &amp; Connected</span>
+                                    </span>
+                                )}
+                                {keyStatus === 'testing' && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#DEEDFC] text-[#0073E6] border border-blue-200 animate-pulse">
+                                        <RefreshIcon className="w-3.5 h-3.5 animate-spin" />
+                                        <span>Testing...</span>
+                                    </span>
+                                )}
+                                {keyStatus === 'invalid' && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                        <CancelCircleIcon className="w-3.5 h-3.5 text-rose-600" />
+                                        <span>Invalid Key</span>
+                                    </span>
+                                )}
+                                {keyStatus === 'saved' && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                        <Tick02Icon className="w-3.5 h-3.5" />
+                                        <span>Key Configured</span>
+                                    </span>
+                                )}
+                                {keyStatus === 'empty' && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-[#727272] border border-[#E2E2E2]">
+                                        <span>System Default</span>
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="p-5 sm:p-6 space-y-4">
+                            <div className="space-y-2">
+                                <label className="block text-xs font-bold text-[#383838] uppercase tracking-wider">
+                                    Gemini API Key
+                                </label>
+                                <div className="relative">
+                                    <Key01Icon className="w-4 h-4 text-[#727272] absolute left-3 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        type={showKey ? 'text' : 'password'}
+                                        value={geminiKey}
+                                        onChange={(e) => {
+                                            setGeminiKey(e.target.value);
+                                            setKeyStatus('idle');
+                                        }}
+                                        placeholder="Enter your Gemini API key (e.g. AIzaSy...)"
+                                        className="w-full text-xs sm:text-sm pl-9 pr-24 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-[#E2E2E2] rounded-xl outline-none focus:ring-2 focus:ring-purple-500/20 font-mono"
+                                    />
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowKey(!showKey)}
+                                            className="p-1.5 text-[#727272] hover:text-[#383838] transition cursor-pointer"
+                                        >
+                                            {showKey ? <ViewOffIcon className="w-4 h-4" /> : <ViewIcon className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between text-[11px] text-[#727272] pt-1">
+                                    <span>{keyStatusMsg || 'Your key is stored securely in your browser session.'}</span>
+                                    <a
+                                        href="https://aistudio.google.com/app/apikey"
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-purple-600 hover:underline font-semibold flex items-center gap-1"
+                                    >
+                                        <span>Get Gemini Key</span>
+                                        <ArrowUpRight01Icon className="w-3 h-3" />
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2.5 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={handleSaveGeminiKey}
+                                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                                >
+                                    <FloppyDiskIcon className="w-3.5 h-3.5" />
+                                    <span>Save API Key</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleTestGeminiKey}
+                                    disabled={!geminiKey.trim() || keyStatus === 'testing'}
+                                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#383838] font-semibold text-xs border border-[#E2E2E2] transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                >
+                                    <SparklesIcon className="w-3.5 h-3.5 text-purple-600" />
+                                    <span>Test Connection</span>
+                                </button>
+
+                                {geminiKey && (
+                                    <button
+                                        type="button"
+                                        onClick={handleClearGeminiKey}
+                                        className="px-3.5 py-2 rounded-xl text-[#383838] hover:text-rose-600 hover:bg-rose-50 border border-[#E2E2E2] transition text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                        <RefreshIcon className="w-3.5 h-3.5" />
+                                        <span>Clear Key</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
-};
-
-export default Settings;
+}

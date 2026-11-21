@@ -123,7 +123,9 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
             }
         };
 
-        const isTeacher = (localStorage.getItem('eduvault_user_role') === 'teacher' || profile?.dob === 'TEACHER');
+        const userRole = localStorage.getItem('eduvault_user_role') || profile?.role || (profile?.dob === 'TEACHER' ? 'teacher' : 'student');
+        const isAdmin = (userRole === 'admin');
+        const isTeacher = !isAdmin && (userRole === 'teacher' || profile?.dob === 'TEACHER');
 
         const navItems = [
             {
@@ -141,11 +143,11 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                 icon: AiCustomIcon,
                 path: '/ai-assistant'
             },
-            {
+            ...(!isTeacher ? [{
                 name: 'Roadmaps',
                 icon: MapsLocation02Icon,
                 path: '/roadmaps'
-            },
+            }] : []),
             {
                 name: 'Announcements',
                 icon: Notification02Icon,
@@ -157,17 +159,17 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                 path: '/attendance',
                 badge: attendance ? `${attendance}%` : null,
             },
-            {
+            ...(isAdmin ? [{
                 name: 'Settings',
                 icon: Settings02Icon,
                 path: '/settings'
-            },
+            }] : []),
         ];
 
         const formatName = (fullName) => {
-            if (!fullName) return profile?.username || "Student";
+            if (!fullName) return isAdmin ? 'Administrator' : (profile?.username || 'Student');
             const trimmed = fullName.trim();
-            if (!trimmed) return "Student";
+            if (!trimmed) return isAdmin ? 'Administrator' : 'Student';
             return trimmed.split(/\s+/).map(word => {
                 if (word.length <= 2 && word.toUpperCase() === word) return word;
                 return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
@@ -356,7 +358,7 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                                         {formatName(profile?.name)}
                                     </span>
                                     <span className="text-[10px] text-[#727272] truncate font-medium">
-                                        {(localStorage.getItem('eduvault_user_role') === 'teacher' || profile?.dob === 'TEACHER') ? 'Faculty Account' : (profile?.prn || profile?.rollNo || 'Student')}
+                                        {isAdmin ? 'Administrator' : (isTeacher ? 'Faculty Account' : (profile?.prn || profile?.rollNo || 'Student'))}
                                     </span>
                                 </div>
                             )}

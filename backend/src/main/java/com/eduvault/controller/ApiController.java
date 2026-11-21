@@ -278,6 +278,43 @@ public class ApiController {
         }
     }
 
+    private static final String SEMESTER_SUBJECTS_KEY = "_config/semester-subjects.json";
+    private final Object semesterSubjectsLock = new Object();
+
+    private Map<String, Object> loadSemesterSubjectsJson() {
+        try {
+            String raw = (r2StorageService != null) ? r2StorageService.readJsonConfig(SEMESTER_SUBJECTS_KEY) : null;
+            if (raw != null && !raw.isBlank()) {
+                return mapper.readValue(raw, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+            }
+        } catch (Exception e) {
+            logger.warn("Could not parse semester subjects JSON: {}", e.getMessage());
+        }
+        return new java.util.LinkedHashMap<>();
+    }
+
+    @GetMapping("/admin/semester-subjects")
+    public ResponseEntity<Map<String, Object>> getSemesterSubjects() {
+        synchronized (semesterSubjectsLock) {
+            return ResponseEntity.ok(loadSemesterSubjectsJson());
+        }
+    }
+
+    @PutMapping("/admin/semester-subjects")
+    public ResponseEntity<Map<String, Object>> saveSemesterSubjects(@RequestBody Map<String, Object> payload) {
+        synchronized (semesterSubjectsLock) {
+            try {
+                String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(payload);
+                if (r2StorageService != null) {
+                    r2StorageService.writeJsonConfig(SEMESTER_SUBJECTS_KEY, json);
+                }
+            } catch (Exception e) {
+                logger.warn("Could not save semester subjects to R2: {}", e.getMessage());
+            }
+            return ResponseEntity.ok(payload);
+        }
+    }
+
     @GetMapping("/profile")
     public ResponseEntity<StudentProfile> getProfile(
             @RequestParam(required = false) String prn,

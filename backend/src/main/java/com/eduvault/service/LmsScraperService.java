@@ -50,6 +50,22 @@ public class LmsScraperService {
     @Value("${app.lms.audit.password:Dkte@123}")
     private String auditPassword = "Dkte@123";
 
+    // 3 Configurable Accounts for Scraping (credentials to be provided)
+    @Value("${app.lms.scraper.account1.username:SCRAPER_USER_1}")
+    private String scraperUser1;
+    @Value("${app.lms.scraper.account1.password:SCRAPER_PASS_1}")
+    private String scraperPass1;
+
+    @Value("${app.lms.scraper.account2.username:SCRAPER_USER_2}")
+    private String scraperUser2;
+    @Value("${app.lms.scraper.account2.password:SCRAPER_PASS_2}")
+    private String scraperPass2;
+
+    @Value("${app.lms.scraper.account3.username:SCRAPER_USER_3}")
+    private String scraperUser3;
+    @Value("${app.lms.scraper.account3.password:SCRAPER_PASS_3}")
+    private String scraperPass3;
+
     private final AtomicReference<LmsSyncResponse.LmsAvailabilityReport> cachedAvailability = new AtomicReference<>();
 
     private String loginUrl() {
@@ -328,6 +344,49 @@ public class LmsScraperService {
                     report.getTotalCourses(), report.getSubjectsWithNewNotes());
         } catch (Exception e) {
             logger.warn("Nightly Moodle availability check failed: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Daily 3:00 AM job: Rotates through 3 scraping accounts to sync all notes.
+     * ID and password placeholders configured in application properties.
+     */
+    @Scheduled(cron = "${app.lms.scraper.sync.cron:0 0 3 * * ?}", zone = "Asia/Kolkata")
+    public void runDailyThreeAccountNoteSync() {
+        logger.info("Starting daily 3:00 AM LMS note synchronization across 3 configured accounts...");
+        List<Map.Entry<String, String>> accounts = List.of(
+            Map.entry(scraperUser1 != null ? scraperUser1.trim() : "", scraperPass1 != null ? scraperPass1.trim() : ""),
+            Map.entry(scraperUser2 != null ? scraperUser2.trim() : "", scraperPass2 != null ? scraperPass2.trim() : ""),
+            Map.entry(scraperUser3 != null ? scraperUser3.trim() : "", scraperPass3 != null ? scraperPass3.trim() : "")
+        );
+
+        boolean synced = false;
+        for (int i = 0; i < accounts.size(); i++) {
+            Map.Entry<String, String> acc = accounts.get(i);
+            String user = acc.getKey();
+            String pass = acc.getValue();
+
+            if (user.isBlank() || user.startsWith("SCRAPER_USER_") || pass.isBlank()) {
+                logger.debug("Scraper account slot {} is unconfigured. Skipping.", i + 1);
+                continue;
+            }
+
+            try {
+                logger.info("Attempting notes sync with scraper account slot {}: {}", i + 1, user);
+                LmsCredentials creds = new LmsCredentials();
+                creds.setUsername(user);
+                creds.setPassword(pass);
+                LmsSyncResponse resp = syncNotes(creds);
+                logger.info("Daily notes sync succeeded with account {}. Notes imported: {}", user, resp != null ? resp.getImportedCount() : 0);
+                synced = true;
+                break;
+            } catch (Exception ex) {
+                logger.warn("Scraper account slot {} ({}) failed: {}. Falling back to next slot...", i + 1, user, ex.getMessage());
+            }
+        }
+
+        if (!synced) {
+            logger.warn("Daily 3:00 AM notes sync ended without active account sync (accounts pending configuration).");
         }
     }
 

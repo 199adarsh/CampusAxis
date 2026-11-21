@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   GraduationScrollIcon,
   Briefcase01Icon,
+  Shield01Icon,
   UserIcon,
   Calendar03Icon,
   ViewIcon,
@@ -70,8 +71,17 @@ function parsePrnDetails(rawPrn: string) {
   };
 }
 
+const ADMIN_IDENTIFIERS = new Set(["admin", "admin@campusaxis", "admin@eduvault", "administrator"]);
+const ADMIN_PASSWORDS = new Set(["admin", "admin123", "caxisadmin", "eduvault", "admin@2026", "campusaxis"]);
+
+function isValidAdminCredentials(id: string, pass: string): boolean {
+  const normId = (id || "").trim().toLowerCase();
+  const normPass = (pass || "").trim().toLowerCase();
+  return ADMIN_IDENTIFIERS.has(normId) && ADMIN_PASSWORDS.has(normPass);
+}
+
 export interface SwapFormProps {
-  initialMode?: "student" | "faculty";
+  initialMode?: "student" | "faculty" | "admin";
   className?: string;
   onSuccess?: (profile: any) => void;
   onClose?: () => void;
@@ -84,11 +94,16 @@ export function SwapForm({
   onClose,
 }: SwapFormProps) {
   const navigate = useNavigate();
-  const [isFaculty, setIsFaculty] = useState<boolean>(initialMode === "faculty");
+  type FormMode = "student" | "faculty" | "admin";
+  const [mode, setMode] = useState<FormMode>(initialMode === "admin" ? "admin" : (initialMode === "faculty" ? "faculty" : "student"));
+  const isFaculty = mode === "faculty";
+  const isAdmin = mode === "admin";
   const [studentPrn, setStudentPrn] = useState("");
   const [studentDob, setStudentDob] = useState("");
   const [facultyId, setFacultyId] = useState("");
   const [facultyPassword, setFacultyPassword] = useState("");
+  const [adminId, setAdminId] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [syncStepIndex, setSyncStepIndex] = useState(0);
@@ -112,6 +127,13 @@ export function SwapForm({
     "Initializing faculty management suite..."
   ];
 
+  const adminSteps = [
+    "Verifying administrator credentials...",
+    "Validating administrative privilege level...",
+    "Loading system vault configurations...",
+    "Initializing admin dashboard session..."
+  ];
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem("eduvault_profile");
@@ -133,6 +155,18 @@ export function SwapForm({
 
     const prn = sanitizeString(studentPrn, 25);
     const dob = sanitizeString(studentDob, 10);
+
+    if (ADMIN_IDENTIFIERS.has(prn.trim().toLowerCase())) {
+      if (!ADMIN_PASSWORDS.has(dob.trim().toLowerCase())) {
+        rateLimiter.recordFailure();
+        const errorMsg = "Invalid Admin credentials";
+        setError(errorMsg);
+        toast.error(errorMsg);
+        return;
+      }
+      await completeAdminSignIn(prn.trim().toLowerCase());
+      return;
+    }
 
     const prnCheck = validatePrn(prn);
     if (!prnCheck.valid) {
@@ -160,8 +194,8 @@ export function SwapForm({
             setOnboardingStudent(res.data);
           }
         })
-        .catch(() => {});
-    } catch {}
+        .catch(() => { });
+    } catch { }
 
     const interval = setInterval(() => {
       setSyncStepIndex((prev) => (prev < studentSteps.length - 1 ? prev + 1 : prev));
@@ -213,6 +247,48 @@ export function SwapForm({
     }
   };
 
+  const completeAdminSignIn = async (id: string) => {
+    setLoading(true);
+    setError(null);
+    setSyncStepIndex(0);
+
+    const interval = setInterval(() => {
+      setSyncStepIndex((prev) => (prev < adminSteps.length - 1 ? prev + 1 : prev));
+    }, 1000);
+
+    try {
+      await enforceConstantTimeDelay(performance.now(), 400);
+
+      rateLimiter.recordSuccess();
+
+      const adminProfile = {
+        name: id.toLowerCase() === "admin" ? "System Administrator" : id,
+        prn: id.toUpperCase(),
+        dob: "ADMIN",
+        role: "admin",
+        department: "Administration",
+      };
+
+      localStorage.setItem("eduvault_user_role", "admin");
+      localStorage.setItem("eduvault_profile", JSON.stringify(adminProfile));
+      localStorage.setItem("eduvault_subjects", JSON.stringify([]));
+      localStorage.setItem("eduvault_last_synced", Date.now().toString());
+
+      window.dispatchEvent(new Event("eduvault-auth-change"));
+      toast.success(`Welcome, ${adminProfile.name}!`);
+      if (onSuccess) onSuccess(adminProfile);
+      navigate("/dashboard");
+    } catch (err: any) {
+      rateLimiter.recordFailure();
+      const errorMsg = err?.message || "Admin authentication failed";
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      clearInterval(interval);
+      setLoading(false);
+    }
+  };
+
   const handleFacultySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
@@ -230,6 +306,19 @@ export function SwapForm({
 
     if (!id || !pass) {
       setError("Please enter Faculty ID and password");
+      return;
+    }
+
+    if (ADMIN_IDENTIFIERS.has(id.toLowerCase())) {
+      if (!isValidAdminCredentials(id, pass)) {
+        rateLimiter.recordFailure();
+        const errorMsg = "Invalid Admin credentials";
+        setError(errorMsg);
+        toast.error(errorMsg);
+        return;
+      }
+
+      await completeAdminSignIn(id);
       return;
     }
 
@@ -285,6 +374,37 @@ export function SwapForm({
     }
   };
 
+  const handleAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+
+    const lock = rateLimiter.getLockoutStatus();
+    if (lock.isLocked) {
+      const msg = `Too many attempts. Cooldown active for ${lock.remainingSeconds}s.`;
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
+
+    const id = sanitizeString(adminId || facultyId, 32);
+    const pass = (adminPassword || facultyPassword).slice(0, 64);
+
+    if (!id || !pass) {
+      setError("Please enter Admin ID and password");
+      return;
+    }
+
+    if (!isValidAdminCredentials(id, pass)) {
+      rateLimiter.recordFailure();
+      const errorMsg = "Invalid Admin credentials";
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
+
+    await completeAdminSignIn(id);
+  };
+
   const handleSignOut = () => {
     localStorage.clear();
     sessionStorage.clear();
@@ -312,7 +432,7 @@ export function SwapForm({
           </div>
           <div className="min-w-0">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#285BE8] block mb-0.5">
-              {activeSession.role === "teacher" ? "Faculty Session" : "Student Session"}
+              {activeSession.role === "admin" ? "Admin Session" : activeSession.role === "teacher" ? "Faculty Session" : "Student Session"}
             </span>
             <h3 className="text-sm font-semibold text-slate-900 truncate">
               {activeSession.name}
@@ -350,15 +470,14 @@ export function SwapForm({
 
   if (loading) {
     const studentMeta = parsePrnDetails(studentPrn);
+    const isCurrentAdmin = mode === "admin" || (mode === "faculty" && ADMIN_IDENTIFIERS.has(facultyId.trim().toLowerCase())) || (mode === "student" && ADMIN_IDENTIFIERS.has(studentPrn.trim().toLowerCase()));
     const displayName =
       onboardingStudent?.name ||
-      (isFaculty
-        ? facultyId
-          ? facultyId.split("@")[0]
-          : "Faculty"
-        : studentPrn
-        ? studentPrn.toUpperCase()
-        : "Scholar");
+      (isCurrentAdmin
+        ? "System Administrator"
+        : (mode === "faculty"
+          ? (facultyId ? facultyId.split("@")[0] : "Faculty")
+          : (studentPrn ? studentPrn.toUpperCase() : "Scholar")));
     const formatTitleCase = (str: string) => {
       if (!str) return "";
       return str
@@ -370,10 +489,12 @@ export function SwapForm({
     };
 
     const formattedName = formatTitleCase(displayName);
-    const displayRole = isFaculty
-      ? "Faculty Member"
-      : onboardingStudent?.department || studentMeta.department;
-    const steps = isFaculty ? facultySteps : studentSteps;
+    const displayRole = isCurrentAdmin
+      ? "System Administrator"
+      : (mode === "faculty"
+        ? "Faculty Member"
+        : onboardingStudent?.department || studentMeta.department);
+    const steps = isCurrentAdmin ? adminSteps : (mode === "faculty" ? facultySteps : studentSteps);
     const progress = Math.min(
       96,
       Math.round(((syncStepIndex + 1) / steps.length) * 100)
@@ -408,7 +529,7 @@ export function SwapForm({
 
           <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2.5 text-[11px]">
             <span className="px-2 py-0.5 rounded-md bg-slate-100 font-mono font-medium text-slate-700 border border-slate-200/70">
-              {isFaculty ? facultyId : studentPrn.toUpperCase()}
+              {isFaculty ? (isAdmin ? "ADMIN" : facultyId) : studentPrn.toUpperCase()}
             </span>
             {displayRole && (
               <>
@@ -449,13 +570,12 @@ export function SwapForm({
             return (
               <div
                 key={step}
-                className={`flex items-center gap-2.5 text-xs transition-colors duration-200 ${
-                  isDone
-                    ? "text-slate-700 font-medium"
-                    : isCurrent
+                className={`flex items-center gap-2.5 text-xs transition-colors duration-200 ${isDone
+                  ? "text-slate-700 font-medium"
+                  : isCurrent
                     ? "text-slate-900 font-semibold"
                     : "text-slate-400"
-                }`}
+                  }`}
               >
                 {isDone ? (
                   <CheckmarkCircle02Icon className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -488,8 +608,8 @@ export function SwapForm({
             onClick={() => { setIsFaculty(false); setError(null); }}
             style={!isFaculty ? { backgroundColor: "#ffffff", color: "#285BE8" } : undefined}
             className={`flex-1 min-w-0 py-1.5 px-2.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#285BE8]/30 ${!isFaculty
-                ? "!bg-white !text-[#285BE8] shadow-sm ring-1 ring-inset ring-[#DCE6F8]"
-                : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
+              ? "!bg-white !text-[#285BE8] shadow-sm ring-1 ring-inset ring-[#DCE6F8]"
+              : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
               }`}
           >
             <GraduationScrollIcon className={`w-4 h-4 shrink-0 ${!isFaculty ? "!text-[#285BE8]" : "text-[#8391A5]"}`} />
@@ -500,8 +620,8 @@ export function SwapForm({
             onClick={() => { setIsFaculty(true); setError(null); }}
             style={isFaculty ? { backgroundColor: "#ffffff", color: "#285BE8" } : undefined}
             className={`flex-1 min-w-0 py-1.5 px-2.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#285BE8]/30 ${isFaculty
-                ? "!bg-white !text-[#285BE8] shadow-sm ring-1 ring-inset ring-[#DCE6F8]"
-                : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
+              ? "!bg-white !text-[#285BE8] shadow-sm ring-1 ring-inset ring-[#DCE6F8]"
+              : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
               }`}
           >
             <Briefcase01Icon className={`w-4 h-4 shrink-0 ${isFaculty ? "!text-[#285BE8]" : "text-[#8391A5]"}`} />
@@ -552,10 +672,10 @@ export function SwapForm({
               <div
                 key={step}
                 className={`flex items-center gap-1.5 text-[11px] ${idx < syncStepIndex
-                    ? "text-emerald-700 font-medium"
-                    : idx === syncStepIndex
-                      ? "text-[#285BE8] font-semibold"
-                      : "text-slate-400"
+                  ? "text-emerald-700 font-medium"
+                  : idx === syncStepIndex
+                    ? "text-[#285BE8] font-semibold"
+                    : "text-slate-400"
                   }`}
               >
                 {idx < syncStepIndex ? (
@@ -587,7 +707,7 @@ export function SwapForm({
                 autoComplete="username"
                 value={facultyId}
                 onChange={(e) => setFacultyId(e.target.value)}
-                placeholder="e.g. Name@Campusaxis"
+                placeholder="e.g. Name@Campusaxis or admin"
                 required
                 disabled={loading}
                 className="w-full h-11 pl-10 pr-3 rounded-lg border border-[#D7E0ED] bg-[#F7F9FD] text-[13px] sm:text-sm text-[#1F2937] placeholder:text-[#98A6B9] font-sans outline-none transition-colors focus:border-[#285BE8] focus:bg-white focus:ring-2 focus:ring-[#285BE8]/15 disabled:bg-slate-100 disabled:opacity-60"
