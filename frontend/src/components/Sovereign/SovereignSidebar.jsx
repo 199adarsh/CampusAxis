@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import axios from 'axios';
 import {
@@ -15,7 +15,9 @@ import {
     Cancel01Icon,
     ArrowUp01Icon,
     UserIcon,
-    PencilEdit02Icon
+    PencilEdit02Icon,
+    UserMultiple02Icon,
+    Layers01Icon
 } from 'hugeicons-react';
 import { cn } from '../../lib/utils';
 
@@ -123,6 +125,7 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
             }
         };
 
+        const location = useLocation();
         const userRole = localStorage.getItem('eduvault_user_role') || profile?.role || (profile?.dob === 'TEACHER' ? 'teacher' : 'student');
         const isAdmin = (userRole === 'admin');
         const isTeacher = !isAdmin && (userRole === 'teacher' || profile?.dob === 'TEACHER');
@@ -159,11 +162,24 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                 path: '/attendance',
                 badge: attendance ? `${attendance}%` : null,
             },
-            ...(isAdmin ? [{
-                name: 'Settings',
-                icon: Settings02Icon,
-                path: '/settings'
-            }] : []),
+            ...(isAdmin ? [
+                {
+                    name: 'Teacher Allocation',
+                    icon: UserMultiple02Icon,
+                    path: '/settings?tab=teacher-subjects',
+                    section: 'Administration'
+                },
+                {
+                    name: 'Semester Visibility',
+                    icon: Layers01Icon,
+                    path: '/settings?tab=semester-subjects'
+                },
+                {
+                    name: 'API Keys & Settings',
+                    icon: Settings02Icon,
+                    path: '/settings?tab=api-keys'
+                }
+            ] : []),
         ];
 
         const formatName = (fullName) => {
@@ -232,52 +248,68 @@ const AiCustomIcon = ({ size = 20, className = '', ...props }) => (
                     <nav className="space-y-1">
                         {navItems.map((item) => {
                             const Icon = item.icon;
+                            const isSelected = (() => {
+                                if (item.path.includes('?')) {
+                                    const [base, query] = item.path.split('?');
+                                    return location.pathname === base && location.search.includes(query);
+                                }
+                                if (item.path === '/settings') {
+                                    return location.pathname === '/settings' && (!location.search || location.search.includes('tab=api-keys'));
+                                }
+                                if (item.path === '/dashboard') {
+                                    return location.pathname === '/dashboard';
+                                }
+                                return location.pathname === item.path || (location.pathname.startsWith(item.path) && !location.search);
+                            })();
+
                             return (
-                                <NavLink
-                                    key={item.path}
-                                    to={item.path}
-                                    end={item.path === '/dashboard'}
-                                    title={collapsed ? item.name : undefined}
-                                    onClick={() => setMobileMenuOpen && setMobileMenuOpen(false)}
-                                    className={({ isActive }) => cn(
-                                        "group flex items-center rounded-xl text-[13px] font-medium transition-all duration-150 cursor-pointer",
-                                        collapsed ? "justify-center p-2.5" : "justify-between px-3 py-2.5",
-                                        isActive
-                                            ? "bg-[#DEEDFC] text-[#0073E6] font-semibold shadow-2xs"
-                                            : "text-[#383838] hover:bg-[#F2F7FC] hover:text-[#0073E6]"
+                                <React.Fragment key={item.path}>
+                                    {item.section && !collapsed && (
+                                        <div className="pt-3 pb-1 px-2 text-[10px] font-bold text-[#727272] uppercase tracking-wider">
+                                            {item.section}
+                                        </div>
                                     )}
-                                >
-                                    {({ isActive }) => (
-                                        <>
-                                            <div className={cn("flex items-center min-w-0", collapsed ? "justify-center" : "gap-3")}>
-                                                <Icon
-                                                    size={18}
-                                                    className={cn(
-                                                        "shrink-0 transition-colors",
-                                                        isActive
-                                                            ? "text-[#0073E6]"
-                                                            : "text-[#727272] group-hover:text-[#0073E6]"
-                                                    )}
-                                                />
-                                                {!collapsed && <span className="truncate">{item.name}</span>}
+                                    <NavLink
+                                        to={item.path}
+                                        end={item.path === '/dashboard'}
+                                        title={collapsed ? item.name : undefined}
+                                        onClick={() => setMobileMenuOpen && setMobileMenuOpen(false)}
+                                        className={() => cn(
+                                            "group flex items-center rounded-xl text-[13px] font-medium transition-all duration-150 cursor-pointer",
+                                            collapsed ? "justify-center p-2.5" : "justify-between px-3 py-2.5",
+                                            isSelected
+                                                ? "bg-[#DEEDFC] text-[#0073E6] font-semibold shadow-2xs"
+                                                : "text-[#383838] hover:bg-[#F2F7FC] hover:text-[#0073E6]"
+                                        )}
+                                    >
+                                        <div className={cn("flex items-center min-w-0", collapsed ? "justify-center" : "gap-3")}>
+                                            <Icon
+                                                size={18}
+                                                className={cn(
+                                                    "shrink-0 transition-colors",
+                                                    isSelected
+                                                        ? "text-[#0073E6]"
+                                                        : "text-[#727272] group-hover:text-[#0073E6]"
+                                                )}
+                                            />
+                                            {!collapsed && <span className="truncate">{item.name}</span>}
+                                        </div>
+                                        {!collapsed && (
+                                            <div className="flex items-center gap-1.5 shrink-0 pl-2">
+                                                {item.chip && (
+                                                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-[#6A5AF9]/10 text-[#6A5AF9] border border-[#6A5AF9]/20">
+                                                        {item.chip}
+                                                    </span>
+                                                )}
+                                                {item.badge && (
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DEEDFC] text-[#174073] border border-[#D9ECFF]">
+                                                        {item.badge}
+                                                    </span>
+                                                )}
                                             </div>
-                                            {!collapsed && (
-                                                <div className="flex items-center gap-1.5 shrink-0 pl-2">
-                                                    {item.chip && (
-                                                        <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-[#6A5AF9]/10 text-[#6A5AF9] border border-[#6A5AF9]/20">
-                                                            {item.chip}
-                                                        </span>
-                                                    )}
-                                                    {item.badge && (
-                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DEEDFC] text-[#174073] border border-[#D9ECFF]">
-                                                            {item.badge}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </NavLink>
+                                        )}
+                                    </NavLink>
+                                </React.Fragment>
                             );
                         })}
                     </nav>

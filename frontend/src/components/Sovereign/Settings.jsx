@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Settings02Icon,
     BookOpen01Icon,
@@ -49,14 +49,32 @@ const ALL_SEMESTERS = [
 
 export default function Settings() {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const context = useOutletContext() || {};
     const { profile, catalogSubjects = [], refreshData } = context;
 
     const userRole = localStorage.getItem('eduvault_user_role') || profile?.role || (profile?.dob === 'TEACHER' ? 'teacher' : 'student');
     const isAdmin = userRole === 'admin' || profile?.role === 'admin';
 
-    // Active Section Tab
-    const [activeTab, setActiveTab] = useState('teacher-subjects'); // 'teacher-subjects' | 'semester-subjects' | 'api-keys'
+    // Active Section Tab (synced with URL for sidebar navigation)
+    const queryTab = searchParams.get('tab');
+    const [activeTab, setActiveTab] = useState(
+        queryTab && ['teacher-subjects', 'semester-subjects', 'api-keys'].includes(queryTab)
+            ? queryTab
+            : 'teacher-subjects'
+    );
+
+    useEffect(() => {
+        const t = searchParams.get('tab');
+        if (t && ['teacher-subjects', 'semester-subjects', 'api-keys'].includes(t)) {
+            setActiveTab(t);
+        }
+    }, [searchParams]);
+
+    const handleTabChange = (tabKey) => {
+        setActiveTab(tabKey);
+        setSearchParams({ tab: tabKey });
+    };
 
     // --- 1. Teacher Assignment State ---
     const [teachers, setTeachers] = useState(DEFAULT_TEACHERS);
@@ -250,7 +268,36 @@ export default function Settings() {
         }
     };
 
+    const handleAssignAllFiltered = () => {
+        const ids = filteredTeacherSubjects.map(s => s.name || s.id);
+        setAssignedTeacherSubjects(prev => Array.from(new Set([...prev, ...ids])));
+        toast.info(`Assigned all ${ids.length} filtered subjects`);
+    };
+
+    const handleRevokeAllFiltered = () => {
+        const ids = new Set(filteredTeacherSubjects.map(s => s.name || s.id));
+        setAssignedTeacherSubjects(prev => prev.filter(k => !ids.has(k)));
+        toast.info(`Cleared filtered subjects for selected teacher`);
+    };
+
     // --- Semester Subject Visibility Handlers ---
+    const handleShowAllInSemester = (sem) => {
+        setSemesterSubjectsConfig(prev => ({
+            ...prev,
+            [sem]: []
+        }));
+        toast.info(`Marked all courses visible in ${sem}`);
+    };
+
+    const handleHideAllInSemester = (sem) => {
+        const allIds = subjectsForSelectedSemester.map(s => s.id || s.name);
+        setSemesterSubjectsConfig(prev => ({
+            ...prev,
+            [sem]: allIds
+        }));
+        toast.info(`Revoked visibility for courses in ${sem}`);
+    };
+
     const isSubjectVisibleInSemester = (sem, subId) => {
         const revokedList = semesterSubjectsConfig[sem] || [];
         return !revokedList.includes(subId);
@@ -448,7 +495,7 @@ export default function Settings() {
                 <div className="flex items-center gap-2 border-b border-[#E2E2E2] pb-2 overflow-x-auto no-scrollbar">
                     <button
                         type="button"
-                        onClick={() => setActiveTab('teacher-subjects')}
+                        onClick={() => handleTabChange('teacher-subjects')}
                         className={cn(
                             "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shrink-0",
                             activeTab === 'teacher-subjects'
@@ -462,7 +509,7 @@ export default function Settings() {
 
                     <button
                         type="button"
-                        onClick={() => setActiveTab('semester-subjects')}
+                        onClick={() => handleTabChange('semester-subjects')}
                         className={cn(
                             "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shrink-0",
                             activeTab === 'semester-subjects'
@@ -476,7 +523,7 @@ export default function Settings() {
 
                     <button
                         type="button"
-                        onClick={() => setActiveTab('api-keys')}
+                        onClick={() => handleTabChange('api-keys')}
                         className={cn(
                             "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shrink-0",
                             activeTab === 'api-keys'
@@ -563,6 +610,25 @@ export default function Settings() {
                                     <option value="TY">TY</option>
                                     <option value="LY">LY</option>
                                 </select>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={handleAssignAllFiltered}
+                                        className="px-2.5 py-2 rounded-lg border border-[#E2E2E2] bg-white hover:bg-slate-50 text-[11px] font-semibold text-slate-700 transition cursor-pointer"
+                                        title="Assign all currently visible subjects to this teacher"
+                                    >
+                                        Assign All ({filteredTeacherSubjects.length})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleRevokeAllFiltered}
+                                        className="px-2.5 py-2 rounded-lg border border-[#E2E2E2] bg-white hover:bg-slate-50 text-[11px] font-semibold text-rose-600 transition cursor-pointer"
+                                        title="Revoke all currently visible subjects for this teacher"
+                                    >
+                                        Clear All
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Subject Grid */}
@@ -666,53 +732,99 @@ export default function Settings() {
                                 ))}
                             </div>
 
-                            {/* Semester Course List */}
-                            <div className="space-y-2">
-                                <div className="text-xs font-bold text-[#727272] px-1 uppercase tracking-wider">
-                                    Courses in {getYearFromSem(selectedSemester)} • {selectedSemester} ({subjectsForSelectedSemester.length})
+                            {/* Semester Course List Header with Quick Actions */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-[#E2E2E2]">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                        Courses in {getYearFromSem(selectedSemester)} • {selectedSemester}
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                        {subjectsForSelectedSemester.length} total
+                                    </span>
                                 </div>
 
-                                {subjectsForSelectedSemester.length === 0 ? (
-                                    <div className="py-8 text-center text-xs text-[#727272] bg-slate-50 rounded-xl border border-dashed border-[#E2E2E2]">
-                                        No courses recorded for {selectedSemester}.
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                        {subjectsForSelectedSemester.map(sub => {
-                                            const subId = sub.id || sub.name;
-                                            const isVisible = isSubjectVisibleInSemester(selectedSemester, subId);
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleShowAllInSemester(selectedSemester)}
+                                        className="px-2.5 py-1.5 rounded-lg border border-[#E2E2E2] bg-white hover:bg-slate-50 text-[11px] font-semibold text-emerald-700 transition cursor-pointer flex items-center gap-1.5"
+                                        title="Show all courses in this semester to students"
+                                    >
+                                        <ViewIcon className="w-3.5 h-3.5" />
+                                        <span>Show All</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleHideAllInSemester(selectedSemester)}
+                                        className="px-2.5 py-1.5 rounded-lg border border-[#E2E2E2] bg-white hover:bg-slate-50 text-[11px] font-semibold text-rose-600 transition cursor-pointer flex items-center gap-1.5"
+                                        title="Hide/Revoke all courses in this semester"
+                                    >
+                                        <ViewOffIcon className="w-3.5 h-3.5" />
+                                        <span>Revoke All</span>
+                                    </button>
+                                </div>
+                            </div>
 
-                                            return (
-                                                <div
-                                                    key={subId}
+                            {subjectsForSelectedSemester.length === 0 ? (
+                                <div className="py-10 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-dashed border-[#E2E2E2]">
+                                    No courses recorded for {selectedSemester}.
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    {subjectsForSelectedSemester.map(sub => {
+                                        const subId = sub.id || sub.name;
+                                        const isVisible = isSubjectVisibleInSemester(selectedSemester, subId);
+
+                                        return (
+                                            <div
+                                                key={subId}
+                                                onClick={() => handleToggleSemesterSubject(selectedSemester, subId)}
+                                                className={cn(
+                                                    "p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 text-xs select-none",
+                                                    isVisible
+                                                        ? "bg-white hover:border-blue-300 border-[#E2E2E2] shadow-2xs"
+                                                        : "bg-slate-50/80 border-slate-200/90 opacity-75"
+                                                )}
+                                            >
+                                                <div className="min-w-0">
+                                                    <div className="font-semibold text-slate-900 truncate text-[13px]">{sub.name}</div>
+                                                    <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
+                                                        <span className="font-mono font-medium">{sub.code || 'CODE'}</span>
+                                                        <span>•</span>
+                                                        <span>{sub.department || 'B.Tech'}</span>
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleToggleSemesterSubject(selectedSemester, subId);
+                                                    }}
                                                     className={cn(
-                                                        "p-3 rounded-xl border flex items-center justify-between gap-3 text-xs",
-                                                        isVisible ? "bg-white border-[#E2E2E2]" : "bg-slate-50/70 border-slate-200 opacity-60"
+                                                        "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition shrink-0 flex items-center gap-1.5 cursor-pointer",
+                                                        isVisible
+                                                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                                                            : "bg-slate-200/80 text-slate-600 border border-slate-300 hover:bg-slate-200"
                                                     )}
                                                 >
-                                                    <div className="min-w-0">
-                                                        <div className="font-bold text-[#383838] truncate">{sub.name}</div>
-                                                        <div className="text-[10px] text-[#727272]">{sub.code || 'CODE'} • {sub.department || 'All'}</div>
-                                                    </div>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleToggleSemesterSubject(selectedSemester, subId)}
-                                                        className={cn(
-                                                            "px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer shrink-0",
-                                                            isVisible
-                                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                                                                : "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
-                                                        )}
-                                                    >
-                                                        {isVisible ? 'Shown' : 'Revoked'}
-                                                    </button>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
+                                                    {isVisible ? (
+                                                        <>
+                                                            <ViewIcon className="w-3.5 h-3.5 text-emerald-600" />
+                                                            <span>Visible</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <ViewOffIcon className="w-3.5 h-3.5 text-slate-500" />
+                                                            <span>Hidden</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
