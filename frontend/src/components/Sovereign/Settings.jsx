@@ -98,10 +98,13 @@ export default function Settings() {
     const [savingVisibilityConfig, setSavingVisibilityConfig] = useState(false);
     const [visibilitySearch, setVisibilitySearch] = useState('');
     const [visibilityFilter, setVisibilityFilter] = useState('all'); // 'all' | 'shown' | 'hidden'
+    const [visibilityYearFilter, setVisibilityYearFilter] = useState('ALL'); // 'ALL' | 'FY' | 'SY' | 'TY' | 'LY'
+    const [visibilityDeptFilter, setVisibilityDeptFilter] = useState('ALL');
     const [showAddCustomModal, setShowAddCustomModal] = useState(false);
     const [newCustomName, setNewCustomName] = useState('');
     const [newCustomCode, setNewCustomCode] = useState('');
     const [newCustomDept, setNewCustomDept] = useState('AI & Data Science');
+    const [newCustomYear, setNewCustomYear] = useState('FY');
 
     // --- 3. Gemini API Key State ---
     const [geminiKey, setGeminiKey] = useState('');
@@ -211,6 +214,65 @@ export default function Settings() {
             console.warn('Could not fetch teacher mappings:', err);
             setAssignedTeacherSubjects([]);
         }
+    };
+
+    const handleToggleTeacherSubject = (subNameOrId) => {
+        setAssignedTeacherSubjects(prev => {
+            if (prev.includes(subNameOrId)) {
+                return prev.filter(item => item !== subNameOrId);
+            } else {
+                return [...prev, subNameOrId];
+            }
+        });
+    };
+
+    const handleSaveTeacherSubjects = async () => {
+        if (!selectedTeacherId) return;
+        setSavingTeacherSubjects(true);
+
+        const folderMappings = {};
+        allCatalogSubjects.forEach(sub => {
+            if (assignedTeacherSubjects.includes(sub.name) || assignedTeacherSubjects.includes(sub.id)) {
+                folderMappings[sub.name] = {
+                    id: sub.id,
+                    code: sub.code || '',
+                    year: sub.year || getYearFromSem(sub.semester),
+                    semester: sub.semester || '',
+                    bucketFolder: sub.bucketFolder || sub.name
+                };
+            }
+        });
+
+        try {
+            await axios.put(`${API_BASE}/teacher/mappings`, {
+                year: teacherYearFilter,
+                semester: teacherSemFilter,
+                selectedSubjects: assignedTeacherSubjects,
+                folderMappings
+            }, {
+                params: { prn: selectedTeacherId },
+                headers: { 'X-Student-PRN': selectedTeacherId }
+            });
+            toast.success(`Assigned ${assignedTeacherSubjects.length} subjects to ${selectedTeacherId}`);
+            if (refreshData) refreshData();
+        } catch (err) {
+            console.error('Failed to save teacher mappings:', err);
+            toast.error('Failed to save teacher subjects: ' + (err.response?.data?.error || err.message));
+        } finally {
+            setSavingTeacherSubjects(false);
+        }
+    };
+
+    const handleAssignAllFiltered = () => {
+        const ids = filteredTeacherSubjects.map(s => s.name || s.id);
+        setAssignedTeacherSubjects(prev => Array.from(new Set([...prev, ...ids])));
+        toast.info(`Assigned all ${ids.length} filtered subjects`);
+    };
+
+    const handleRevokeAllFiltered = () => {
+        const ids = new Set(filteredTeacherSubjects.map(s => s.name || s.id));
+        setAssignedTeacherSubjects(prev => prev.filter(k => !ids.has(k)));
+        toast.info(`Cleared filtered subjects for selected teacher`);
     };
 
     const loadSemesterVisibilityConfig = async () => {
@@ -340,6 +402,7 @@ export default function Settings() {
             name: trimmedName,
             code: newCustomCode.trim() || 'CUSTOM',
             department: newCustomDept.trim() || 'AI & Data Science',
+            year: newCustomYear || 'FY',
             isCustom: true
         };
 
@@ -489,15 +552,33 @@ export default function Settings() {
 
     // All available subjects including any custom subjects added by admin
     const allAvailableSubjects = useMemo(() => {
-        const list = [...allCatalogSubjects];
+        const list = allCatalogSubjects.map(s => ({
+            ...s,
+            year: s.year || getYearFromSem(s.semester) || 'FY'
+        }));
         const custom = visibilityConfig.customSubjects || [];
         for (const cs of custom) {
             if (!list.some(s => s.id === cs.id || s.name === cs.name)) {
-                list.push({ ...cs, isCustom: true });
+                list.push({
+                    ...cs,
+                    year: cs.year || 'FY',
+                    isCustom: true
+                });
             }
         }
         return list;
     }, [allCatalogSubjects, visibilityConfig.customSubjects]);
+
+    // Unique departments extracted dynamically from catalog
+    const availableDepartments = useMemo(() => {
+        const depts = new Set();
+        allAvailableSubjects.forEach(s => {
+            if (s.department && s.department.trim()) {
+                depts.add(s.department.trim());
+            }
+        });
+        return Array.from(depts).sort();
+    }, [allAvailableSubjects]);
 
     // Filtered subjects for Subject Visibility tab
     const filteredVisibilitySubjects = useMemo(() => {
@@ -512,9 +593,18 @@ export default function Settings() {
             const shown = isSubjectShown(sub);
             if (visibilityFilter === 'shown' && !shown) return false;
             if (visibilityFilter === 'hidden' && shown) return false;
+
+            if (visibilityYearFilter !== 'ALL' && sub.year !== visibilityYearFilter) {
+                return false;
+            }
+
+            if (visibilityDeptFilter !== 'ALL' && sub.department !== visibilityDeptFilter) {
+                return false;
+            }
+
             return true;
         });
-    }, [allAvailableSubjects, visibilitySearch, visibilityFilter, visibilityConfig]);
+    }, [allAvailableSubjects, visibilitySearch, visibilityFilter, visibilityYearFilter, visibilityDeptFilter, visibilityConfig]);
 
     // Access guard: If non-admin user navigates to /settings
     if (!isAdmin) {
@@ -806,7 +896,7 @@ export default function Settings() {
                                         </button>
                                     </div>
 
-                                    <form onSubmit={handleAddCustomSubject} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <form onSubmit={handleAddCustomSubject} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                         <div className="space-y-1">
                                             <label className="text-[11px] font-bold text-[#727272] uppercase tracking-wider">
                                                 Course Name *
@@ -847,7 +937,23 @@ export default function Settings() {
                                             />
                                         </div>
 
-                                        <div className="sm:col-span-3 flex items-center justify-end gap-2 pt-1">
+                                        <div className="space-y-1">
+                                            <label className="text-[11px] font-bold text-[#727272] uppercase tracking-wider">
+                                                Academic Year
+                                            </label>
+                                            <select
+                                                value={newCustomYear}
+                                                onChange={(e) => setNewCustomYear(e.target.value)}
+                                                className="w-full text-xs px-3 py-2 bg-white border border-[#E2E2E2] rounded-lg outline-none focus:ring-1 focus:ring-purple-500 font-semibold text-[#383838] cursor-pointer"
+                                            >
+                                                <option value="FY">First Year (FY)</option>
+                                                <option value="SY">Second Year (SY)</option>
+                                                <option value="TY">Third Year (TY)</option>
+                                                <option value="LY">Final Year (LY)</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="sm:col-span-4 flex items-center justify-end gap-2 pt-1">
                                             <button
                                                 type="button"
                                                 onClick={() => setShowAddCustomModal(false)}
@@ -866,6 +972,62 @@ export default function Settings() {
                                     </form>
                                 </div>
                             )}
+
+                            {/* Year & Department Filter Controls */}
+                            <div className="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-[#E2E2E2] flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                                {/* Academic Year Selector Pills */}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-xs font-bold text-[#383838] mr-1">Academic Year:</span>
+                                    {[
+                                        { id: 'ALL', label: 'All Years' },
+                                        { id: 'FY', label: 'FY' },
+                                        { id: 'SY', label: 'SY' },
+                                        { id: 'TY', label: 'TY' },
+                                        { id: 'LY', label: 'LY' },
+                                    ].map(yr => {
+                                        const count = yr.id === 'ALL'
+                                            ? allAvailableSubjects.length
+                                            : allAvailableSubjects.filter(s => s.year === yr.id).length;
+                                        const isSelected = visibilityYearFilter === yr.id;
+                                        return (
+                                            <button
+                                                key={yr.id}
+                                                type="button"
+                                                onClick={() => setVisibilityYearFilter(yr.id)}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5",
+                                                    isSelected
+                                                        ? "bg-[#0073E6] text-white shadow-2xs"
+                                                        : "bg-white text-[#727272] hover:text-[#383838] border border-[#E2E2E2] hover:bg-slate-100"
+                                                )}
+                                            >
+                                                <span>{yr.label}</span>
+                                                <span className="text-[10px] opacity-75">({count})</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Department Filter Selector */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-[#383838] shrink-0">Department:</span>
+                                    <select
+                                        value={visibilityDeptFilter}
+                                        onChange={(e) => setVisibilityDeptFilter(e.target.value)}
+                                        className="text-xs bg-white border border-[#E2E2E2] rounded-lg px-3 py-1.5 font-semibold text-[#383838] outline-none cursor-pointer focus:ring-1 focus:ring-blue-500 max-w-[240px]"
+                                    >
+                                        <option value="ALL">All Departments ({allAvailableSubjects.length})</option>
+                                        {availableDepartments.map(dept => {
+                                            const count = allAvailableSubjects.filter(s => s.department === dept).length;
+                                            return (
+                                                <option key={dept} value={dept}>
+                                                    {dept} ({count})
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+                                </div>
+                            </div>
 
                             {/* Search, Filter Pills, and Bulk Actions */}
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -983,6 +1145,9 @@ export default function Settings() {
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-center gap-1.5 flex-wrap">
                                                         <span className="font-semibold text-slate-900 truncate text-[13px]">{sub.name}</span>
+                                                        <span className="px-1.5 py-0.2 rounded-md text-[9px] font-extrabold bg-[#DEEDFC] text-[#0073E6] border border-blue-200">
+                                                            {sub.year || 'FY'}
+                                                        </span>
                                                         {sub.isCustom && (
                                                             <span className="px-1.5 py-0.2 rounded-md text-[9px] font-extrabold bg-purple-50 text-purple-700 border border-purple-200">
                                                                 Custom
