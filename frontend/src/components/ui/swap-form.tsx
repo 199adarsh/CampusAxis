@@ -72,13 +72,6 @@ function parsePrnDetails(rawPrn: string) {
 }
 
 const ADMIN_IDENTIFIERS = new Set(["admin", "admin@campusaxis", "admin@eduvault", "administrator"]);
-const ADMIN_PASSWORDS = new Set(["admin", "admin123", "caxisadmin", "eduvault", "admin@2026", "campusaxis"]);
-
-function isValidAdminCredentials(id: string, pass: string): boolean {
-  const normId = (id || "").trim().toLowerCase();
-  const normPass = (pass || "").trim().toLowerCase();
-  return ADMIN_IDENTIFIERS.has(normId) && ADMIN_PASSWORDS.has(normPass);
-}
 
 export interface SwapFormProps {
   initialMode?: "student" | "faculty" | "admin";
@@ -157,14 +150,24 @@ export function SwapForm({
     const dob = sanitizeString(studentDob, 10);
 
     if (ADMIN_IDENTIFIERS.has(prn.trim().toLowerCase())) {
-      if (!ADMIN_PASSWORDS.has(dob.trim().toLowerCase())) {
+      setLoading(true);
+      setError(null);
+      setSyncStepIndex(0);
+      const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+      try {
+        const adminRes = await axios.post(`${API_BASE}/portal/admin/login`, {
+          adminId: prn.trim(),
+          password: dob.trim(),
+        });
+        await completeAdminSignIn(adminRes.data);
+      } catch (err: any) {
         rateLimiter.recordFailure();
-        const errorMsg = "Invalid Admin credentials";
+        const errorMsg = err.response?.data?.error || "Invalid Admin credentials";
         setError(errorMsg);
         toast.error(errorMsg);
-        return;
+      } finally {
+        setLoading(false);
       }
-      await completeAdminSignIn(prn.trim().toLowerCase());
       return;
     }
 
@@ -247,7 +250,7 @@ export function SwapForm({
     }
   };
 
-  const completeAdminSignIn = async (id: string) => {
+  const completeAdminSignIn = async (adminProfile: any) => {
     setLoading(true);
     setError(null);
     setSyncStepIndex(0);
@@ -261,22 +264,22 @@ export function SwapForm({
 
       rateLimiter.recordSuccess();
 
-      const adminProfile = {
-        name: id.toLowerCase() === "admin" ? "System Administrator" : id,
-        prn: id.toUpperCase(),
+      const profile = {
+        name: adminProfile?.name || "System Administrator",
+        prn: adminProfile?.prn || "ADMIN01",
         dob: "ADMIN",
         role: "admin",
-        department: "Administration",
+        department: adminProfile?.department || "Administration",
       };
 
       localStorage.setItem("eduvault_user_role", "admin");
-      localStorage.setItem("eduvault_profile", JSON.stringify(adminProfile));
+      localStorage.setItem("eduvault_profile", JSON.stringify(profile));
       localStorage.setItem("eduvault_subjects", JSON.stringify([]));
       localStorage.setItem("eduvault_last_synced", Date.now().toString());
 
       window.dispatchEvent(new Event("eduvault-auth-change"));
-      toast.success(`Welcome, ${adminProfile.name}!`);
-      if (onSuccess) onSuccess(adminProfile);
+      toast.success(`Welcome, ${profile.name}!`);
+      if (onSuccess) onSuccess(profile);
       navigate("/dashboard");
     } catch (err: any) {
       rateLimiter.recordFailure();
@@ -309,16 +312,26 @@ export function SwapForm({
       return;
     }
 
+    const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+
     if (ADMIN_IDENTIFIERS.has(id.toLowerCase())) {
-      if (!isValidAdminCredentials(id, pass)) {
+      setLoading(true);
+      setError(null);
+      setSyncStepIndex(0);
+      try {
+        const adminRes = await axios.post(`${API_BASE}/portal/admin/login`, {
+          adminId: id,
+          password: pass,
+        });
+        await completeAdminSignIn(adminRes.data);
+      } catch (err: any) {
         rateLimiter.recordFailure();
-        const errorMsg = "Invalid Admin credentials";
+        const errorMsg = err.response?.data?.error || "Invalid Admin credentials";
         setError(errorMsg);
         toast.error(errorMsg);
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      await completeAdminSignIn(id);
       return;
     }
 
@@ -329,8 +342,6 @@ export function SwapForm({
     const interval = setInterval(() => {
       setSyncStepIndex((prev) => (prev < facultySteps.length - 1 ? prev + 1 : prev));
     }, 2200);
-
-    const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
     try {
       const facultyRes = await axios.post(

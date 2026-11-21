@@ -258,7 +258,9 @@ export default function Settings() {
     const handleSaveSemesterConfig = async () => {
         setSavingSemesterConfig(true);
         try {
-            await axios.put(`${API_BASE}/admin/semester-subjects`, semesterSubjectsConfig);
+            await axios.put(`${API_BASE}/admin/semester-subjects`, semesterSubjectsConfig, {
+                headers: { 'X-User-Role': 'admin' }
+            });
             localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(semesterSubjectsConfig));
             toast.success('Semester subject visibility updated successfully!');
             if (refreshData) refreshData();

@@ -301,7 +301,12 @@ public class ApiController {
     }
 
     @PutMapping("/admin/semester-subjects")
-    public ResponseEntity<Map<String, Object>> saveSemesterSubjects(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> saveSemesterSubjects(
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
+            @RequestBody Map<String, Object> payload) {
+        if (roleHeader == null || !roleHeader.equalsIgnoreCase("admin")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Admin role required"));
+        }
         synchronized (semesterSubjectsLock) {
             try {
                 String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(payload);
