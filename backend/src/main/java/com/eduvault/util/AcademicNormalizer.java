@@ -152,6 +152,13 @@ public class AcademicNormalizer {
             return String.format("SEM %02d", Integer.parseInt(semMatcher.group(1)));
         }
 
+        if (combined.contains("MINI PROJECT II") || combined.contains("MINI-PROJECT-II") || combined.contains("MINI PROJECT 2") || combined.contains("MINI-PROJECT 2") || combined.contains("01ADD306")) {
+            return "SEM 05";
+        }
+        if (combined.contains("MINI PROJECT I") || combined.contains("MINI-PROJECT-I") || combined.contains("MINI PROJECT 1") || combined.contains("MINI-PROJECT 1") || combined.contains("02ADD220")) {
+            return "SEM 03";
+        }
+
         if (combined.contains("FY") || combined.contains("FIRST YEAR") || combined.contains("1ST YEAR")) {
             return "SEM 01";
         }

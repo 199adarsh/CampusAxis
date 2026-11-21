@@ -181,6 +181,7 @@ public class ApiController {
         List<String> folders = (r2StorageService != null) ? r2StorageService.listTopLevelFolders() : List.of();
         List<Map<String, Object>> merged = new java.util.ArrayList<>();
         Set<String> matchedIds = new HashSet<>();
+        Set<String> seenSubjectKeys = new HashSet<>();
 
         for (String folder : folders) {
             String cleanFolder = folder.trim();
@@ -197,24 +198,31 @@ public class ApiController {
             }
             if (matched != null) {
                 matchedIds.add(matched.getId());
-                merged.add(buildSubjectEntry(matched, cleanFolder, true));
+                String key = ((matched.getCode() != null ? matched.getCode() : "") + ":" + AcademicNormalizer.normalizeSubjectName(matched.getName())).toLowerCase();
+                if (seenSubjectKeys.add(key)) {
+                    merged.add(buildSubjectEntry(matched, cleanFolder, true));
+                }
             } else {
                 String inferredCode = cleanFolder.contains(" ") ? cleanFolder.substring(0, cleanFolder.indexOf(' ')).trim() : "";
                 String inferredDept = AcademicNormalizer.inferDepartmentFromCourse(inferredCode, cleanFolder);
                 String inferredSem = AcademicNormalizer.inferSemesterFromCourse(inferredCode, cleanFolder);
-                Subject virtualSub = Subject.builder()
-                        .id("r2-" + cleanFolder.toLowerCase().replaceAll("[^a-z0-9]+", "-"))
-                        .name(folderNamePart)
-                        .code(inferredCode)
-                        .department(inferredDept)
-                        .semester(inferredSem)
-                        .build();
-                merged.add(buildSubjectEntry(virtualSub, cleanFolder, true));
+                String key = (inferredCode + ":" + AcademicNormalizer.normalizeSubjectName(folderNamePart)).toLowerCase();
+                if (seenSubjectKeys.add(key)) {
+                    Subject virtualSub = Subject.builder()
+                            .id("r2-" + cleanFolder.toLowerCase().replaceAll("[^a-z0-9]+", "-"))
+                            .name(folderNamePart)
+                            .code(inferredCode)
+                            .department(inferredDept)
+                            .semester(inferredSem)
+                            .build();
+                    merged.add(buildSubjectEntry(virtualSub, cleanFolder, true));
+                }
             }
         }
 
         for (Subject s : catalog) {
-            if (!matchedIds.contains(s.getId())) {
+            String key = ((s.getCode() != null ? s.getCode() : "") + ":" + AcademicNormalizer.normalizeSubjectName(s.getName())).toLowerCase();
+            if (!matchedIds.contains(s.getId()) && seenSubjectKeys.add(key)) {
                 String prefix = (s.getCode() != null && !s.getCode().isBlank()) ? s.getCode().trim().toUpperCase() + " " : "";
                 merged.add(buildSubjectEntry(s, (prefix + (s.getName() != null ? s.getName() : "")).trim(), false));
             }

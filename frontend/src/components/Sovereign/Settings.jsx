@@ -145,7 +145,19 @@ export default function Settings() {
                     inBucket: false
                 }));
             }
-            setAllCatalogSubjects(list);
+
+            const seen = new Set();
+            const deduped = [];
+            for (const item of list) {
+                const normName = (item.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                const sem = (item.semester || '').toUpperCase().trim();
+                const key = `${normName}_${sem}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    deduped.push(item);
+                }
+            }
+            setAllCatalogSubjects(deduped);
         } catch (err) {
             console.error('Failed to load catalog subjects:', err);
             if (catalogSubjects && catalogSubjects.length > 0) {
