@@ -616,7 +616,7 @@ export function SwapForm({
         <div className="flex min-w-0 rounded-lg bg-[#F2F5FA] p-1 border border-[#E5EAF2] w-full max-w-[316px]">
           <button
             type="button"
-            onClick={() => { setIsFaculty(false); setError(null); }}
+            onClick={() => { setMode("student"); setError(null); }}
             style={!isFaculty ? { backgroundColor: "#ffffff", color: "#285BE8" } : undefined}
             className={`flex-1 min-w-0 py-1.5 px-2.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#285BE8]/30 ${!isFaculty
               ? "!bg-white !text-[#285BE8] shadow-sm ring-1 ring-inset ring-[#DCE6F8]"
@@ -628,7 +628,7 @@ export function SwapForm({
           </button>
           <button
             type="button"
-            onClick={() => { setIsFaculty(true); setError(null); }}
+            onClick={() => { setMode("faculty"); setError(null); }}
             style={isFaculty ? { backgroundColor: "#ffffff", color: "#285BE8" } : undefined}
             className={`flex-1 min-w-0 py-1.5 px-2.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#285BE8]/30 ${isFaculty
               ? "!bg-white !text-[#285BE8] shadow-sm ring-1 ring-inset ring-[#DCE6F8]"
