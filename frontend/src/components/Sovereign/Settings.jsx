@@ -35,6 +35,13 @@ const DEFAULT_TEACHERS = [
     { id: 'PMM@caxis', name: 'Prof. P M Mathpati', dept: 'AI & Data Science' }
 ];
 
+const YEAR_GROUPS = [
+    { year: 'FY', label: 'First Year (FY)', semesters: ['SEM 01', 'SEM 02'] },
+    { year: 'SY', label: 'Second Year (SY)', semesters: ['SEM 03', 'SEM 04'] },
+    { year: 'TY', label: 'Third Year (TY)', semesters: ['SEM 05', 'SEM 06'] },
+    { year: 'LY', label: 'Last Year (LY)', semesters: ['SEM 07', 'SEM 08'] },
+];
+
 const ALL_SEMESTERS = [
     'SEM 01', 'SEM 02', 'SEM 03', 'SEM 04',
     'SEM 05', 'SEM 06', 'SEM 07', 'SEM 08'
@@ -78,7 +85,7 @@ export default function Settings() {
         if (num <= 2) return 'FY';
         if (num <= 4) return 'SY';
         if (num <= 6) return 'TY';
-        return 'Final Year';
+        return 'LY';
     };
 
     // Load initial settings
@@ -542,7 +549,7 @@ export default function Settings() {
                                     <option value="FY">FY</option>
                                     <option value="SY">SY</option>
                                     <option value="TY">TY</option>
-                                    <option value="Final Year">Final Year</option>
+                                    <option value="LY">LY</option>
                                 </select>
                             </div>
 
@@ -618,29 +625,39 @@ export default function Settings() {
                         </div>
 
                         <div className="p-5 sm:p-6 space-y-4">
-                            {/* Semester Buttons */}
-                            <div className="flex flex-wrap gap-2">
-                                {ALL_SEMESTERS.map(sem => (
-                                    <button
-                                        key={sem}
-                                        type="button"
-                                        onClick={() => setSelectedSemester(sem)}
-                                        className={cn(
-                                            "px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer",
-                                            selectedSemester === sem
-                                                ? "bg-[#0073E6] text-white shadow-2xs"
-                                                : "bg-slate-100 text-[#727272] hover:bg-slate-200"
-                                        )}
-                                    >
-                                        {sem}
-                                    </button>
+                            {/* Semester Buttons grouped by Year: FY, SY, TY, LY */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                {YEAR_GROUPS.map(yg => (
+                                    <div key={yg.year} className="bg-slate-50 border border-[#E2E2E2] rounded-xl p-2.5 space-y-2">
+                                        <div className="flex items-center justify-between text-xs font-bold text-[#383838]">
+                                            <span className="text-xs font-extrabold text-[#0073E6]">{yg.year}</span>
+                                            <span className="text-[10px] text-[#727272] font-medium">{yg.label}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                            {yg.semesters.map(sem => (
+                                                <button
+                                                    key={sem}
+                                                    type="button"
+                                                    onClick={() => setSelectedSemester(sem)}
+                                                    className={cn(
+                                                        "py-1.5 px-2 rounded-lg text-xs font-bold transition cursor-pointer text-center",
+                                                        selectedSemester === sem
+                                                            ? "bg-[#0073E6] text-white shadow-2xs"
+                                                            : "bg-white border border-[#E2E2E2] text-[#727272] hover:bg-slate-100 hover:text-[#383838]"
+                                                    )}
+                                                >
+                                                    {sem}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
 
                             {/* Semester Course List */}
                             <div className="space-y-2">
                                 <div className="text-xs font-bold text-[#727272] px-1 uppercase tracking-wider">
-                                    Courses in {selectedSemester} ({subjectsForSelectedSemester.length})
+                                    Courses in {getYearFromSem(selectedSemester)} • {selectedSemester} ({subjectsForSelectedSemester.length})
                                 </div>
 
                                 {subjectsForSelectedSemester.length === 0 ? (

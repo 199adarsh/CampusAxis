@@ -145,7 +145,7 @@ public class ApiController {
         if (num <= 2) return "FY";
         if (num <= 4) return "SY";
         if (num <= 6) return "TY";
-        return "Final Year";
+        return "LY";
     }
 
     private Map<String, Object> buildSubjectEntry(Subject sub, String bucketFolder, boolean inBucket) {

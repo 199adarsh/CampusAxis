@@ -109,7 +109,7 @@ export const getYearOrder = (subjectOrSem) => {
     if (s.includes('FY') || s.includes('FIRST') || s === '1' || s === '2') return 1;
     if (s.includes('SY') || s.includes('SECOND') || s === '3' || s === '4') return 2;
     if (s.includes('TY') || s.includes('THIRD') || s === '5' || s === '6') return 3;
-    if (s.includes('FINAL') || s.includes('BTECH') || s.includes('B.TECH') || s.includes('FOURTH') || s.includes('BE') || s === '7' || s === '8') return 4;
+    if (s.includes('FINAL') || s.includes('BTECH') || s.includes('B.TECH') || s.includes('FOURTH') || s.includes('BE') || s.includes('LY') || s === '7' || s === '8') return 4;
 
     const semNum = getSemesterNumber(semValue);
     if (semNum <= 2) return 1;
@@ -125,7 +125,7 @@ export const getYearLabel = (subjectOrSem) => {
         case 1: return 'First Year (FY)';
         case 2: return 'Second Year (SY)';
         case 3: return 'Third Year (TY)';
-        case 4: return 'Final Year (B.Tech)';
+        case 4: return 'Last Year (LY)';
         default: return 'Other';
     }
 };
