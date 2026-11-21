@@ -351,7 +351,29 @@ const NotesLibrary = ({ defaultTab = 'notes' }) => {
             }
         }
 
-        const candidateList = (!isTeacher && subjects && subjects.length > 0) ? subjects : baseList;
+        let candidateList = (!isTeacher && subjects && subjects.length > 0) ? subjects : baseList;
+        const userRole = localStorage.getItem('eduvault_user_role');
+        if (userRole !== 'admin') {
+            try {
+                const cachedConfig = localStorage.getItem('eduvault_semester_subjects_config');
+                if (cachedConfig) {
+                    const semConfig = JSON.parse(cachedConfig);
+                    if (semConfig && typeof semConfig === 'object') {
+                        candidateList = candidateList.filter(sub => {
+                            const sem = (sub.semester || '').trim().toUpperCase();
+                            const revoked = semConfig[sem];
+                            if (Array.isArray(revoked) && revoked.length > 0) {
+                                const id = sub.id || '';
+                                const name = sub.name || '';
+                                const code = sub.code || '';
+                                return !revoked.includes(id) && !revoked.includes(name) && (!code || !revoked.includes(code));
+                            }
+                            return true;
+                        });
+                    }
+                }
+            } catch {}
+        }
         return sortSubjectsByYear(candidateList.filter(s => subjectHasNotes(s)));
     }, [isTeacher, subjects, allKnownSubjects, studentDept, studentSem, subjectHasNotes]);
 

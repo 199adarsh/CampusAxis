@@ -276,10 +276,12 @@ const SovereignLayout = () => {
             // 3. Set enrolled subjects using canonical IDs from backend catalog
 
             const isTeacher = currentProfile
-
                 ? (currentProfile.dob === 'TEACHER' || String(currentProfile.role || '').toUpperCase() === 'TEACHER')
-
                 : (localStorage.getItem('eduvault_user_role') === 'teacher');
+
+            const isAdmin = currentProfile
+                ? (String(currentProfile.role || '').toLowerCase() === 'admin' || currentProfile.dob === 'ADMIN')
+                : (localStorage.getItem('eduvault_user_role') === 'admin');
 
             let enrolledSubjects = [];
 
@@ -491,16 +493,43 @@ const SovereignLayout = () => {
                 );
 
                 enrolledSubjects = scoped.length > 0 ? scoped : catalogSubs;
-
-                setSubjects(enrolledSubjects);
-
             } else {
-
                 enrolledSubjects = catalogSubs;
-
-                setSubjects(enrolledSubjects);
-
             }
+
+            // Filter out subjects revoked by admin for each semester (for non-admin users)
+            if (!isAdmin) {
+                let semConfig = null;
+                try {
+                    const cachedConfig = localStorage.getItem('eduvault_semester_subjects_config');
+                    if (cachedConfig) semConfig = JSON.parse(cachedConfig);
+                } catch {}
+                if (!semConfig) {
+                    try {
+                        const cfgRes = await axios.get(`${API_BASE}/admin/semester-subjects`);
+                        if (cfgRes.data) {
+                            semConfig = cfgRes.data;
+                            localStorage.setItem('eduvault_semester_subjects_config', JSON.stringify(cfgRes.data));
+                        }
+                    } catch {}
+                }
+                if (semConfig && typeof semConfig === 'object') {
+                    enrolledSubjects = enrolledSubjects.filter(sub => {
+                        const sem = (sub.semester || '').trim().toUpperCase();
+                        const revoked = semConfig[sem];
+                        if (Array.isArray(revoked) && revoked.length > 0) {
+                            const id = sub.id || '';
+                            const name = sub.name || '';
+                            const code = sub.code || '';
+                            return !revoked.includes(id) && !revoked.includes(name) && (!code || !revoked.includes(code));
+                        }
+                        return true;
+                    });
+                }
+            }
+
+            localStorage.setItem('eduvault_subjects', JSON.stringify(enrolledSubjects));
+            setSubjects(enrolledSubjects);
 
 
 
